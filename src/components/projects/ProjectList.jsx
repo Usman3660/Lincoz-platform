@@ -249,10 +249,30 @@ export const ProjectList = () => {
 
 // Comprehensive Client Project Detail View
 const ProjectDetailModal = ({ isOpen, onClose, project }) => {
-  const { users, tasks, isSuperAdmin, updateProject } = useApp();
+  const { users, tasks, isSuperAdmin, updateProject, clients = [] } = useApp();
   
+  const [isEditing, setIsEditing] = useState(false);
   const [isChangingManager, setIsChangingManager] = useState(false);
   const [selectedNewPmId, setSelectedNewPmId] = useState(project.projectManagerId || 'usr-pm');
+
+  // Milestone editing state
+  const [editingMilestoneId, setEditingMilestoneId] = useState(null);
+  const [msEditForm, setMsEditForm] = useState({ title: '', dueDate: '', status: 'PLANNING', trancheAmount: 0, isBilledToClient: false });
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [newMs, setNewMs] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], status: 'PLANNING', trancheAmount: 10000, isBilledToClient: false });
+
+  const [form, setForm] = useState({
+    name: project.name || '',
+    clientName: project.clientName || '',
+    clientContact: project.clientContact || '',
+    description: project.description || '',
+    status: project.status || 'ACTIVE',
+    priority: project.priority || 'High',
+    totalContractValue: project.totalContractValue || 0,
+    directExpenses: project.directExpenses || 0,
+    targetDeliveryDate: project.targetDeliveryDate || '',
+    projectManagerId: project.projectManagerId || 'usr-pm'
+  });
 
   if (!project) return null;
 
@@ -268,6 +288,56 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
   // Assigned team members
   const assignedTeamMembers = users.filter((u) => project.assignedTeamIds?.includes(u.id));
 
+  const handleStartEditMilestone = (m) => {
+    setMsEditForm({
+      title: m.title || '',
+      dueDate: m.dueDate || '',
+      status: m.status || 'PLANNING',
+      trancheAmount: typeof m.trancheAmount === 'number' ? m.trancheAmount : 0,
+      isBilledToClient: !!m.isBilledToClient
+    });
+    setEditingMilestoneId(m.id);
+  };
+
+  const handleSaveMilestone = (mId) => {
+    const updated = (project.milestones || []).map(m => {
+      if (m.id === mId) {
+        return {
+          ...m,
+          title: msEditForm.title.trim() || m.title,
+          dueDate: msEditForm.dueDate || m.dueDate,
+          status: msEditForm.status,
+          trancheAmount: Number(msEditForm.trancheAmount) || 0,
+          isBilledToClient: msEditForm.isBilledToClient
+        };
+      }
+      return m;
+    });
+    updateProject(project.id, { milestones: updated });
+    setEditingMilestoneId(null);
+  };
+
+  const handleDeleteMilestone = (mId) => {
+    const updated = (project.milestones || []).filter(m => m.id !== mId);
+    updateProject(project.id, { milestones: updated });
+    setEditingMilestoneId(null);
+  };
+
+  const handleCreateMilestone = () => {
+    if (!newMs.title.trim()) return;
+    const newEntry = {
+      id: `ms-${Date.now()}`,
+      title: newMs.title.trim(),
+      dueDate: newMs.dueDate || new Date().toISOString().split('T')[0],
+      status: newMs.status || 'PLANNING',
+      trancheAmount: Number(newMs.trancheAmount) || 0,
+      billedAmount: newMs.isBilledToClient ? Number(newMs.trancheAmount) || 0 : 0,
+      isBilledToClient: !!newMs.isBilledToClient
+    };
+    updateProject(project.id, { milestones: [...(project.milestones || []), newEntry] });
+    setIsAddingMilestone(false);
+  };
+
   const handleSaveNewManager = () => {
     if (!selectedNewPmId || selectedNewPmId === project.projectManagerId) {
       setIsChangingManager(false);
@@ -276,6 +346,23 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
 
     updateProject(project.id, { projectManagerId: selectedNewPmId });
     setIsChangingManager(false);
+  };
+
+  const handleSaveProjectDetails = (e) => {
+    e?.preventDefault?.();
+    updateProject(project.id, {
+      name: form.name.trim(),
+      clientName: form.clientName.trim(),
+      clientContact: form.clientContact.trim(),
+      description: form.description.trim(),
+      status: form.status,
+      priority: form.priority,
+      totalContractValue: Number(form.totalContractValue) || 0,
+      directExpenses: Number(form.directExpenses) || 0,
+      targetDeliveryDate: form.targetDeliveryDate,
+      projectManagerId: form.projectManagerId
+    });
+    setIsEditing(false);
   };
 
   const isConfidential = project.totalContractValue === 'CONFIDENTIAL';
@@ -318,13 +405,185 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
             </p>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-[#182234] hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700 self-start"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            {isSuperAdmin() && !isEditing && (
+              <button
+                onClick={() => {
+                  setForm({
+                    name: project.name || '',
+                    clientName: project.clientName || '',
+                    clientContact: project.clientContact || '',
+                    description: project.description || '',
+                    status: project.status || 'ACTIVE',
+                    priority: project.priority || 'High',
+                    totalContractValue: project.totalContractValue || 0,
+                    directExpenses: project.directExpenses || 0,
+                    targetDeliveryDate: project.targetDeliveryDate || '',
+                    projectManagerId: project.projectManagerId || 'usr-pm'
+                  });
+                  setIsEditing(true);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold border border-indigo-500/40 flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit Project
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-[#182234] hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700"
+            >
+              ✕
+            </button>
+          </div>
         </div>
+
+        {/* Super Admin Full Project Edit Form */}
+        {isEditing && (
+          <form onSubmit={handleSaveProjectDetails} className="p-5 rounded-2xl bg-[#182234] border border-indigo-500/40 space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/80">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <Edit3 className="w-3.5 h-3.5 text-indigo-400" /> Edit Project Specifications
+              </h3>
+              <span className="text-[10px] text-amber-400 font-mono">Super Admin Action</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Project Name *</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Client / Organization / Freelancer *</label>
+                <select
+                  value={form.clientName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const selected = clients.find(c => c.name === val);
+                    setForm({
+                      ...form,
+                      clientName: val,
+                      clientContact: selected ? `${selected.email} | ${selected.contactNumber}` : form.clientContact
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  required
+                >
+                  <option value={form.clientName}>{form.clientName}</option>
+                  {clients.filter(c => c.name !== form.clientName).map(c => (
+                    <option key={c.id} value={c.name}>
+                      {c.name} ({c.category === 'FREELANCER' ? `${c.percentage}% share` : c.country})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Status</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="PLANNING">Planning</option>
+                  <option value="ON_HOLD">On Hold</option>
+                  <option value="COMPLETED">Completed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Priority</label>
+                <select
+                  value={form.priority}
+                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Urgent">Urgent</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Total Contract Value ($)</label>
+                <input
+                  type="number"
+                  value={form.totalContractValue}
+                  onChange={(e) => setForm({ ...form, totalContractValue: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Direct Expenses ($)</label>
+                <input
+                  type="number"
+                  value={form.directExpenses}
+                  onChange={(e) => setForm({ ...form, directExpenses: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Target Delivery Date</label>
+                <input
+                  type="date"
+                  value={form.targetDeliveryDate}
+                  onChange={(e) => setForm({ ...form, targetDeliveryDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Project Manager</label>
+                <select
+                  value={form.projectManagerId}
+                  onChange={(e) => setForm({ ...form, projectManagerId: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  {availablePMs.map((pm) => (
+                    <option key={pm.id} value={pm.id}>{pm.name} ({pm.role})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Description</label>
+              <textarea
+                rows={2}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 custom-scrollbar"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-700/80">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-sm transition-all"
+              >
+                Save Project Changes
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* 1. PROJECT MANAGER SECTION (Highlighted & Changeable by Super Admin) */}
         <div className="p-5 rounded-2xl bg-gradient-to-r from-[#182234] to-[#121c2e] border border-indigo-500/30 shadow-lg space-y-4">
@@ -479,38 +738,251 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
 
         {/* 4. DISCRETE MILESTONE ROADMAP TRANCHES */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Milestone className="w-4 h-4 text-indigo-400" /> Discrete Milestone Roadmap ({project.milestones?.length || 0})
-          </h3>
-          <div className="space-y-2">
-            {project.milestones?.map((m) => (
-              <div
-                key={m.id}
-                className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Milestone className="w-4 h-4 text-indigo-400" /> Discrete Milestone Roadmap ({project.milestones?.length || 0})
+            </h3>
+            {isSuperAdmin() && !isAddingMilestone && (
+              <button
+                onClick={() => {
+                  setNewMs({ title: '', dueDate: new Date().toISOString().split('T')[0], status: 'PLANNING', trancheAmount: 10000, isBilledToClient: false });
+                  setIsAddingMilestone(true);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold border border-indigo-500/40 flex items-center gap-1 transition-all"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">{m.title}</span>
-                    <StatusBadge status={m.status} />
-                  </div>
-                  <p className="text-[11px] text-slate-400">
-                    Target Due Date: <span className="text-slate-200 font-mono font-medium">{m.dueDate}</span>
-                  </p>
+                <Plus className="w-3.5 h-3.5" /> + Add Milestone
+              </button>
+            )}
+          </div>
+
+          {/* Add New Milestone Form */}
+          {isAddingMilestone && (
+            <div className="p-4 rounded-xl bg-[#182234] border border-indigo-500/40 space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-300">Add New Milestone Tranche</span>
+                <span className="text-[10px] text-slate-400 font-mono">Super Admin</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Milestone 4: Security Audit"
+                    value={newMs.title}
+                    onChange={(e) => setNewMs({ ...newMs, title: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
 
-                <div className="flex items-center gap-3 font-mono">
-                  {isSuperAdmin() && typeof m.trancheAmount === 'number' && (
-                    <div className="text-right">
-                      <span className="text-slate-400 text-[10px] block">Tranche Value</span>
-                      <span className="text-xs font-bold text-emerald-400">${m.trancheAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <span className={`text-[10px] px-2 py-0.5 rounded ${m.isBilledToClient ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                    {m.isBilledToClient ? 'Invoiced to Client' : 'Pending Milestone Delivery'}
-                  </span>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Status</label>
+                  <select
+                    value={newMs.status}
+                    onChange={(e) => setNewMs({ ...newMs, status: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="PLANNING">Planning</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="PENDING_REVIEW">Pending Review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={newMs.dueDate}
+                    onChange={(e) => setNewMs({ ...newMs, dueDate: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Tranche Value ($)</label>
+                  <input
+                    type="number"
+                    value={newMs.trancheAmount}
+                    onChange={(e) => setNewMs({ ...newMs, trancheAmount: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-4">
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newMs.isBilledToClient}
+                      onChange={(e) => setNewMs({ ...newMs, isBilledToClient: e.target.checked })}
+                      className="rounded border-slate-700 text-indigo-600 focus:ring-0"
+                    />
+                    <span>Invoiced to Client</span>
+                  </label>
                 </div>
               </div>
-            ))}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-700/80">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingMilestone(false)}
+                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateMilestone}
+                  className="px-3.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm"
+                >
+                  Add Milestone
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Milestones List */}
+          <div className="space-y-2">
+            {project.milestones?.map((m) => {
+              const isEditingThis = editingMilestoneId === m.id;
+
+              if (isEditingThis) {
+                return (
+                  <div
+                    key={m.id}
+                    className="p-4 rounded-xl bg-[#182234] border border-indigo-500/50 space-y-3 animate-fadeIn text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-indigo-300 text-xs">Edit Milestone</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMilestone(m.id)}
+                        className="text-rose-400 hover:text-rose-300 text-[11px] font-medium flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove Milestone
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={msEditForm.title}
+                          onChange={(e) => setMsEditForm({ ...msEditForm, title: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Status</label>
+                        <select
+                          value={msEditForm.status}
+                          onChange={(e) => setMsEditForm({ ...msEditForm, status: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="PLANNING">Planning</option>
+                          <option value="IN_PROGRESS">In Progress</option>
+                          <option value="PENDING_REVIEW">Pending Review</option>
+                          <option value="APPROVED">Approved</option>
+                          <option value="COMPLETED">Completed</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Due Date</label>
+                        <input
+                          type="date"
+                          value={msEditForm.dueDate}
+                          onChange={(e) => setMsEditForm({ ...msEditForm, dueDate: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Tranche Value ($)</label>
+                        <input
+                          type="number"
+                          value={msEditForm.trancheAmount}
+                          onChange={(e) => setMsEditForm({ ...msEditForm, trancheAmount: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-3">
+                        <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={msEditForm.isBilledToClient}
+                            onChange={(e) => setMsEditForm({ ...msEditForm, isBilledToClient: e.target.checked })}
+                            className="rounded border-slate-700 text-indigo-600 focus:ring-0"
+                          />
+                          <span>Invoiced to Client</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-700/80">
+                      <button
+                        type="button"
+                        onClick={() => setEditingMilestoneId(null)}
+                        className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveMilestone(m.id)}
+                        className="px-3.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm"
+                      >
+                        Save Milestone
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={m.id}
+                  className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs group"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-sm">{m.title}</span>
+                      <StatusBadge status={m.status} />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Target Due Date: <span className="text-slate-200 font-mono font-medium">{m.dueDate}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 font-mono">
+                    {isSuperAdmin() && typeof m.trancheAmount === 'number' && (
+                      <div className="text-right">
+                        <span className="text-slate-400 text-[10px] block">Tranche Value</span>
+                        <span className="text-xs font-bold text-emerald-400">${m.trancheAmount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded ${m.isBilledToClient ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                      {m.isBilledToClient ? 'Invoiced to Client' : 'Pending Milestone Delivery'}
+                    </span>
+
+                    {isSuperAdmin() && (
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditMilestone(m)}
+                        className="p-1.5 rounded-lg bg-[#0e1420] hover:bg-indigo-600 text-slate-400 hover:text-white border border-slate-700 text-xs transition-colors"
+                        title="Edit Milestone"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
     <div className="space-y-6 animate-fadeIn">
       
       {/* PM Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950/70 to-[#111827] border border-indigo-500/20 p-6 sm:p-7">
+      <div className="dashboard-hero-banner pm-banner relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950/70 to-[#111827] border border-indigo-500/20 p-6 sm:p-7">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold">

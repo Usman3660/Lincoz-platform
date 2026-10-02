@@ -43,7 +43,7 @@ export const EngineerDashboard = ({ setActiveTab, onSelectTask }) => {
     <div className="space-y-8 animate-fadeIn">
       
       {/* Engineer Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-cyan-950/60 to-[#111827] border border-cyan-500/20 p-6 sm:p-8">
+      <div className="dashboard-hero-banner engineer-banner relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-cyan-950/60 to-[#111827] border border-cyan-500/20 p-6 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">

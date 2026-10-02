@@ -5,7 +5,8 @@ import {
   INITIAL_PROJECTS,
   INITIAL_TASKS,
   INITIAL_PAYOUT_LEDGER,
-  INITIAL_AUDIT_LOGS
+  INITIAL_AUDIT_LOGS,
+  INITIAL_CLIENTS_DIRECTORY
 } from '../data/initialData';
 
 const AppContext = createContext();
@@ -109,16 +110,70 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  const [notifications, setNotifications] = useState([
+  const INITIAL_NOTIFICATIONS = [
     {
       id: 'notif-1',
       title: 'Disbursement Authorization Pending',
       message: 'Milestone 2 payout for David Vance ($6,000.00) requires Super Admin Step-2 signature.',
       type: 'warning',
-      timestamp: new Date().toISOString(),
-      read: false
+      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      read: false,
+      targetRoles: ['SUPER_ADMIN'],
+      targetUserId: 'usr-admin'
+    },
+    {
+      id: 'notif-2',
+      title: 'Project Milestone Nearing Due Date',
+      message: 'Milestone 2 for Quantum Ledger Node is scheduled for review.',
+      type: 'info',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      read: false,
+      projectId: 'proj-1',
+      targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER']
+    },
+    {
+      id: 'notif-3',
+      title: 'Task Assigned: WebRTC SFU Media Relay',
+      message: 'You have been assigned to task "Implement WebRTC SFU Media Relay Engine".',
+      type: 'info',
+      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      read: false,
+      projectId: 'proj-1',
+      targetUserId: 'usr-eng-1',
+      targetRoles: ['ONSITE_MEMBER']
+    },
+    {
+      id: 'notif-4',
+      title: 'Contractor Commission Agreement Active',
+      message: 'Your 22.5% milestone commission model for Decentralized Identity Vault is active.',
+      type: 'success',
+      timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+      read: false,
+      projectId: 'proj-2',
+      targetUserId: 'usr-partner-1',
+      targetRoles: ['PARTNER']
     }
-  ]);
+  ];
+
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_notifications');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_NOTIFICATIONS;
+    } catch (e) {
+      return INITIAL_NOTIFICATIONS;
+    }
+  });
+
+  const [clients, setClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_clients_directory');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CLIENTS_DIRECTORY;
+    } catch (e) {
+      return INITIAL_CLIENTS_DIRECTORY;
+    }
+  });
 
   // Sync to local storage
   useEffect(() => {
@@ -163,6 +218,18 @@ export const AppProvider = ({ children }) => {
     } catch (e) {}
   }, [auditLogs]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_notifications', JSON.stringify(notifications));
+    } catch (e) {}
+  }, [notifications]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_clients_directory', JSON.stringify(clients));
+    } catch (e) {}
+  }, [clients]);
+
   const currentUser = users.find(u => u.id === currentUserId) || users[0] || {
     id: 'usr-admin',
     name: 'Alexander Wright',
@@ -171,16 +238,19 @@ export const AppProvider = ({ children }) => {
     title: 'Founder & Managing Director'
   };
 
-  const pushNotification = (title, message, type = 'info') => {
+  const pushNotification = (title, message, type = 'info', meta = {}) => {
     const newNotif = {
       id: 'notif-' + Date.now() + Math.random().toString(36).substring(2, 5),
       title,
       message,
       type,
       timestamp: new Date().toISOString(),
-      read: false
+      read: false,
+      actorId: currentUser?.id,
+      actorName: currentUser?.name,
+      ...meta
     };
-    setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+    setNotifications(prev => [newNotif, ...prev.slice(0, 49)]);
   };
 
   const generateUUID = () => {
@@ -263,7 +333,13 @@ export const AppProvider = ({ children }) => {
       pushNotification(
         `Checklist Item ${newStateVal ? 'Completed' : 'Reopened'}`,
         `${currentUser.name} marked "${checklistItemText}" as ${newStateVal ? 'completed' : 'incomplete'}.`,
-        'success'
+        'success',
+        {
+          projectId: updatedTaskRef.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: updatedTaskRef.assigneeId
+        }
       );
     }
   };
@@ -295,7 +371,13 @@ export const AppProvider = ({ children }) => {
       pushNotification(
         'Task Status Changed',
         `"${taskRef.title}" moved to ${newStatus.replace('_', ' ')} by ${currentUser.name}.`,
-        'info'
+        'info',
+        {
+          projectId: taskRef.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: taskRef.assigneeId
+        }
       );
     }
   };
@@ -333,7 +415,13 @@ export const AppProvider = ({ children }) => {
       pushNotification(
         newBlock ? 'Task Blocked' : 'Task Unblocked',
         `"${taskRef.title}" was ${newBlock ? 'flagged as blocked' : 'cleared'} by ${currentUser.name}.`,
-        newBlock ? 'warning' : 'success'
+        newBlock ? 'warning' : 'success',
+        {
+          projectId: taskRef.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: taskRef.assigneeId
+        }
       );
     }
   };
@@ -363,7 +451,17 @@ export const AppProvider = ({ children }) => {
       newState: newTask
     });
 
-    pushNotification('New Task Created', `"${newTask.title}" was added to project backlog.`, 'success');
+    pushNotification(
+      'New Task Created',
+      `"${newTask.title}" was added to project backlog.`,
+      'success',
+      {
+        projectId: newTask.projectId,
+        taskId: newTask.id,
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+        targetUserId: newTask.assigneeId
+      }
+    );
     return newTask;
   };
 
@@ -390,6 +488,18 @@ export const AppProvider = ({ children }) => {
         previousState: oldTask,
         newState: updatedTask
       });
+
+      pushNotification(
+        'Task Updated',
+        `"${updatedTask.title}" specifications updated by ${currentUser.name}.`,
+        'info',
+        {
+          projectId: updatedTask.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: updatedTask.assigneeId
+        }
+      );
     }
   };
 
@@ -409,7 +519,17 @@ export const AppProvider = ({ children }) => {
       newState: null
     });
 
-    pushNotification('Task Deleted', `"${taskToDelete.title}" was deleted.`, 'info');
+    pushNotification(
+      'Task Deleted',
+      `"${taskToDelete.title}" was deleted by ${currentUser.name}.`,
+      'info',
+      {
+        projectId: taskToDelete.projectId,
+        taskId,
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+        targetUserId: taskToDelete.assigneeId
+      }
+    );
   };
 
   const addComment = (taskId, text) => {
@@ -421,12 +541,28 @@ export const AppProvider = ({ children }) => {
       createdAt: new Date().toISOString()
     };
 
+    let targetTask = null;
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
+        targetTask = t;
         return { ...t, comments: [...(t.comments || []), newComment] };
       }
       return t;
     }));
+
+    if (targetTask) {
+      pushNotification(
+        'New Comment on Task',
+        `${currentUser.name} commented on "${targetTask.title}".`,
+        'info',
+        {
+          projectId: targetTask.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: targetTask.assigneeId
+        }
+      );
+    }
   };
 
   const addDeliverable = (taskId, deliverable) => {
@@ -454,7 +590,16 @@ export const AppProvider = ({ children }) => {
         newState: { deliverable }
       });
 
-      pushNotification('Deliverable Submitted', `New deliverable "${deliverable.title}" submitted by ${currentUser.name}.`, 'info');
+      pushNotification(
+        'Deliverable Submitted',
+        `New deliverable "${deliverable.title}" submitted by ${currentUser.name}.`,
+        'info',
+        {
+          projectId: taskRef.projectId,
+          taskId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER']
+        }
+      );
     }
   };
 
@@ -481,7 +626,16 @@ export const AppProvider = ({ children }) => {
       newState: newProject
     });
 
-    pushNotification('Project Created', `Project "${newProject.name}" successfully provisioned.`, 'success');
+    pushNotification(
+      'Project Created',
+      `Project "${newProject.name}" successfully provisioned.`,
+      'success',
+      {
+        projectId: newProject.id,
+        targetRoles: ['SUPER_ADMIN'],
+        targetUserId: newProject.projectManagerId
+      }
+    );
     return newProject;
   };
 
@@ -522,13 +676,22 @@ export const AppProvider = ({ children }) => {
         pushNotification(
           'Project Manager Reassigned',
           `"${newProj.name}" is now managed by ${newPm?.name || 'Assigned Manager'}.`,
-          'success'
+          'success',
+          {
+            projectId: newProj.id,
+            targetRoles: ['SUPER_ADMIN'],
+            targetUserIds: [oldPm?.id, newPm?.id].filter(Boolean)
+          }
         );
       } else {
         pushNotification(
           'Project Updated',
           `Project "${newProj.name}" configuration was updated.`,
-          'info'
+          'info',
+          {
+            projectId: newProj.id,
+            targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER']
+          }
         );
       }
     }
@@ -560,7 +723,16 @@ export const AppProvider = ({ children }) => {
       newState: agreementData
     });
 
-    pushNotification('Contractor Agreement Updated', `Commission model configured for ${targetUser?.name || 'Partner'}.`, 'success');
+    pushNotification(
+      'Contractor Agreement Updated',
+      `Commission model configured for ${targetUser?.name || 'Partner'}.`,
+      'success',
+      {
+        projectId,
+        targetUserId: contractorUserId,
+        targetRoles: ['SUPER_ADMIN']
+      }
+    );
   };
 
   const approvePayoutStep1 = (payoutId) => {
@@ -588,7 +760,16 @@ export const AppProvider = ({ children }) => {
         newState: { status: 'APPROVED', step1ApprovedBy: currentUser.name }
       });
 
-      pushNotification('Step 1 Verification Complete', `Payout for ${updatedItem.contractorName} is now APPROVED and awaiting Super Admin Step-2 sign-off.`, 'info');
+      pushNotification(
+        'Step 1 Verification Complete',
+        `Payout for ${updatedItem.contractorName} ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) is now APPROVED and awaiting Super Admin Step-2 sign-off.`,
+        'info',
+        {
+          projectId: updatedItem.projectId,
+          targetRoles: ['SUPER_ADMIN'],
+          targetUserId: updatedItem.contractorId
+        }
+      );
     }
   };
 
@@ -628,7 +809,12 @@ export const AppProvider = ({ children }) => {
       pushNotification(
         'Disbursement Authorized & Disbursed',
         `Funds ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) disbursed to ${updatedItem.contractorName} via ${updatedItem.disbursementChannel}. Reference: ${txRef}`,
-        'success'
+        'success',
+        {
+          projectId: updatedItem.projectId,
+          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+          targetUserId: updatedItem.contractorId
+        }
       );
       return true;
     }
@@ -661,18 +847,136 @@ export const AppProvider = ({ children }) => {
 
     recordAuditLog({
       actionType: 'USER_PROVISIONED',
-      itemText: `Provisioned new system user "${newUser.name}" (Role: ${newUser.role})`,
+      itemText: `Provisioned new system user "${newUser.name}" (Role: ${newUser.role}${newUser.salary ? `, Salary: $${Number(newUser.salary).toLocaleString()}/yr` : ''})`,
       previousState: null,
       newState: newUser
     });
 
-    pushNotification('User Provisioned', `New user "${newUser.name}" (${newUser.role}) added to the platform.`, 'success');
+    pushNotification(
+      'User Provisioned',
+      `New user "${newUser.name}" (${newUser.role}) added to the platform.`,
+      'success',
+      {
+        targetRoles: ['SUPER_ADMIN'],
+        targetUserId: newUser.id
+      }
+    );
     return newUser;
   };
 
   const updateUser = (userId, updates) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-    pushNotification('User Updated', 'User profile details were updated.', 'info');
+    pushNotification('User Updated', 'User profile details were updated.', 'info', {
+      targetRoles: ['SUPER_ADMIN'],
+      targetUserId: userId
+    });
+  };
+
+  const createClient = (clientData) => {
+    const isFreelancer = clientData.category === 'FREELANCER';
+    const newClient = {
+      id: (isFreelancer ? 'fl-' : 'cli-') + Date.now(),
+      category: clientData.category || 'CLIENT',
+      name: clientData.name?.trim() || '',
+      email: clientData.email?.trim() || '',
+      contactNumber: clientData.contactNumber?.trim() || '',
+      country: clientData.country?.trim() || 'United States',
+      percentage: isFreelancer ? (Number(clientData.percentage) || 0) : null,
+      associatedProjects: clientData.associatedProjects || [],
+      skills: clientData.skills || '',
+      notes: clientData.notes || '',
+      status: clientData.status || 'ACTIVE',
+      createdAt: new Date().toISOString()
+    };
+
+    setClients(prev => [newClient, ...prev]);
+
+    recordAuditLog({
+      actionType: isFreelancer ? 'SOURCE_CREATED' : 'CLIENT_CREATED',
+      itemText: isFreelancer
+        ? `Added Source "${newClient.name}" (${newClient.percentage}% Project Commission, ${newClient.country})`
+        : `Added Client "${newClient.name}" (${newClient.country}, ${newClient.email})`,
+      previousState: null,
+      newState: newClient
+    });
+
+    pushNotification(
+      isFreelancer ? 'New Source Added' : 'New Client Added',
+      `"${newClient.name}" (${isFreelancer ? `${newClient.percentage}% Commission` : newClient.country}) was added to the platform.`,
+      'success',
+      { targetRoles: ['SUPER_ADMIN'] }
+    );
+
+    return newClient;
+  };
+
+  const updateClient = (clientId, updates) => {
+    let oldClient = null;
+    let updatedClient = null;
+
+    setClients(prev => prev.map(c => {
+      if (c.id === clientId) {
+        oldClient = c;
+        const isFreelancer = updates.category ? updates.category === 'FREELANCER' : c.category === 'FREELANCER';
+        updatedClient = {
+          ...c,
+          ...updates,
+          percentage: isFreelancer
+            ? (updates.percentage !== undefined ? Number(updates.percentage) : c.percentage)
+            : null
+        };
+        return updatedClient;
+      }
+      return c;
+    }));
+
+    if (updatedClient) {
+      const isFreelancer = updatedClient.category === 'FREELANCER';
+      recordAuditLog({
+        actionType: isFreelancer ? 'SOURCE_UPDATED' : 'CLIENT_UPDATED',
+        itemText: `Updated profile details for ${isFreelancer ? 'Source' : 'Client'} "${updatedClient.name}"`,
+        previousState: oldClient,
+        newState: updatedClient
+      });
+
+      pushNotification(
+        isFreelancer ? 'Source Profile Updated' : 'Client Profile Updated',
+        `Details for "${updatedClient.name}" were updated.`,
+        'info',
+        { targetRoles: ['SUPER_ADMIN'] }
+      );
+    }
+  };
+
+  const deleteClient = (clientId) => {
+    const target = clients.find(c => c.id === clientId);
+    if (!target) return;
+
+    setClients(prev => prev.filter(c => c.id !== clientId));
+
+    const isFreelancer = target.category === 'FREELANCER';
+    recordAuditLog({
+      actionType: isFreelancer ? 'SOURCE_DELETED' : 'CLIENT_DELETED',
+      itemText: `Deleted ${isFreelancer ? 'Source' : 'Client'} "${target.name}" from directory`,
+      previousState: target,
+      newState: null
+    });
+
+    pushNotification(
+      isFreelancer ? 'Source Deleted' : 'Client Deleted',
+      `"${target.name}" was removed from the directory.`,
+      'info',
+      { targetRoles: ['SUPER_ADMIN'] }
+    );
+  };
+
+  const getScopedClients = () => {
+    if (isSuperAdmin()) return clients || [];
+    if (isPM()) {
+      const pmProjectIds = new Set((projects || []).filter(p => p.projectManagerId === currentUser.id).map(p => p.id));
+      return (clients || []).filter(c => (c.associatedProjects || []).some(pId => pmProjectIds.has(pId)));
+    }
+    return [];
   };
 
   const resetToDefaults = () => {
@@ -686,7 +990,9 @@ export const AppProvider = ({ children }) => {
     setTasks(INITIAL_TASKS);
     setPayoutLedger(INITIAL_PAYOUT_LEDGER);
     setAuditLogs(INITIAL_AUDIT_LOGS);
-    pushNotification('System Reset', 'All data restored to default initial state.', 'info');
+    setNotifications(INITIAL_NOTIFICATIONS);
+    setClients(INITIAL_CLIENTS_DIRECTORY);
+    pushNotification('System Reset', 'All data restored to default initial state.', 'info', { isGlobal: true });
   };
 
   const isSuperAdmin = () => currentUser.role === 'SUPER_ADMIN';
@@ -799,6 +1105,87 @@ export const AppProvider = ({ children }) => {
     return (auditLogs || []).filter(log => log.actorId === currentUser.id);
   };
 
+  /**
+   * Smart Scoped Notification Filter:
+   * Delivers strictly the notifications relevant to the authenticated user profile.
+   */
+  const getScopedNotifications = () => {
+    if (!currentUser) return [];
+
+    return (notifications || []).filter((notif) => {
+      // 1. Explicit direct recipient(s)
+      if (notif.targetUserId && notif.targetUserId === currentUser.id) return true;
+      if (Array.isArray(notif.targetUserIds) && notif.targetUserIds.includes(currentUser.id)) return true;
+
+      // 2. Direct action triggered by the current user
+      if (notif.actorId && notif.actorId === currentUser.id) return true;
+
+      // 3. Super Admin governance (sees all governance, disbursements, system, and scoped project logs)
+      if (currentUser.role === 'SUPER_ADMIN') {
+        if (!notif.targetRoles || notif.targetRoles.includes('SUPER_ADMIN')) return true;
+        if (notif.isGlobal) return true;
+      }
+
+      // 4. Role-based matching with project isolation
+      if (Array.isArray(notif.targetRoles) && notif.targetRoles.includes(currentUser.role)) {
+        if (notif.projectId) {
+          if (currentUser.role === 'PROJECT_MANAGER') {
+            const proj = (projects || []).find(p => p.id === notif.projectId);
+            return proj && (proj.projectManagerId === currentUser.id || (proj.assignedTeamIds && proj.assignedTeamIds.includes(currentUser.id)));
+          }
+          if (currentUser.role === 'ONSITE_MEMBER' || currentUser.role === 'PARTNER') {
+            const proj = (projects || []).find(p => p.id === notif.projectId);
+            const hasTask = (tasks || []).some(t => t.projectId === notif.projectId && t.assigneeId === currentUser.id);
+            const isAssigned = proj?.assignedTeamIds?.includes(currentUser.id);
+            return hasTask || isAssigned;
+          }
+        }
+        return true;
+      }
+
+      // 5. Project-specific notification without explicit targetRoles
+      if (notif.projectId && !notif.targetUserId && !notif.targetRoles) {
+        if (currentUser.role === 'PROJECT_MANAGER') {
+          const proj = (projects || []).find(p => p.id === notif.projectId);
+          return proj && (proj.projectManagerId === currentUser.id || (proj.assignedTeamIds && proj.assignedTeamIds.includes(currentUser.id)));
+        }
+        if (currentUser.role === 'ONSITE_MEMBER' || currentUser.role === 'PARTNER') {
+          const proj = (projects || []).find(p => p.id === notif.projectId);
+          const hasTask = (tasks || []).some(t => t.projectId === notif.projectId && t.assigneeId === currentUser.id);
+          return hasTask || proj?.assignedTeamIds?.includes(currentUser.id);
+        }
+      }
+
+      // 6. Global broadcast
+      if (notif.isGlobal) return true;
+
+      // 7. General untargeted notifications fallback
+      if (!notif.targetUserId && !notif.targetUserIds && !notif.targetRoles && !notif.projectId && !notif.actorId) {
+        return true;
+      }
+
+      return false;
+    });
+  };
+
+  const markNotificationAsRead = (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    const scopedIds = new Set(getScopedNotifications().map(n => n.id));
+    setNotifications(prev => prev.map(n => scopedIds.has(n.id) ? { ...n, read: true } : n));
+  };
+
+  const deleteNotification = (notifId) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+  };
+
+  const clearNotifications = () => {
+    const scopedIds = new Set(getScopedNotifications().map(n => n.id));
+    setNotifications(prev => prev.filter(n => !scopedIds.has(n.id)));
+  };
+
   // Global Edit Profile Modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileModalUser, setProfileModalUser] = useState(null);
@@ -808,7 +1195,7 @@ export const AppProvider = ({ children }) => {
     // Non-Super Admins can only edit themselves, onsite members, or partner contractors
     if (currentUser.role !== 'SUPER_ADMIN' && target.id !== currentUser.id) {
       if (target.role === 'SUPER_ADMIN' || target.role === 'PROJECT_MANAGER') {
-        pushNotification('Security Violation', 'Access Denied: You do not have authorization to view or edit other managers or Super Admin accounts.', 'warning');
+        pushNotification('Security Violation', 'Access Denied: You do not have authorization to view or edit other managers or Super Admin accounts.', 'warning', { targetUserId: currentUser.id });
         return;
       }
     }
@@ -834,10 +1221,21 @@ export const AppProvider = ({ children }) => {
         setContractors,
         projects,
         tasks,
+        clients,
+        setClients,
+        createClient,
+        updateClient,
+        deleteClient,
+        getScopedClients,
         payoutLedger,
         auditLogs,
         notifications,
         pushNotification,
+        getScopedNotifications,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        deleteNotification,
+        clearNotifications,
         toggleChecklistItem,
         updateTaskStatus,
         toggleTaskBlock,

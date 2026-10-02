@@ -49,7 +49,7 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
     <div className="space-y-8 animate-fadeIn">
       
       {/* Top Banner / Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-[#111827] border border-indigo-500/20 p-6 sm:p-8">
+      <div className="dashboard-hero-banner super-admin-banner relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-[#111827] border border-indigo-500/20 p-6 sm:p-8">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
@@ -116,7 +116,7 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
             subtitle="Pending + Accruing commissions"
             icon={AlertCircle}
             colorScheme="amber"
-            badgeText={`${pendingStep2Disbursements.length} Ready for Sign-off`}
+            badgeText={`${pendingStep2Disbursements.length} Pending Sign-off`}
           />
           <StatsCard
             title="Total Disbursed"

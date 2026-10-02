@@ -83,6 +83,7 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleTheme}
+                aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
                 className="p-2.5 rounded-xl bg-[#182234] hover:bg-[#202d44] border border-slate-700/80 text-slate-300 hover:text-white transition-all shadow-sm flex items-center justify-center"
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
@@ -173,6 +174,10 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
                   <img
                     src={r.avatar}
                     alt={r.name}
+                    loading="lazy"
+                    decoding="async"
+                    width="44"
+                    height="44"
                     className="w-11 h-11 rounded-xl object-cover ring-1 ring-indigo-500/30"
                   />
                   <RoleBadge role={r.role} />

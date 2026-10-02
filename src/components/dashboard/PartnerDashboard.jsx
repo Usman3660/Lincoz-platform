@@ -37,7 +37,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
     <div className="space-y-8 animate-fadeIn">
       
       {/* Partner Isolated Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-[#111827] border border-amber-500/30 p-6 sm:p-8">
+      <div className="dashboard-hero-banner partner-banner relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-[#111827] border border-amber-500/30 p-6 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">

@@ -13,7 +13,8 @@ import {
   Lock,
   Sparkles,
   Edit3,
-  Filter
+  Filter,
+  DollarSign
 } from 'lucide-react';
 
 export const UserManagement = () => {
@@ -26,6 +27,7 @@ export const UserManagement = () => {
   const [role, setRole] = useState(isSuperAdmin() ? 'PROJECT_MANAGER' : 'ONSITE_MEMBER');
   const [title, setTitle] = useState('');
   const [department, setDepartment] = useState('Core Engineering');
+  const [salary, setSalary] = useState('');
   const [organization, setOrganization] = useState('');
   const [taxId, setTaxId] = useState('');
   const [payoutChannel, setPayoutChannel] = useState('Wise Multi-Currency Wire');
@@ -36,6 +38,7 @@ export const UserManagement = () => {
     setName('');
     setEmail('');
     setTitle('');
+    setSalary('');
     setOrganization('');
     setTaxId('');
     setIsProvisionModalOpen(true);
@@ -55,6 +58,7 @@ export const UserManagement = () => {
       name: name.trim(),
       email: email.trim(),
       role: finalRole,
+      salary: (finalRole === 'ONSITE_MEMBER' || finalRole === 'PROJECT_MANAGER') && salary ? Number(salary) : undefined,
       title: title.trim() || (finalRole === 'PROJECT_MANAGER' ? 'Project Manager' : finalRole === 'PARTNER' ? 'Contractor Partner' : 'Software Engineer'),
       department: finalRole === 'PARTNER' ? 'External Contractor' : finalRole === 'PROJECT_MANAGER' ? 'Operations' : department,
       organization: finalRole === 'PARTNER' ? (organization.trim() || `${name.trim()} LLC`) : undefined,
@@ -65,6 +69,7 @@ export const UserManagement = () => {
     setName('');
     setEmail('');
     setTitle('');
+    setSalary('');
     setOrganization('');
     setTaxId('');
     setIsProvisionModalOpen(false);
@@ -218,6 +223,10 @@ export const UserManagement = () => {
                   <img
                     src={u.avatar}
                     alt={u.name}
+                    loading="lazy"
+                    decoding="async"
+                    width="44"
+                    height="44"
                     className="w-11 h-11 rounded-2xl object-cover ring-2 ring-indigo-500/30"
                   />
                   <div>
@@ -251,6 +260,16 @@ export const UserManagement = () => {
                   <span className="text-slate-400 text-[10px] uppercase font-bold">Department</span>
                   <span className="text-slate-300 font-medium truncate max-w-[160px]">{u.department || 'Engineering'}</span>
                 </div>
+                {isSuperAdmin() && (u.role === 'ONSITE_MEMBER' || u.role === 'PROJECT_MANAGER') && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/50">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold flex items-center gap-1">
+                      <DollarSign className="w-3 h-3 text-emerald-400" /> Salary
+                    </span>
+                    <span className="text-emerald-400 font-mono font-bold">
+                      {u.salary ? `$${Number(u.salary).toLocaleString()} / yr` : 'Not Set'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -340,17 +359,41 @@ export const UserManagement = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Department / Team
-            </label>
-            <input
-              type="text"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="e.g. Core Engineering, Mobile Team, UI/UX"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
-            />
+          <div className={`grid grid-cols-1 ${(role === 'ONSITE_MEMBER' || role === 'PROJECT_MANAGER') ? 'sm:grid-cols-2' : ''} gap-3`}>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Department / Team
+              </label>
+              <input
+                type="text"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="e.g. Core Engineering, Mobile Team, UI/UX"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            {/* Onsite Employee Base Salary */}
+            {(role === 'ONSITE_MEMBER' || role === 'PROJECT_MANAGER') && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  Annual Salary (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={salary}
+                    onChange={(e) => setSalary(e.target.value)}
+                    placeholder="e.g. 120000"
+                    className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Conditional contractor fields */}

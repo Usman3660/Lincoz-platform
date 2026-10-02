@@ -17,6 +17,7 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     title: 'Lead Technical Project Manager',
     department: 'Operations',
+    salary: 135000,
     isMfaEnabled: true,
   },
   {
@@ -27,6 +28,7 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     title: 'Senior Full-Stack Engineer',
     department: 'Core Engineering',
+    salary: 120000,
     isMfaEnabled: false,
   },
   {
@@ -37,6 +39,7 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     title: 'Lead Product Designer',
     department: 'Design & UX',
+    salary: 110000,
     isMfaEnabled: false,
   },
   {
@@ -630,5 +633,80 @@ export const INITIAL_AUDIT_LOGS = [
     clientIp: '192.168.1.102',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0',
     timestamp: '2026-10-01T09:00:00.000Z'
+  }
+];
+
+export const INITIAL_CLIENTS_DIRECTORY = [
+  {
+    id: 'cli-1',
+    category: 'CLIENT', // 'CLIENT' or 'FREELANCER'
+    name: 'Apex Global Banking Corp',
+    email: 'marcus.v@apexbanking.com',
+    contactNumber: '+1 (415) 890-2100',
+    country: 'United States',
+    associatedProjects: ['proj-1'],
+    notes: 'Enterprise Tier-1 financial institution client.',
+    createdAt: '2026-08-01T09:00:00.000Z'
+  },
+  {
+    id: 'cli-2',
+    category: 'CLIENT',
+    name: 'MediHealth Systems',
+    email: 'procurement@medihealth.org',
+    contactNumber: '+1 (617) 492-7711',
+    country: 'United States',
+    associatedProjects: ['proj-2'],
+    notes: 'Digital healthcare & telemedicine client.',
+    createdAt: '2026-08-15T11:30:00.000Z'
+  },
+  {
+    id: 'cli-3',
+    category: 'CLIENT',
+    name: 'Aegis Cyber Defense Group',
+    email: 'ops@aegiscyber.co.uk',
+    contactNumber: '+44 20 7946 0912',
+    country: 'United Kingdom',
+    associatedProjects: ['proj-3'],
+    notes: 'Cybersecurity identity vault contract.',
+    createdAt: '2026-09-01T14:15:00.000Z'
+  },
+  {
+    id: 'fl-1',
+    category: 'FREELANCER',
+    name: 'David Vance',
+    email: 'david@vanceweblabs.io',
+    contactNumber: '+1 (312) 555-0182',
+    country: 'United States',
+    percentage: 15.0, // Commission % that freelancer gets from project
+    associatedProjects: ['proj-1', 'proj-2'],
+    skills: 'WebRTC, Distributed SFU, High-Concurrency Rust',
+    notes: 'Lead systems architect freelancer on Quantum Ledger Node.',
+    createdAt: '2026-08-15T09:00:00.000Z'
+  },
+  {
+    id: 'fl-2',
+    category: 'FREELANCER',
+    name: 'Elena Rostova',
+    email: 'elena@cloudsec.dev',
+    contactNumber: '+372 612 3456',
+    country: 'Estonia',
+    percentage: 20.0,
+    associatedProjects: ['proj-1'],
+    skills: 'Cloud Security, AWS HSM, Micro-settlement',
+    notes: 'Distributed infrastructure and HSM cryptographic security freelancer.',
+    createdAt: '2026-08-20T10:00:00.000Z'
+  },
+  {
+    id: 'fl-3',
+    category: 'FREELANCER',
+    name: 'Kavita Patel',
+    email: 'kavita.p@smartcontracts.in',
+    contactNumber: '+91 98200 12345',
+    country: 'India',
+    percentage: 12.5,
+    associatedProjects: ['proj-3'],
+    skills: 'Solidity, ZK-Snarks, Smart Contract Audits',
+    notes: 'Zero-knowledge proof verification freelancer.',
+    createdAt: '2026-09-10T16:00:00.000Z'
   }
 ];

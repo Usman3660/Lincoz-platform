@@ -8,7 +8,8 @@ import {
   Trash2,
   AlertTriangle,
   CheckSquare,
-  CheckCircle2
+  CheckCircle2,
+  Edit3
 } from 'lucide-react';
 
 export const ListView = ({ tasks, onSelectTask }) => {
@@ -188,7 +189,7 @@ export const ListView = ({ tasks, onSelectTask }) => {
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => onSelectTask(t)}
+                            onClick={() => onSelectTask(t, false)}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-white transition-colors"
                             title="Inspect Task"
                           >
@@ -196,17 +197,26 @@ export const ListView = ({ tasks, onSelectTask }) => {
                           </button>
 
                           {(isSuperAdmin() || isPM()) && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Delete task "${t.title}"?`)) {
-                                  deleteTask(t.id);
-                                }
-                              }}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600/30 text-rose-400 hover:text-rose-300 transition-colors"
-                              title="Delete Task"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => onSelectTask(t, true)}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600/40 text-indigo-300 hover:text-white transition-colors"
+                                title="Edit Task"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete task "${t.title}"?`)) {
+                                    deleteTask(t.id);
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600/30 text-rose-400 hover:text-rose-300 transition-colors"
+                                title="Delete Task"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>

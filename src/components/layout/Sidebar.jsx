@@ -10,7 +10,8 @@ import {
   History,
   Lock,
   KeyRound,
-  Edit3
+  Edit3,
+  Building2
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -21,6 +22,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       return [
         { id: 'dashboard', label: 'Executive Overview', icon: LayoutDashboard },
         { id: 'projects', label: 'Client Projects', icon: Briefcase },
+        { id: 'clients', label: 'Clients & Sources', icon: Building2 },
         { id: 'tasks', label: 'Task Engine', icon: FolderKanban },
         { id: 'financials', label: 'Financials & Payouts', icon: DollarSign },
         { id: 'contractors', label: 'Contractors & % Setup', icon: Users },
@@ -33,6 +35,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       return [
         { id: 'dashboard', label: 'PM Operations Hub', icon: LayoutDashboard },
         { id: 'projects', label: 'Assigned Projects', icon: Briefcase },
+        { id: 'clients', label: 'Clients & Sources', icon: Building2 },
         { id: 'tasks', label: 'Task & Sprint Engine', icon: FolderKanban },
         { id: 'users', label: 'Team Members & Staff', icon: Users },
         { id: 'audit', label: 'Project Audit Trail', icon: History },
@@ -106,14 +109,14 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+              className={`w-full group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-              <span className="truncate">{item.label}</span>
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+              <span className="truncate transition-colors">{item.label}</span>
             </button>
           );
         })}

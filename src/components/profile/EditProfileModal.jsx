@@ -14,13 +14,15 @@ import {
   X,
   Sparkles,
   Building,
-  CreditCard
+  CreditCard,
+  DollarSign
 } from 'lucide-react';
 
 export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
   const {
     currentUser,
     updateUser,
+    isSuperAdmin,
     contractors,
     setContractors,
     pushNotification,
@@ -43,6 +45,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
   const [skills, setSkills] = useState('');
+  const [salary, setSalary] = useState('');
 
   // Contractor-specific fields (if role is PARTNER)
   const [legalName, setLegalName] = useState('');
@@ -63,6 +66,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       setBio(targetUser.bio || 'Passionate software and engineering professional contributing to high-velocity delivery.');
       setAvatar(targetUser.avatar || '');
       setSkills(targetUser.skills ? targetUser.skills.join(', ') : 'React, Node.js, TypeScript, Cloud Architecture');
+      setSalary(targetUser.salary !== undefined && targetUser.salary !== null ? String(targetUser.salary) : '');
 
       const cRec = (contractors || []).find(c => c.userId === targetUser.id);
       setLegalName(cRec?.legalName || `${targetUser.name} LLC`);
@@ -157,7 +161,10 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       location: location.trim(),
       bio: bio.trim(),
       avatar: avatar || targetUser.avatar,
-      skills: parsedSkills
+      skills: parsedSkills,
+      salary: isSuperAdmin() && (targetUser.role === 'ONSITE_MEMBER' || targetUser.role === 'PROJECT_MANAGER')
+        ? (salary ? Number(salary) : undefined)
+        : targetUser.salary
     };
 
     try {
@@ -419,6 +426,28 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                 />
               </div>
             </div>
+
+            {/* Base Salary (Super Admin exclusive) */}
+            {isSuperAdmin() && (targetUser.role === 'ONSITE_MEMBER' || targetUser.role === 'PROJECT_MANAGER') && (
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  Annual Base Salary (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={salary}
+                    onChange={(e) => setSalary(e.target.value)}
+                    placeholder="e.g. 120000"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+            )}
 
           </div>
 
