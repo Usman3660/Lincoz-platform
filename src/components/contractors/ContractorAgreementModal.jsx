@@ -7,7 +7,7 @@ export const ContractorAgreementModal = ({ isOpen, onClose, contractor }) => {
   const { projects, updateContractorAgreement, users } = useApp();
 
   const [projectId, setProjectId] = useState(projects[0]?.id || '');
-  const [model, setModel] = useState('MILESTONE_TRANCHE_SHARE');
+  const [model, setModel] = useState('PROJECT_DIRECT_SHARE');
   const [sharePercentage, setSharePercentage] = useState(15);
   const [notes, setNotes] = useState('Commission allocation agreed on master service agreement');
 
@@ -65,14 +65,14 @@ export const ContractorAgreementModal = ({ isOpen, onClose, contractor }) => {
             onChange={(e) => setModel(e.target.value)}
             className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
           >
+            <option value="PROJECT_DIRECT_SHARE">
+              Project Direct Share (Direct % tied to total project value)
+            </option>
             <option value="GROSS_CONTRACT_SHARE">
               Gross Contract Share (% calculated against total client invoice)
             </option>
             <option value="NET_REVENUE_SHARE">
               Net Revenue Share (% calculated after direct project expenses)
-            </option>
-            <option value="MILESTONE_TRANCHE_SHARE">
-              Milestone Tranche Share (Variable % tied to discrete milestone deliveries)
             </option>
           </select>
         </div>
@@ -104,7 +104,7 @@ export const ContractorAgreementModal = ({ isOpen, onClose, contractor }) => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            placeholder="e.g. 15% tranche allocation for high-frequency trading worker deliverables..."
+            placeholder="e.g. 15% direct allocation for project engineering deliverables..."
             className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
           />
         </div>
@@ -112,7 +112,7 @@ export const ContractorAgreementModal = ({ isOpen, onClose, contractor }) => {
         <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300 flex items-start gap-2">
           <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
           <span>
-            Changes will automatically recompute milestone commission ledgers and record an immutable audit trail entry.
+            Changes will automatically recompute contractor commission ledgers and record an immutable audit trail entry.
           </span>
         </div>
 

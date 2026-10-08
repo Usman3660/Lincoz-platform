@@ -15,7 +15,8 @@ const TaskBoard = lazy(() => import('./components/tasks/TaskBoard').then(m => ({
 const ProjectList = lazy(() => import('./components/projects/ProjectList').then(m => ({ default: m.ProjectList })));
 const ClientDirectory = lazy(() => import('./components/clients/ClientDirectory').then(m => ({ default: m.ClientDirectory })));
 const FinancialsLedger = lazy(() => import('./components/financials/FinancialsLedger').then(m => ({ default: m.FinancialsLedger })));
-const ContractorManagement = lazy(() => import('./components/contractors/ContractorManagement').then(m => ({ default: m.ContractorManagement })));
+const PayinPayoutManager = lazy(() => import('./components/financials/PayinPayoutManager').then(m => ({ default: m.PayinPayoutManager })));
+const ExpenseCategoryManagement = lazy(() => import('./components/expenses/ExpenseCategoryManagement').then(m => ({ default: m.ExpenseCategoryManagement })));
 const AuditLogViewer = lazy(() => import('./components/audit/AuditLogViewer').then(m => ({ default: m.AuditLogViewer })));
 const UserManagement = lazy(() => import('./components/users/UserManagement').then(m => ({ default: m.UserManagement })));
 const DisbursementModal = lazy(() => import('./components/financials/DisbursementModal').then(m => ({ default: m.DisbursementModal })));
@@ -210,12 +211,13 @@ export const MainApp = () => {
                   onClearSelectedTask={() => setSelectedTaskForModal(null)}
                 />
               )}
+              {activeTab === 'payin_payout' && <PayinPayoutManager />}
+              {activeTab === 'expenses' && <ExpenseCategoryManagement />}
               {activeTab === 'financials' && (
                 <FinancialsLedger
                   onOpenDisbursement={(item) => setSelectedDisbursementItem(item)}
                 />
               )}
-              {activeTab === 'contractors' && <ContractorManagement />}
               {activeTab === 'audit' && <AuditLogViewer />}
               {activeTab === 'users' && <UserManagement />}
             </Suspense>

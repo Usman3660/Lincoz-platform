@@ -77,10 +77,10 @@ export const ContractorManagement = () => {
 
         <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 space-y-1.5">
           <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
-            <Sparkles className="w-4 h-4" /> Milestone Tranche Share
+            <Sparkles className="w-4 h-4" /> Project Direct Share
           </div>
           <p className="text-[11px] text-slate-300">
-            Variable percentage tied directly to discrete milestone deliverables and client billings.
+            Variable percentage tied directly to project deliverables and client billings.
           </p>
         </div>
       </div>

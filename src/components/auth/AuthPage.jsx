@@ -184,7 +184,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
           <div className="p-3.5 rounded-2xl bg-[#182234]/60 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2.5 leading-relaxed">
             <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-slate-200">Provisioned Accounts Only:</strong> Public registration is disabled. Super Admin provisions Project Managers, and Project Managers provision onsite members & partner contractors.
+              <strong className="text-slate-200">Provisioned Accounts Only:</strong> Public registration is disabled. Super Admin provisions Project Managers, and Project Managers provision on-site and remote employees.
             </span>
           </div>
 

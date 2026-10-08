@@ -25,7 +25,7 @@ export const ClientDirectory = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('ALL');
   const [sortBy, setSortBy] = useState('name_asc'); // 'name_asc' | 'name_desc' | 'pct_desc' | 'newest'
-  
+
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addInitialCategory, setAddInitialCategory] = useState('CLIENT');
@@ -88,7 +88,7 @@ export const ClientDirectory = () => {
     const total = scopedClients.length;
     const clientCount = scopedClients.filter(c => c.category === 'CLIENT').length;
     const freelancerCount = scopedClients.filter(c => c.category === 'FREELANCER').length;
-    
+
     const freelancers = scopedClients.filter(c => c.category === 'FREELANCER' && typeof c.percentage === 'number');
     const avgPct = freelancers.length > 0
       ? (freelancers.reduce((sum, f) => sum + f.percentage, 0) / freelancers.length).toFixed(1)
@@ -110,7 +110,7 @@ export const ClientDirectory = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      
+
       {/* Clean Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -131,19 +131,14 @@ export const ClientDirectory = () => {
             >
               <Building2 className="w-4 h-4 text-indigo-400" /> + Add Client
             </button>
-            <button
-              onClick={() => openAddModal('FREELANCER')}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 shrink-0"
-            >
-              <UserCheck className="w-4 h-4" /> + Add Source
-            </button>
+
           </div>
         )}
       </div>
 
       {/* KPI Metrics Summary Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+
         <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Records</p>
@@ -188,7 +183,7 @@ export const ClientDirectory = () => {
 
       {/* Filter and Category Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        
+
         {/* Filter Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mr-1 shrink-0">
@@ -198,11 +193,10 @@ export const ClientDirectory = () => {
             <button
               key={chip.id}
               onClick={() => setActiveCategory(chip.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                activeCategory === chip.id
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${activeCategory === chip.id
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'bg-[#182234] text-slate-400 hover:text-white border border-slate-700/80'
-              }`}
+                }`}
             >
               {chip.label}
             </button>
@@ -211,7 +205,7 @@ export const ClientDirectory = () => {
 
         {/* Search & Country & Sort Dropdowns */}
         <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-          
+
           {/* Search Input */}
           <div className="relative min-w-[200px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -321,11 +315,10 @@ export const ClientDirectory = () => {
 
                       {/* Category */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                          isFreelancer
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${isFreelancer
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                             : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
-                        }`}>
+                          }`}>
                           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isFreelancer ? 'bg-emerald-400' : 'bg-indigo-400'}`}></span>
                           {isFreelancer ? 'Source' : 'Client'}
                         </span>

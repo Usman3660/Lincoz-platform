@@ -76,7 +76,9 @@ html.light .bg-\[\#0e1420\]\/80 {
 
 html.light .bg-\[\#111827\],
 html.light .bg-\[\#111827\]\/90,
-html.light .bg-\[\#111827\]\/80 {
+html.light .bg-\[\#111827\]\/80,
+html.light .bg-\[\#111827\]\/70,
+html.light .bg-\[\#151f32\] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
@@ -94,8 +96,68 @@ html.light .bg-\[\#182234\]\/40 {
 }
 
 html.light .bg-\[\#182234\]:hover,
-html.light .hover\:bg-\[\#202d44\]:hover {
+html.light .hover\:bg-\[\#202d44\]:hover,
+html.light tr.hover\:bg-\[\#182234\]\/50:hover,
+html.light tr.hover\:bg-\[\#182234\]\/40:hover,
+html.light tr.hover\:bg-\[\#182234\]\/60:hover,
+html.light tr.hover\:bg-\[\#182234\]:hover,
+html.light tr.hover\:bg-slate-800\/50:hover,
+html.light tr.hover\:bg-slate-800\/60:hover,
+html.light tr:hover,
+html.light tbody tr:hover,
+html.light .hover\:bg-\[\#182234\]\/50:hover,
+html.light .hover\:bg-\[\#182234\]\/40:hover,
+html.light .hover\:bg-\[\#182234\]\/60:hover,
+html.light .hover\:bg-\[\#182234\]:hover {
   background-color: #f1f5f9 !important;
+}
+
+/* Light Mode: Ensure all text inside hovered rows is crisp, bold, and clearly visible */
+html.light tbody tr:hover td,
+html.light tbody tr:hover p,
+html.light tr:hover td,
+html.light tr:hover p {
+  color: #0f172a !important;
+}
+
+html.light tbody tr:hover .text-white,
+html.light tr:hover .text-white {
+  color: #0f172a !important;
+}
+
+html.light tbody tr:hover .text-slate-400,
+html.light tbody tr:hover .text-slate-500,
+html.light tr:hover .text-slate-400,
+html.light tr:hover .text-slate-500 {
+  color: #475569 !important;
+}
+
+html.light tbody tr:hover button,
+html.light tr:hover button {
+  color: #334155 !important;
+}
+
+html.light tbody tr:hover button:hover,
+html.light tr:hover button:hover {
+  color: #4f46e5 !important;
+}
+
+/* Dark Mode: Ensure high contrast text on hovered rows */
+tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+}
+
+tbody tr:hover .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+tbody tr:hover .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+tbody tr:hover button.text-slate-400,
+tbody tr:hover button.text-slate-500 {
+  color: #cbd5e1 !important;
 }
 
 html.light .bg-slate-900,
@@ -211,10 +273,129 @@ html.light .dashboard-hero-banner.partner-banner {
   box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12) !important;
 }
 
+/* Company Aggregate Performance Banner (Dark Mode Base) */
+.company-performance-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.15) !important;
+}
+
+.company-performance-banner h3 {
+  color: #ffffff !important;
+}
+
+.company-performance-banner p {
+  color: #cbd5e1 !important;
+}
+
+.company-performance-banner .banner-badge {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(129, 140, 248, 0.4) !important;
+  color: #a5b4fc !important;
+}
+
+.company-performance-banner .net-margin-card {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.company-performance-banner .net-margin-label {
+  color: #94a3b8 !important;
+}
+
+.company-performance-banner .net-margin-value {
+  color: #34d399 !important;
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+/* Audit Event Details Modal Banner (Dark Mode Base) */
+.audit-event-banner {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.7) 0%, rgba(15, 23, 42, 0.9) 60%, rgba(24, 34, 52, 0.95) 100%) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.audit-event-banner .audit-banner-title {
+  color: #ffffff !important;
+}
+
+.audit-event-banner .audit-banner-timestamp {
+  color: #94a3b8 !important;
+}
+
+/* Light Mode Overrides */
+html.light .company-performance-banner {
+  background: linear-gradient(135deg, #f8faff 0%, #eef2ff 50%, #ffffff 100%) !important;
+  border-color: #c7d2fe !important;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.12), 0 4px 6px -2px rgba(99, 102, 241, 0.04) !important;
+}
+
+html.light .company-performance-banner h3 {
+  color: #0f172a !important;
+}
+
+html.light .company-performance-banner p {
+  color: #334155 !important;
+}
+
+html.light .company-performance-banner .banner-badge {
+  background-color: #e0e7ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+}
+
+html.light .company-performance-banner .net-margin-card {
+  background-color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.12) !important;
+}
+
+html.light .company-performance-banner .net-margin-label {
+  color: #475569 !important;
+}
+
+html.light .company-performance-banner .net-margin-value {
+  color: #059669 !important;
+  text-shadow: none;
+}
+
+html.light .audit-event-banner {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #f8faff 100%) !important;
+  border-color: #c7d2fe !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08) !important;
+}
+
+html.light .audit-event-banner .audit-banner-title {
+  color: #0f172a !important;
+}
+
+html.light .audit-event-banner .audit-banner-timestamp {
+  color: #64748b !important;
+}
+
 html.light .dashboard-hero-banner.clients-banner {
   background: linear-gradient(135deg, #f0fdf4 0%, #e0e7ff 50%, #ffffff 100%) !important;
   border-color: #c7d2fe !important;
   box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.12) !important;
+}
+
+html.light .dashboard-hero-banner.payin-payout-banner {
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 50%, #ffffff 100%) !important;
+  border-color: #c7d2fe !important;
+  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.12) !important;
+}
+
+html.light .dashboard-hero-banner.expenses-banner {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #ffffff 100%) !important;
+  border-color: #fecdd3 !important;
+  box-shadow: 0 4px 20px -2px rgba(244, 63, 94, 0.12) !important;
+}
+
+html.light .payin-payout-banner .payin-badge {
+  background-color: #ede9fe !important;
+  border-color: #c4b5fd !important;
+  color: #4f46e5 !important;
 }
 
 html.light .dashboard-hero-banner h1 {
@@ -288,6 +469,68 @@ html.light .text-slate-500 {
   color: #94a3b8;
 }
 
+/* High-contrast colors for badges and amounts in Light Mode */
+html.light .text-indigo-300,
+html.light .text-indigo-400 {
+  color: #4338ca !important;
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: #be123c !important;
+}
+
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #b45309 !important;
+}
+
+html.light .text-purple-400,
+html.light .text-purple-300 {
+  color: #7e22ce !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-300 {
+  color: #0e7490 !important;
+}
+
+/* Light Mode Badges Contrast */
+html.light .bg-indigo-500\/10 {
+  background-color: #e0e7ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+}
+
+html.light .bg-emerald-500\/10 {
+  background-color: #d1fae5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+}
+
+html.light .bg-rose-500\/10 {
+  background-color: #ffe4e6 !important;
+  border-color: #fecdd3 !important;
+  color: #9f1239 !important;
+}
+
+html.light .bg-amber-500\/10 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+html.light .bg-purple-500\/10 {
+  background-color: #f3e8ff !important;
+  border-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+
 html.light input,
 html.light select,
 html.light textarea {
@@ -358,3 +601,23 @@ html.light .kanban-card-title {
 .animate-scaleUp {
   animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* --------------------------------------------------------------------------
+   PRINT STYLES FOR FINANCIAL VOUCHERS & RECEIPTS
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: auto;
+    margin: 10mm 12mm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

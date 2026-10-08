@@ -334,7 +334,7 @@ export const AddContractorModal = ({ isOpen, onClose }) => {
               >
                 <option value="NET_REVENUE_SHARE">Net Revenue Share</option>
                 <option value="GROSS_INVOICE_SHARE">Gross Contract Share</option>
-                <option value="MILESTONE_TRANCHE_SHARE">Milestone Tranche Share</option>
+                <option value="PROJECT_DIRECT_SHARE">Project Direct Share</option>
               </select>
             </div>
 

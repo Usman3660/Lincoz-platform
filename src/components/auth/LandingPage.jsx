@@ -26,31 +26,31 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
       title: 'Super Admin (Owner)',
       name: 'Alexander Wright',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      description: 'TCV financial governance, contractor setup, Project Manager provisioning, and 2-step disbursement sign-off.',
+      description: 'TCV financial governance, employee compensation structures, PM provisioning, and 2-step disbursement sign-off.',
     },
     {
       id: 'usr-pm',
       role: 'PROJECT_MANAGER',
-      title: 'Project Manager (Onsite)',
+      title: 'Project Manager',
       name: 'Sarah Jenkins',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      description: 'Sprint lifecycles, engineer & contractor staff provisioning, milestone deliverable reviews, and Step-1 verification.',
+      description: 'Sprint lifecycles, on-site & remote staff provisioning, deliverable reviews, and Step-1 verification.',
     },
     {
       id: 'usr-eng',
       role: 'ONSITE_MEMBER',
-      title: 'Onsite Engineer',
+      title: 'On-Site Engineer (Salaried)',
       name: 'Alex Rivera',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       description: 'Granular verification checklist execution with sub-250ms latency, internal comments, and PR submissions.',
     },
     {
       id: 'usr-partner-1',
-      role: 'PARTNER',
-      title: '% Partner Freelancer',
+      role: 'ONSITE_MEMBER',
+      title: 'Remote Architect (% Share)',
       name: 'David Vance',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      description: 'Isolated contractor portal, real-time commission earnings ledger, and confidential rate masking.',
+      description: 'Remote engineering delivery with real-time percentage project earnings and transparent ledger calculation.',
     }
   ];
 
@@ -121,7 +121,7 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
         </h1>
 
         <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Manage onsite engineers, project managers, and percentage-partner freelancers in one place. Enforce hierarchical user provisioning, strict data isolation, 2-step payout sign-offs, and immutable audit logs.
+          Manage on-site and remote employees (salaried and project percentage share) in one place. Enforce hierarchical user provisioning, project data isolation, 2-step payout sign-offs, and immutable audit logs.
         </p>
 
         {/* Primary CTA Buttons */}
@@ -146,7 +146,7 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Super Admin &rarr; PM &rarr; Team Provisioning
           </span>
           <span className="flex items-center gap-1.5 bg-[#182234]/60 px-3 py-1.5 rounded-lg border border-slate-800">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Strict Data Isolation
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> On-Site & Remote Workflows
           </span>
         </div>
 
@@ -159,7 +159,7 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
             Role-Based Access Architecture
           </h2>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Explore the four tailored operational security tiers designed for high-velocity enterprise teams.
+            Explore the tailored operational security tiers designed for high-velocity enterprise teams.
           </p>
         </div>
 
@@ -229,9 +229,9 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
             <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 w-fit border border-amber-500/20">
               <Lock className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Isolated Contractor Portal</h3>
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Project Share Ledger</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              External partners view real-time commissions ($17k earned) with complete concealment of client rates.
+              Percentage-based partners track real-time project share commissions with transparent formula calculations.
             </p>
           </div>
 
@@ -241,7 +241,7 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
             </div>
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">Multi-View Task Engine</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Kanban, filterable List, and Gantt roadmap views mapped to discrete milestone tranches.
+              Kanban, filterable List, and Gantt roadmap views mapped directly to project tasks and deliverables.
             </p>
           </div>
 

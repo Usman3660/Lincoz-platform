@@ -6,7 +6,7 @@ export const RoleBadge = ({ role }) => {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5 animate-pulse"></span>
-          Super Admin (Owner)
+          Super Admin
         </span>
       );
     case 'PROJECT_MANAGER':
@@ -17,26 +17,43 @@ export const RoleBadge = ({ role }) => {
         </span>
       );
     case 'ONSITE_MEMBER':
+    default:
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mr-1.5"></span>
-          Onsite Member
-        </span>
-      );
-    case 'PARTNER':
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span>
-          % Partner Contractor
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700/50 text-slate-300">
-          {role}
+          Team Employee
         </span>
       );
   }
+};
+
+export const WorkModeBadge = ({ mode }) => {
+  const isRemote = mode === 'REMOTE';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+      isRemote
+        ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+        : 'bg-teal-500/10 text-teal-400 border border-teal-500/30'
+    }`}>
+      <span className={`w-1 h-1 rounded-full mr-1 ${isRemote ? 'bg-purple-400' : 'bg-teal-400'}`} />
+      {isRemote ? 'Remote' : 'On-Site'}
+    </span>
+  );
+};
+
+export const CompBadge = ({ type, salary, percentage }) => {
+  if (type === 'PERCENTAGE') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+        {percentage ? `${percentage}% Share` : '% Based'}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+      {salary ? `$${Number(salary).toLocaleString()}/yr` : 'Salaried'}
+    </span>
+  );
 };
 
 export const StatusBadge = ({ status }) => {

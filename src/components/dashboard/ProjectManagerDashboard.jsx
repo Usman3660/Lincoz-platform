@@ -10,7 +10,6 @@ import {
   Sparkles,
   ArrowRight,
   ExternalLink,
-  Milestone,
   CheckSquare,
   Eye,
   Users
@@ -43,10 +42,10 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
               <FolderKanban className="w-3.5 h-3.5" /> Project Operations & Delivery Hub
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Sprint Velocity & Milestone Orchestration
+              Sprint Velocity & Delivery Orchestration
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Track project delivery timelines, review engineering pull requests, provision team members, and monitor milestone progression.
+              Track project delivery timelines, review engineering pull requests, provision team members, and monitor task execution progression.
             </p>
           </div>
 
@@ -243,16 +242,16 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
 
       </div>
 
-      {/* Project Milestones Delivery Progress (Pure Operational) */}
+      {/* Project Delivery Progress (Pure Operational) */}
       <div className="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Milestone className="w-4 h-4 text-indigo-400" />
-              Project Milestones Delivery Roadmap
+              <CheckSquare className="w-4 h-4 text-indigo-400" />
+              Project Delivery Roadmap & Task Distribution
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Track operational deliverable milestones and target completion dates across assigned projects.
+              Track operational deliverable tasks and target completion dates across assigned projects.
             </p>
           </div>
           <button
@@ -301,17 +300,23 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
                   </div>
                 </div>
 
-                {/* Milestone list */}
-                <div className="space-y-1 pt-1 border-t border-slate-800/80">
+                {/* Active Tasks Preview */}
+                <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Milestones ({proj.milestones?.length || 0}):
+                    Active Tasks ({projectTasks.length}):
                   </span>
-                  {proj.milestones?.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between text-[11px] text-slate-300">
-                      <span className="truncate max-w-[140px]">{m.title}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{m.dueDate}</span>
+                  {projectTasks.slice(0, 3).map((task) => (
+                    <div key={task.id} className="flex items-center justify-between text-[11px] text-slate-300">
+                      <span className="truncate max-w-[140px]">{task.title}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{task.dueDate || task.status}</span>
                     </div>
                   ))}
+                  {projectTasks.length > 3 && (
+                    <span className="text-[10px] text-slate-500 block italic">+{projectTasks.length - 3} more tasks</span>
+                  )}
+                  {projectTasks.length === 0 && (
+                    <span className="text-[11px] text-slate-500 italic block">No tasks assigned yet.</span>
+                  )}
                 </div>
               </div>
             );

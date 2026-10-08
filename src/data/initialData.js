@@ -7,6 +7,9 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     title: 'Founder & Managing Director',
     department: 'Executive Governance',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
+    salary: 180000,
     isMfaEnabled: true,
   },
   {
@@ -17,6 +20,8 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     title: 'Lead Technical Project Manager',
     department: 'Operations',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
     salary: 135000,
     isMfaEnabled: true,
   },
@@ -28,6 +33,8 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     title: 'Senior Full-Stack Engineer',
     department: 'Core Engineering',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
     salary: 120000,
     isMfaEnabled: false,
   },
@@ -39,27 +46,100 @@ export const INITIAL_USERS = [
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     title: 'Lead Product Designer',
     department: 'Design & UX',
+    workMode: 'REMOTE',
+    compensationType: 'SALARIED',
     salary: 110000,
+    isMfaEnabled: false,
+  },
+  {
+    id: 'usr-sal-1',
+    name: 'Liam Sterling',
+    email: 'liam.s@lincoz.internal',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    title: 'Senior Backend Architect',
+    department: 'Platform Systems',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
+    salary: 130000,
+    isMfaEnabled: false,
+  },
+  {
+    id: 'usr-sal-2',
+    name: 'Sophia Patel',
+    email: 'sophia.p@lincoz.internal',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    title: 'Lead DevOps & Cloud Engineer',
+    department: 'Infrastructure & SRE',
+    workMode: 'REMOTE',
+    compensationType: 'SALARIED',
+    salary: 125000,
+    isMfaEnabled: false,
+  },
+  {
+    id: 'usr-sal-3',
+    name: 'Marcus Hayes',
+    email: 'marcus.h@lincoz.internal',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    title: 'Senior Mobile Engineer (iOS/Android)',
+    department: 'Mobile Delivery',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
+    salary: 115000,
+    isMfaEnabled: false,
+  },
+  {
+    id: 'usr-sal-4',
+    name: 'Hannah Kim',
+    email: 'hannah.k@lincoz.internal',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    title: 'Senior QA Automation Engineer',
+    department: 'Quality Assurance',
+    workMode: 'REMOTE',
+    compensationType: 'SALARIED',
+    salary: 95000,
+    isMfaEnabled: false,
+  },
+  {
+    id: 'usr-sal-5',
+    name: 'Carlos Mendoza',
+    email: 'carlos.m@lincoz.internal',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+    title: 'Frontend & Design System Engineer',
+    department: 'Core Engineering',
+    workMode: 'ONSITE',
+    compensationType: 'SALARIED',
+    salary: 105000,
     isMfaEnabled: false,
   },
   {
     id: 'usr-partner-1',
     name: 'David Vance',
     email: 'david@vanceweblabs.io',
-    role: 'PARTNER',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    title: 'External Systems Architect',
-    organization: 'Vance Web Labs LLC',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+    title: 'Lead Systems Architect',
+    department: 'Distributed SFU Systems',
+    workMode: 'REMOTE',
+    compensationType: 'PERCENTAGE',
+    percentage: 15.0,
     isMfaEnabled: true,
   },
   {
     id: 'usr-partner-2',
     name: 'Elena Rostova',
     email: 'elena@cloudsec.dev',
-    role: 'PARTNER',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    title: 'Distributed Infrastructure Partner',
-    organization: 'Rostova CyberTech Ltd',
+    role: 'ONSITE_MEMBER',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    title: 'Cloud Infrastructure & HSM Engineer',
+    department: 'Cryptographic Security',
+    workMode: 'REMOTE',
+    compensationType: 'PERCENTAGE',
+    percentage: 20.0,
     isMfaEnabled: true,
   },
 ];
@@ -76,8 +156,8 @@ export const INITIAL_CONTRACTORS = [
     agreements: [
       {
         projectId: 'proj-1',
-        model: 'MILESTONE_TRANCHE_SHARE', // Gross Contract Share, Net Revenue Share, Milestone Tranche Share
-        sharePercentage: 15.0, // 15% of discrete milestone tranche
+        model: 'PROJECT_DIRECT_SHARE',
+        sharePercentage: 15.0, // 15% of project contract value
         notes: '15% allocation for High-Frequency Engine and Cryptographic Modules',
         contractSignedDate: '2026-08-15',
       },
@@ -126,36 +206,7 @@ export const INITIAL_PROJECTS = [
     startDate: '2026-08-01',
     targetDeliveryDate: '2026-12-15',
     projectManagerId: 'usr-pm',
-    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des', 'usr-partner-1', 'usr-partner-2'],
-    milestones: [
-      {
-        id: 'ms-101',
-        title: 'Milestone 1: Core Architecture & Security Audit',
-        trancheAmount: 40000,
-        status: 'COMPLETED', // PLANNING, IN_PROGRESS, IN_REVIEW, COMPLETED
-        dueDate: '2026-09-10',
-        billedAmount: 40000,
-        isBilledToClient: true,
-      },
-      {
-        id: 'ms-102',
-        title: 'Milestone 2: High-Frequency Transaction Engine',
-        trancheAmount: 50000,
-        status: 'IN_PROGRESS',
-        dueDate: '2026-10-30',
-        billedAmount: 40000,
-        isBilledToClient: true,
-      },
-      {
-        id: 'ms-103',
-        title: 'Milestone 3: Client Dashboard & Compliance Gateway',
-        trancheAmount: 30000,
-        status: 'PLANNING',
-        dueDate: '2026-12-15',
-        billedAmount: 0,
-        isBilledToClient: false,
-      }
-    ]
+    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des', 'usr-partner-1', 'usr-partner-2']
   },
   {
     id: 'proj-2',
@@ -172,36 +223,7 @@ export const INITIAL_PROJECTS = [
     startDate: '2026-09-01',
     targetDeliveryDate: '2026-11-30',
     projectManagerId: 'usr-pm',
-    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des', 'usr-partner-1'],
-    milestones: [
-      {
-        id: 'ms-201',
-        title: 'Milestone 1: WebRTC Video Room & HIPAA Encryption',
-        trancheAmount: 35000,
-        status: 'COMPLETED',
-        dueDate: '2026-09-28',
-        billedAmount: 35000,
-        isBilledToClient: true,
-      },
-      {
-        id: 'ms-202',
-        title: 'Milestone 2: Doctor E-Prescription Gateway',
-        trancheAmount: 30000,
-        status: 'IN_PROGRESS',
-        dueDate: '2026-10-31',
-        billedAmount: 10000,
-        isBilledToClient: true,
-      },
-      {
-        id: 'ms-203',
-        title: 'Milestone 3: Patient Portal & Mobile App Release',
-        trancheAmount: 20000,
-        status: 'PLANNING',
-        dueDate: '2026-11-30',
-        billedAmount: 0,
-        isBilledToClient: false,
-      }
-    ]
+    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des', 'usr-partner-1']
   },
   {
     id: 'proj-3',
@@ -218,27 +240,7 @@ export const INITIAL_PROJECTS = [
     startDate: '2026-09-15',
     targetDeliveryDate: '2027-01-20',
     projectManagerId: 'usr-pm',
-    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des'],
-    milestones: [
-      {
-        id: 'ms-301',
-        title: 'Milestone 1: Route Optimization ML Pipeline',
-        trancheAmount: 35000,
-        status: 'IN_PROGRESS',
-        dueDate: '2026-11-15',
-        billedAmount: 25000,
-        isBilledToClient: true,
-      },
-      {
-        id: 'ms-302',
-        title: 'Milestone 2: Sensor Ingestion & Telemetry Dashboard',
-        trancheAmount: 30000,
-        status: 'PLANNING',
-        dueDate: '2027-01-20',
-        billedAmount: 0,
-        isBilledToClient: false,
-      }
-    ]
+    assignedTeamIds: ['usr-pm', 'usr-eng', 'usr-des']
   }
 ];
 
@@ -246,7 +248,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-1',
     projectId: 'proj-1',
-    milestoneId: 'ms-102',
     title: 'Implement JWT & Argon2id Auth Session Revocation Engine',
     description: 'Implement salted Argon2id password verification, JWT token rotation, and Redis token blacklist revocation stream according to section 5.1.',
     priority: 'Urgent',
@@ -285,7 +286,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-2',
     projectId: 'proj-1',
-    milestoneId: 'ms-102',
     title: 'High-Frequency Matching Engine Microservice (Kafka + Rust/Node)',
     description: 'Deliver the core settlement worker listening to internal event queues and performing atomic micro-settlement ledger entries.',
     priority: 'Urgent',
@@ -318,7 +318,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-3',
     projectId: 'proj-1',
-    milestoneId: 'ms-102',
     title: 'Append-Only Audit Log Trigger & JSON Delta Engine',
     description: 'Ensure immutable audit logs capture UUIDv4, actor ID, client IP, UTC timestamp down to milliseconds, and previous/new state JSON diffs.',
     priority: 'High',
@@ -341,9 +340,8 @@ export const INITIAL_TASKS = [
   {
     id: 'task-4',
     projectId: 'proj-1',
-    milestoneId: 'ms-103',
     title: 'Executive Financial Governance & 2-Step Payout Disbursement UI',
-    description: 'Build the Super Admin interface for reviewing calculated partner payouts, validating milestone completion, and signing cryptographic disbursement authorizations.',
+    description: 'Build the Super Admin interface for reviewing calculated partner payouts, validating deliverable completion, and signing cryptographic disbursement authorizations.',
     priority: 'High',
     status: 'IN_PROGRESS',
     isBlocked: false,
@@ -366,7 +364,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-5',
     projectId: 'proj-2',
-    milestoneId: 'ms-201',
     title: 'HIPAA WebRTC End-to-End Encrypted Media Mesh',
     description: 'Configure multi-party secure video rooms with ephemeral cryptographic keys and automatic session audit logging.',
     priority: 'Urgent',
@@ -390,7 +387,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-6',
     projectId: 'proj-2',
-    milestoneId: 'ms-202',
     title: 'Doctor E-Prescription FHIR Compliant API',
     description: 'Implement e-prescription digital signature pipeline adhering to standard healthcare FHIR specs.',
     priority: 'High',
@@ -419,7 +415,6 @@ export const INITIAL_TASKS = [
   {
     id: 'task-7',
     projectId: 'proj-3',
-    milestoneId: 'ms-301',
     title: 'Route Matrix Cost Optimizer (A* & Dijkstra Hybrid)',
     description: 'Develop graph clustering algorithm to batch deliveries across 45 logistics hubs.',
     priority: 'Medium',
@@ -444,15 +439,15 @@ export const INITIAL_PAYOUT_LEDGER = [
   {
     id: 'payout-101',
     contractorId: 'usr-partner-1',
-    contractorName: 'David Vance (Vance Web Labs)',
+    contractorName: 'David Vance',
     projectId: 'proj-1',
     projectName: 'FinTech Quantum Ledger',
-    milestoneId: 'ms-101',
-    milestoneTitle: 'Milestone 1: Core Architecture & Security Audit',
-    agreementModel: 'MILESTONE_TRANCHE_SHARE',
+    deliverableTitle: 'Phase 1: Architecture & Security Deliverable',
+    agreementModel: 'WHOLE_PROJECT_SHARE',
     agreementPercentage: 15.0,
-    milestoneBilledAmount: 40000,
-    calculatedPayoutAmount: 6000, // 40000 * 0.15
+    projectTotalValue: 120000,
+    calculatedPayoutAmount: 6000, // Part of $18,000 total project share ($120k * 15%)
+    totalProjectShare: 18000,
     status: 'DISBURSED', // ACCRUING, INVOICED, APPROVED, DISBURSED
     step1ApprovedBy: 'usr-pm',
     step1ApprovedAt: '2026-09-12T10:00:00.000Z',
@@ -460,20 +455,20 @@ export const INITIAL_PAYOUT_LEDGER = [
     step2AuthorizedAt: '2026-09-14T14:22:15.821Z',
     disbursementRef: 'WISE-TX-99824108',
     disbursementChannel: 'Wise Multi-Currency Wire',
-    notes: 'Tranche 1 completed on time with zero security vulnerabilities.'
+    notes: 'Phase 1 settlement from 15% Whole Project Share ($18,000 total).'
   },
   {
     id: 'payout-102',
     contractorId: 'usr-partner-1',
-    contractorName: 'David Vance (Vance Web Labs)',
+    contractorName: 'David Vance',
     projectId: 'proj-1',
     projectName: 'FinTech Quantum Ledger',
-    milestoneId: 'ms-102',
-    milestoneTitle: 'Milestone 2: High-Frequency Transaction Engine',
-    agreementModel: 'MILESTONE_TRANCHE_SHARE',
+    deliverableTitle: 'Phase 2: High-Frequency Transaction Engine',
+    agreementModel: 'WHOLE_PROJECT_SHARE',
     agreementPercentage: 15.0,
-    milestoneBilledAmount: 40000,
+    projectTotalValue: 120000,
     calculatedPayoutAmount: 6000,
+    totalProjectShare: 18000,
     status: 'APPROVED', // Ready for Step 2 Super Admin Sign-off!
     step1ApprovedBy: 'usr-pm',
     step1ApprovedAt: '2026-10-01T09:00:00.000Z',
@@ -481,20 +476,20 @@ export const INITIAL_PAYOUT_LEDGER = [
     step2AuthorizedAt: null,
     disbursementRef: '',
     disbursementChannel: 'Wise Multi-Currency Wire',
-    notes: 'Task 2 submitted for review. Milestone partially billed to client ($40k of $50k).'
+    notes: 'Phase 2 deliverable verified. Ready for Super Admin settlement recording.'
   },
   {
     id: 'payout-201',
     contractorId: 'usr-partner-1',
-    contractorName: 'David Vance (Vance Web Labs)',
+    contractorName: 'David Vance',
     projectId: 'proj-2',
     projectName: 'PulseCare Telemedicine Suite',
-    milestoneId: 'ms-201',
-    milestoneTitle: 'Milestone 1: WebRTC Video Room & HIPAA Encryption',
-    agreementModel: 'GROSS_CONTRACT_SHARE',
+    deliverableTitle: 'Phase 1: WebRTC Video Room & Encryption',
+    agreementModel: 'WHOLE_PROJECT_SHARE',
     agreementPercentage: 12.5,
-    milestoneBilledAmount: 35000,
-    calculatedPayoutAmount: 4375, // 35000 * 0.125
+    projectTotalValue: 85000,
+    calculatedPayoutAmount: 4375, // Part of $10,625 total project share ($85k * 12.5%)
+    totalProjectShare: 10625,
     status: 'DISBURSED',
     step1ApprovedBy: 'usr-pm',
     step1ApprovedAt: '2026-09-29T11:00:00.000Z',
@@ -502,41 +497,41 @@ export const INITIAL_PAYOUT_LEDGER = [
     step2AuthorizedAt: '2026-09-30T16:40:11.192Z',
     disbursementRef: 'WISE-TX-44810294',
     disbursementChannel: 'Wise Multi-Currency Wire',
-    notes: 'HIPAA mesh fully verified.'
+    notes: 'Phase 1 settled from 12.5% Whole Project Share ($10,625 total).'
   },
   {
     id: 'payout-103',
     contractorId: 'usr-partner-2',
-    contractorName: 'Elena Rostova (Rostova CyberTech)',
+    contractorName: 'Elena Rostova',
     projectId: 'proj-1',
     projectName: 'FinTech Quantum Ledger',
-    milestoneId: 'ms-101',
-    milestoneTitle: 'Milestone 1: Core Architecture & Security Audit',
-    agreementModel: 'NET_REVENUE_SHARE',
+    deliverableTitle: 'Cloud Security & HSM Integration',
+    agreementModel: 'WHOLE_PROJECT_SHARE',
     agreementPercentage: 20.0,
-    milestoneBilledAmount: 40000,
-    calculatedPayoutAmount: 6800, // (40000 - 6000 expense) * 0.20 = 34000 * 0.20 = 6800
-    status: 'INVOICED', // Invoiced to client, awaiting PM & Admin review
-    step1ApprovedBy: null,
-    step1ApprovedAt: null,
+    projectTotalValue: 120000,
+    calculatedPayoutAmount: 12000, // Part of $24,000 total project share ($120k * 20%)
+    totalProjectShare: 24000,
+    status: 'APPROVED',
+    step1ApprovedBy: 'usr-pm',
+    step1ApprovedAt: '2026-10-02T14:00:00.000Z',
     step2AuthorizedBy: null,
     step2AuthorizedAt: null,
     disbursementRef: '',
-    disbursementChannel: 'USDC / Smart Contract Escrow',
-    notes: 'Net share calculated after $6,000 HSM direct infrastructure cost deduction.'
+    disbursementChannel: 'Direct Wire Transfer',
+    notes: 'Phase 1 approved from 20% Whole Project Share ($24,000 total).'
   },
   {
     id: 'payout-202',
     contractorId: 'usr-partner-1',
-    contractorName: 'David Vance (Vance Web Labs)',
+    contractorName: 'David Vance',
     projectId: 'proj-2',
     projectName: 'PulseCare Telemedicine Suite',
-    milestoneId: 'ms-202',
-    milestoneTitle: 'Milestone 2: Doctor E-Prescription Gateway',
-    agreementModel: 'GROSS_CONTRACT_SHARE',
+    deliverableTitle: 'Phase 2: Doctor E-Prescription Gateway',
+    agreementModel: 'WHOLE_PROJECT_SHARE',
     agreementPercentage: 12.5,
-    milestoneBilledAmount: 10000,
-    calculatedPayoutAmount: 1250,
+    projectTotalValue: 85000,
+    calculatedPayoutAmount: 6250, // Remaining part of $10,625
+    totalProjectShare: 10625,
     status: 'ACCRUING', // WIP
     step1ApprovedBy: null,
     step1ApprovedAt: null,
@@ -544,7 +539,7 @@ export const INITIAL_PAYOUT_LEDGER = [
     step2AuthorizedAt: null,
     disbursementRef: '',
     disbursementChannel: 'Wise Multi-Currency Wire',
-    notes: 'Work in progress - accruing commission balance.'
+    notes: 'Accruing remaining project share balance.'
   }
 ];
 
@@ -627,7 +622,7 @@ export const INITIAL_AUDIT_LOGS = [
     actorName: 'Sarah Jenkins',
     actorRole: 'PROJECT_MANAGER',
     actionType: 'PAYOUT_VERIFIED',
-    itemText: 'Approved Step 1 Milestone Calculation for David Vance ($6,000.00)',
+    itemText: 'Approved Step 1 Deliverable Calculation for David Vance ($6,000.00)',
     previousState: { status: 'INVOICED' },
     newState: { status: 'APPROVED' },
     clientIp: '192.168.1.102',
@@ -708,5 +703,302 @@ export const INITIAL_CLIENTS_DIRECTORY = [
     skills: 'Solidity, ZK-Snarks, Smart Contract Audits',
     notes: 'Zero-knowledge proof verification freelancer.',
     createdAt: '2026-09-10T16:00:00.000Z'
+  }
+];
+
+export const INITIAL_CLIENT_INVOICES = [
+  {
+    id: 'inv-101',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    clientName: 'Apex Global Banking Corp',
+    invoiceNumber: 'INV-2026-081',
+    amount: 50000,
+    issueDate: '2026-08-10',
+    dueDate: '2026-09-10',
+    status: 'PAID',
+    notes: 'Initial deposit & Phase 1 setup invoice'
+  },
+  {
+    id: 'inv-102',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    clientName: 'Apex Global Banking Corp',
+    invoiceNumber: 'INV-2026-094',
+    amount: 30000,
+    issueDate: '2026-09-15',
+    dueDate: '2026-10-15',
+    status: 'PENDING',
+    notes: 'Phase 2 Architecture & Kafka Settlement Worker deliverable invoice'
+  },
+  {
+    id: 'inv-103',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    clientName: 'Apex Global Banking Corp',
+    invoiceNumber: 'INV-2026-102',
+    amount: 40000,
+    issueDate: '2026-10-02',
+    dueDate: '2026-11-02',
+    status: 'PAID',
+    notes: 'Phase 3 HSM Cryptographic Engine & Production Deployment'
+  },
+  {
+    id: 'inv-201',
+    projectId: 'proj-2',
+    projectName: 'PulseCare Telemedicine Suite',
+    clientName: 'MediHealth Systems',
+    invoiceNumber: 'INV-2026-088',
+    amount: 45000,
+    issueDate: '2026-09-05',
+    dueDate: '2026-10-05',
+    status: 'PARTIAL',
+    notes: 'Telemedicine core engine & HIPAA portal provisioning invoice'
+  },
+  {
+    id: 'inv-202',
+    projectId: 'proj-2',
+    projectName: 'PulseCare Telemedicine Suite',
+    clientName: 'MediHealth Systems',
+    invoiceNumber: 'INV-2026-105',
+    amount: 25000,
+    issueDate: '2026-10-04',
+    dueDate: '2026-11-04',
+    status: 'PENDING',
+    notes: 'WebRTC SFU Video Milestone Billing'
+  },
+  {
+    id: 'inv-301',
+    projectId: 'proj-3',
+    projectName: 'Nexus AI Logistics Hub',
+    clientName: 'Omnilogix Freight Corp',
+    invoiceNumber: 'INV-2026-098',
+    amount: 25000,
+    issueDate: '2026-09-20',
+    dueDate: '2026-10-20',
+    status: 'PENDING',
+    notes: 'Route optimization & IoT sensor ingest setup invoice'
+  },
+  {
+    id: 'inv-302',
+    projectId: 'proj-3',
+    projectName: 'Nexus AI Logistics Hub',
+    clientName: 'Omnilogix Freight Corp',
+    invoiceNumber: 'INV-2026-109',
+    amount: 20000,
+    issueDate: '2026-10-05',
+    dueDate: '2026-11-05',
+    status: 'PAID',
+    notes: 'Real-time telemetry pipeline and dispatch optimizer invoice'
+  }
+];
+
+export const INITIAL_CLIENT_PAYMENTS = [
+  {
+    id: 'payin-101',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    clientName: 'Apex Global Banking Corp',
+    amount: 45000,
+    paymentDate: '2026-08-25',
+    paymentMethod: 'Bank Wire / Fedwire',
+    referenceNumber: 'WIRE-APEX-88912',
+    notes: 'Phase 1 invoice settlement'
+  },
+  {
+    id: 'payin-102',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    clientName: 'Apex Global Banking Corp',
+    amount: 40000,
+    paymentDate: '2026-10-04',
+    paymentMethod: 'Bank Wire / Fedwire',
+    referenceNumber: 'WIRE-APEX-99410',
+    notes: 'Phase 3 HSM invoice settlement'
+  },
+  {
+    id: 'payin-201',
+    projectId: 'proj-2',
+    projectName: 'PulseCare Telemedicine Suite',
+    clientName: 'MediHealth Systems',
+    amount: 25000,
+    paymentDate: '2026-09-18',
+    paymentMethod: 'ACH Electronic Transfer',
+    referenceNumber: 'ACH-MEDI-44102',
+    notes: 'Partial payment on INV-2026-088'
+  },
+  {
+    id: 'payin-301',
+    projectId: 'proj-3',
+    projectName: 'Nexus AI Logistics Hub',
+    clientName: 'Omnilogix Freight Corp',
+    amount: 10000,
+    paymentDate: '2026-09-28',
+    paymentMethod: 'Corporate Wire Transfer',
+    referenceNumber: 'WIRE-OMNI-9021',
+    notes: 'Advance deposit on Logistics Hub'
+  },
+  {
+    id: 'payin-302',
+    projectId: 'proj-3',
+    projectName: 'Nexus AI Logistics Hub',
+    clientName: 'Omnilogix Freight Corp',
+    amount: 20000,
+    paymentDate: '2026-10-05',
+    paymentMethod: 'Corporate Wire Transfer',
+    referenceNumber: 'WIRE-OMNI-9155',
+    notes: 'Cleared invoice INV-2026-109 payment'
+  }
+];
+
+export const INITIAL_SOURCE_PAYOUTS = [
+  {
+    id: 'src-101',
+    projectId: 'proj-1',
+    projectName: 'FinTech Quantum Ledger',
+    sourceName: 'Nexus Lead Capital Ltd',
+    amount: 5000,
+    payoutDate: '2026-08-28',
+    status: 'DISBURSED',
+    paymentMethod: 'Wire Transfer',
+    referenceNumber: 'SRC-FEE-1002',
+    notes: '5% client acquisition & origination commission'
+  },
+  {
+    id: 'src-201',
+    projectId: 'proj-2',
+    projectName: 'PulseCare Telemedicine Suite',
+    sourceName: 'HealthTech Ventures Alliance',
+    amount: 3500,
+    payoutDate: '2026-09-22',
+    status: 'DISBURSED',
+    paymentMethod: 'ACH Transfer',
+    referenceNumber: 'SRC-FEE-1005',
+    notes: 'Client referral fee on signed Telemedicine contract'
+  },
+  {
+    id: 'src-301',
+    projectId: 'proj-3',
+    projectName: 'Nexus AI Logistics Hub',
+    sourceName: 'SupplyChain Growth Partners',
+    amount: 2000,
+    payoutDate: '2026-10-01',
+    status: 'DISBURSED',
+    paymentMethod: 'Bank Wire',
+    referenceNumber: 'SRC-FEE-1008',
+    notes: 'Origination fee for Freight Corp contract'
+  }
+];
+
+export const INITIAL_DIRECT_EXPENSES = [
+  {
+    id: 'exp-101',
+    month: '2026-08',
+    category: 'Cloud Infrastructure & Security',
+    vendor: 'AWS Cloud (CloudHSM & EC2 Ultra)',
+    amount: 3800,
+    expenseDate: '2026-08-20',
+    receiptRef: 'AWS-INV-992140',
+    status: 'PAID',
+    notes: 'Dedicated CloudHSM cluster for cryptographic testbed'
+  },
+  {
+    id: 'exp-102',
+    month: '2026-09',
+    category: 'API & Software Licenses',
+    vendor: 'Confluent Kafka Cloud',
+    amount: 2200,
+    expenseDate: '2026-09-05',
+    receiptRef: 'CONF-88192',
+    status: 'PAID',
+    notes: 'Managed Kafka streaming cluster throughput'
+  },
+  {
+    id: 'exp-103',
+    month: '2026-10',
+    category: 'Cloud Infrastructure & Security',
+    vendor: 'AWS Cloud Compute Cluster',
+    amount: 3200,
+    expenseDate: '2026-10-03',
+    receiptRef: 'AWS-INV-998501',
+    status: 'PAID',
+    notes: 'High-availability ledger nodes and HSM cluster'
+  },
+  {
+    id: 'exp-201',
+    month: '2026-09',
+    category: 'Cloud Infrastructure & Security',
+    vendor: 'Twilio & LiveKit Cloud',
+    amount: 2500,
+    expenseDate: '2026-09-12',
+    receiptRef: 'TW-77821',
+    status: 'PAID',
+    notes: 'HIPAA video streaming & SIP trunking credits'
+  },
+  {
+    id: 'exp-202',
+    month: '2026-09',
+    category: 'Third-Party Compliance Audit',
+    vendor: 'SecurHealth HIPAA Auditors',
+    amount: 2000,
+    expenseDate: '2026-09-25',
+    receiptRef: 'HIPAA-AUD-2026',
+    status: 'PAID',
+    notes: 'Automated HIPAA compliance security assessment'
+  },
+  {
+    id: 'exp-301',
+    month: '2026-09',
+    category: 'Cloud Infrastructure & Security',
+    vendor: 'GCP BigQuery & IoT Core',
+    amount: 2800,
+    expenseDate: '2026-09-29',
+    receiptRef: 'GCP-884109',
+    status: 'PAID',
+    notes: 'Real-time telemetry stream ingest and ML model training'
+  },
+  {
+    id: 'exp-302',
+    month: '2026-10',
+    category: 'Server Hosting & Database Clusters',
+    vendor: 'Supabase PostgreSQL Enterprise',
+    amount: 1500,
+    expenseDate: '2026-10-04',
+    receiptRef: 'DB-SVR-88210',
+    status: 'PAID',
+    notes: 'Telemetry time-series database hosting'
+  }
+];
+
+export const INITIAL_EXPENSE_CATEGORIES = [
+  {
+    id: 'exp-cat-1',
+    name: 'Cloud Infrastructure & Security',
+    description: 'AWS / GCP cloud compute, dedicated Kubernetes nodes, CloudHSM clusters, and encrypted VPC networks.',
+    createdAt: '2026-08-01T08:00:00.000Z'
+  },
+  {
+    id: 'exp-cat-2',
+    name: 'API & Software Licenses',
+    description: 'Third-party managed streaming, live messaging pipelines, Confluent Kafka, Stripe/Plaid, and Twilio WebRTC.',
+    createdAt: '2026-08-10T09:30:00.000Z'
+  },
+  {
+    id: 'exp-cat-3',
+    name: 'Third-Party Compliance Audit',
+    description: 'External cybersecurity penetration testing, HIPAA compliance verification, and SOC-2 security audit certifications.',
+    createdAt: '2026-08-15T11:00:00.000Z'
+  },
+  {
+    id: 'exp-cat-4',
+    name: 'Server Hosting & Database Clusters',
+    description: 'High-availability PostgreSQL/Redis clusters, staging environments, and high-frequency database replication nodes.',
+    createdAt: '2026-09-01T14:15:00.000Z'
+  },
+  {
+    id: 'exp-cat-5',
+    name: 'Dev Tools & Testbeds',
+    description: 'Automated CI/CD runners, distributed browser testing platforms (Cypress/Playwright Cloud), and developer licenses.',
+    createdAt: '2026-09-12T16:45:00.000Z'
   }
 ];

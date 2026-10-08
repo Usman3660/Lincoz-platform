@@ -113,11 +113,14 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
   const associatedProjectObjs = (projects || []).filter(p => (formData.associatedProjects || []).includes(p.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto custom-scrollbar">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-fadeIn" onClick={onClose} />
+      
+      <div className="min-h-full flex items-start justify-center p-3 sm:p-5 pt-8 sm:pt-12 md:pt-14 pb-12">
+        <div className="relative w-full max-w-xl max-h-[85vh] flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#182234]/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#182234] border border-slate-700/80 text-indigo-400 flex items-center justify-center">
               {isFreelancer ? <UserCheck className="w-5 h-5 text-emerald-400" /> : <Building2 className="w-5 h-5 text-indigo-400" />}
@@ -160,7 +163,7 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
           
           {/* Details Form / View */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,7 +368,7 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-[#182234]/50">
           <div>
             {isSuperAdmin() && (
               isConfirmingDelete ? (
@@ -427,5 +430,6 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
 
       </div>
     </div>
+  </div>
   );
 };

@@ -27,7 +27,10 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
     payoutLedger = [],
     contractors = [],
     auditLogs = [],
-    getScopedFinancials
+    getScopedFinancials,
+    selectedMonth,
+    setSelectedMonth,
+    availableMonths = []
   } = useApp();
 
   const financials = getScopedFinancials() || {
@@ -39,6 +42,8 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
     totalDisbursed: 0,
     ledger: []
   };
+
+  const selectedMonthObj = availableMonths.find(m => m.id === selectedMonth) || { label: 'Current Month' };
 
   const pendingStep2Disbursements = payoutLedger.filter(p => p.status === 'APPROVED');
   const activeProjectsCount = projects.filter(p => p.status === 'ACTIVE').length;
@@ -59,11 +64,28 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
               Platform Master Ledger & Operations
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl">
-              Super Admin full-scope visibility: monitor live Total Contract Values (TCV), accounts receivable, contractor liabilities, and authorize 2-step financial disbursements.
+              Super Admin full-scope visibility: monitor live Total Contract Values (TCV), accounts receivable, contractor liabilities, and authorize 2-step financial disbursements on a monthly basis.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* Global Month Selector */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#182234] border border-indigo-500/40 shadow-inner">
+              <DollarSign className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Month:</span>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              >
+                {availableMonths.map((m) => (
+                  <option key={m.id} value={m.id} className="bg-[#182234] text-white">
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
               onClick={() => setActiveTab('financials')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
@@ -82,10 +104,10 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
 
       {/* Global Financial Metrics (PRD Section 3.1) */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-400" />
-            Global Financial Overview (TCV & Liabilities)
+            Financial Overview • {selectedMonthObj.label}
           </h2>
           <span className="text-xs text-slate-400 font-mono">
             Direct Expenses Deducted: ${(financials.directExpenses || 0).toLocaleString()}
@@ -96,32 +118,29 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
           <StatsCard
             title="Total Contract Value (TCV)"
             value={`$${(financials.totalContractValue || 0).toLocaleString()}`}
-            subtitle="Across all client portfolios"
+            subtitle="Whole client project portfolios"
             icon={DollarSign}
             colorScheme="indigo"
-            trend="+18.4% vs last Q"
-            trendPositive={true}
           />
           <StatsCard
-            title="Gross Invoiced"
+            title="Monthly Invoiced"
             value={`$${(financials.grossInvoiced || 0).toLocaleString()}`}
-            subtitle={`$${(financials.accountsReceivable || 0).toLocaleString()} Accounts Receivable`}
+            subtitle={`$${(financials.accountsReceivable || 0).toLocaleString()} AR in ${selectedMonthObj.label}`}
             icon={TrendingUp}
             colorScheme="emerald"
-            badgeText="66.6% Billed"
           />
           <StatsCard
-            title="Accrued Contractor Liabilities"
+            title="Accrued Liabilities"
             value={`$${(financials.accruedLiabilities || 0).toLocaleString()}`}
-            subtitle="Pending + Accruing commissions"
+            subtitle={`Staff/Source shares in ${selectedMonthObj.label}`}
             icon={AlertCircle}
             colorScheme="amber"
             badgeText={`${pendingStep2Disbursements.length} Pending Sign-off`}
           />
           <StatsCard
-            title="Total Disbursed"
+            title="Disbursed / Paid"
             value={`$${(financials.totalDisbursed || 0).toLocaleString()}`}
-            subtitle="Executed 2-step disbursements"
+            subtitle={`Executed in ${selectedMonthObj.label}`}
             icon={CheckCircle2}
             colorScheme="cyan"
           />
@@ -159,7 +178,7 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
 
             {pendingStep2Disbursements.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 bg-[#182234]/40 rounded-xl border border-slate-800">
-                All contractor milestone payouts have been authorized and disbursed.
+                All contractor payouts have been authorized and disbursed.
               </div>
             ) : (
               <div className="space-y-3">
@@ -178,7 +197,7 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
                         </span>
                       </div>
                       <p className="text-xs text-slate-300 font-medium">
-                        {item.projectName} &bull; {item.milestoneTitle}
+                        {item.projectName} &bull; {item.deliverableTitle || 'Project Share'}
                       </p>
                       <p className="text-[11px] text-slate-400">
                         Channel: <span className="text-slate-300 font-mono">{item.disbursementChannel}</span>
@@ -265,7 +284,7 @@ export const SuperAdminDashboard = ({ setActiveTab, onOpenDisbursementModal, onS
                     {/* Progress Bar */}
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                        <span>Milestones & Invoicing Progress</span>
+                        <span>Invoicing & Financial Progress</span>
                         <span className="font-mono text-emerald-400 font-semibold">
                           ${(proj.grossInvoiced || 0).toLocaleString()} / ${(proj.totalContractValue || 0).toLocaleString()} ({percentInvoiced}%)
                         </span>

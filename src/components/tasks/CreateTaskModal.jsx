@@ -8,7 +8,6 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
   const availableProjects = getScopedProjects();
 
   const [projectId, setProjectId] = useState(availableProjects[0]?.id || '');
-  const [milestoneId, setMilestoneId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
@@ -23,9 +22,6 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
     'Verify sub-250ms latency benchmarking'
   ]);
   const [newChecklistText, setNewChecklistText] = useState('');
-
-  const selectedProject = projects.find((p) => p.id === projectId);
-  const availableMilestones = selectedProject?.milestones || [];
 
   const handleAddChecklistItem = () => {
     if (!newChecklistText.trim()) return;
@@ -49,7 +45,6 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
 
     createTask({
       projectId,
-      milestoneId: milestoneId || availableMilestones[0]?.id || 'ms-default',
       title: title.trim(),
       description: description.trim(),
       priority,
@@ -70,51 +65,28 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Operational Task"
-      subtitle="Provision task with granular verification checklist criteria and milestone alignment."
+      subtitle="Provision task with granular verification checklist criteria and deliverable specs."
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Project & Milestone */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Target Project *
-            </label>
-            <select
-              value={projectId}
-              onChange={(e) => {
-                setProjectId(e.target.value);
-                const p = projects.find((x) => x.id === e.target.value);
-                if (p?.milestones?.length) setMilestoneId(p.milestones[0].id);
-              }}
-              className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
-              required
-            >
-              {availableProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Milestone Tranche *
-            </label>
-            <select
-              value={milestoneId}
-              onChange={(e) => setMilestoneId(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
-            >
-              {availableMilestones.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Project Selection */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+            Target Project *
+          </label>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+            required
+          >
+            {availableProjects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Task Title */}

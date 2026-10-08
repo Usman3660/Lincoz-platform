@@ -41,14 +41,14 @@ export const AuditLogViewer = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
               <History className="w-6 h-6 text-indigo-400" />
-              Immutable Audit Trail & System Event Ledger
+              System Event Logs
             </h1>
             <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase font-bold">
               Append-Only (WORM)
@@ -56,10 +56,10 @@ export const AuditLogViewer = () => {
           </div>
           <p className="text-xs text-slate-400 mt-1">
             {isSuperAdmin()
-              ? 'Global cryptographic audit log capturing every state change, IP, user-agent, and state delta with millisecond timestamp.'
+              ? ''
               : isPM()
-              ? 'Project-scoped audit stream for deliverables, checklists, and sprint transitions.'
-              : 'Personal activity log tracking your interactions and checklist completions.'}
+                ? 'Project-scoped audit stream for deliverables, checklists, and sprint transitions.'
+                : 'Personal activity log tracking your interactions and checklist completions.'}
           </p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export const AuditLogViewer = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by actor, task, UUIDv4..."
+            placeholder="Search by actor, task, action type..."
             className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -84,13 +84,17 @@ export const AuditLogViewer = () => {
             className="px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
           >
             <option value="ALL">All Action Types</option>
+            <option value="CLIENT_PAYMENT_RECEIVED">CLIENT_PAYMENT_RECEIVED</option>
+            <option value="CLIENT_INVOICE_CREATED">CLIENT_INVOICE_CREATED</option>
+            <option value="SOURCE_PAYOUT_LOGGED">SOURCE_PAYOUT_LOGGED</option>
+            <option value="PAYOUT_DISBURSED">PAYOUT_DISBURSED (Staff Share)</option>
+            <option value="DIRECT_EXPENSE_LOGGED">DIRECT_EXPENSE_LOGGED</option>
             <option value="ITEM_CHECKED">ITEM_CHECKED</option>
             <option value="ITEM_UNCHECKED">ITEM_UNCHECKED</option>
             <option value="STATUS_CHANGED">STATUS_CHANGED</option>
             <option value="PM_REASSIGNED">PM_REASSIGNED</option>
             <option value="CONTRACTOR_ONBOARDED">CONTRACTOR_ONBOARDED</option>
             <option value="PAYOUT_VERIFIED">PAYOUT_VERIFIED</option>
-            <option value="PAYOUT_DISBURSED">PAYOUT_DISBURSED</option>
             <option value="DELIVERABLE_SUBMITTED">DELIVERABLE_SUBMITTED</option>
             <option value="BLOCKED">BLOCKED</option>
             <option value="CREATED">CREATED</option>
@@ -108,7 +112,6 @@ export const AuditLogViewer = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-[#182234]/60 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="py-3 px-4">Event ID</th>
                 <th className="py-3 px-4">Action Type</th>
                 <th className="py-3 px-4">Actor</th>
                 <th className="py-3 px-4">Context / Project</th>
@@ -121,7 +124,7 @@ export const AuditLogViewer = () => {
             <tbody className="divide-y divide-slate-800 text-xs font-mono">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-slate-500 font-sans">
+                  <td colSpan="7" className="py-12 text-center text-slate-500 font-sans">
                     No matching audit logs found.
                   </td>
                 </tr>
@@ -129,13 +132,6 @@ export const AuditLogViewer = () => {
                 filteredLogs.map((log) => {
                   return (
                     <tr key={log.id} className="hover:bg-[#182234]/50 transition-colors">
-                      {/* UUID */}
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                        <span className="text-indigo-400" title={log.id}>
-                          {log.id.substring(0, 8)}...
-                        </span>
-                      </td>
-
                       {/* Action Type */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-bold">
@@ -214,29 +210,29 @@ const AuditDetailsModal = ({ isOpen, onClose, log }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="Audit Event Details"
-      subtitle={`Event UUID: ${log.id} • ${log.timestamp}`}
+      subtitle={log.timestamp}
       maxWidth="max-w-3xl"
     >
       <div className="space-y-4">
-        
+
         {/* Event Summary Banner */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-slate-900 to-[#182234] border border-indigo-500/30 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-mono text-xs font-bold shadow-sm">
+        <div className="audit-event-banner p-4 sm:p-5 rounded-2xl border space-y-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="px-3 py-1 rounded-lg bg-indigo-600 text-white font-mono text-xs font-bold shadow-sm">
               {log.actionType}
             </span>
-            <span className="text-[11px] text-slate-400 font-mono">
+            <span className="text-[11px] font-mono audit-banner-timestamp">
               {log.timestamp}
             </span>
           </div>
-          <h3 className="text-sm font-bold text-white leading-relaxed">
+          <h3 className="text-sm sm:text-base font-bold leading-relaxed audit-banner-title">
             {log.itemText || `Recorded ${log.actionType} event in system.`}
           </h3>
         </div>
 
         {/* Actor & Execution Metadata */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          
+
           <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80 space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold uppercase tracking-wider">
               <User className="w-3.5 h-3.5 text-indigo-400" /> Executed By
@@ -298,7 +294,7 @@ const AuditDetailsModal = ({ isOpen, onClose, log }) => {
 
           {!showRawPayload ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              
+
               {/* Previous State Card */}
               <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80 space-y-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   INITIAL_USERS,
   INITIAL_CONTRACTORS,
@@ -6,7 +6,12 @@ import {
   INITIAL_TASKS,
   INITIAL_PAYOUT_LEDGER,
   INITIAL_AUDIT_LOGS,
-  INITIAL_CLIENTS_DIRECTORY
+  INITIAL_CLIENTS_DIRECTORY,
+  INITIAL_CLIENT_INVOICES,
+  INITIAL_CLIENT_PAYMENTS,
+  INITIAL_SOURCE_PAYOUTS,
+  INITIAL_DIRECT_EXPENSES,
+  INITIAL_EXPENSE_CATEGORIES
 } from '../data/initialData';
 
 const AppContext = createContext();
@@ -40,12 +45,29 @@ export const AppProvider = ({ children }) => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Safe localStorage persistence with fallback
+  // Safe localStorage persistence with fallback and intelligent roster sync
   const [users, setUsers] = useState(() => {
     try {
       const saved = localStorage.getItem('lincoz_users');
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_USERS;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Merge missing users from INITIAL_USERS and ensure defaults
+        const existingIds = new Set(parsed.map(u => u.id));
+        const missingUsers = INITIAL_USERS.filter(u => !existingIds.has(u.id));
+        const merged = [...parsed, ...missingUsers].map(u => {
+          const isPercentage = u.compensationType === 'PERCENTAGE' || u.role === 'PARTNER';
+          const defaultSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
+          return {
+            ...u,
+            workMode: u.workMode || (u.role === 'ONSITE_MEMBER' ? 'ONSITE' : 'REMOTE'),
+            compensationType: isPercentage ? 'PERCENTAGE' : 'SALARIED',
+            salary: !isPercentage ? (u.salary || defaultSalary) : undefined,
+            percentage: isPercentage ? (u.percentage || 15.0) : undefined
+          };
+        });
+        return merged;
+      }
+      return INITIAL_USERS;
     } catch (e) {
       return INITIAL_USERS;
     }
@@ -110,11 +132,61 @@ export const AppProvider = ({ children }) => {
     }
   });
 
+  const [clientInvoices, setClientInvoices] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_client_invoices');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CLIENT_INVOICES;
+    } catch (e) {
+      return INITIAL_CLIENT_INVOICES;
+    }
+  });
+
+  const [clientPayments, setClientPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_client_payments');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CLIENT_PAYMENTS;
+    } catch (e) {
+      return INITIAL_CLIENT_PAYMENTS;
+    }
+  });
+
+  const [sourcePayouts, setSourcePayouts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_source_payouts');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_SOURCE_PAYOUTS;
+    } catch (e) {
+      return INITIAL_SOURCE_PAYOUTS;
+    }
+  });
+
+  const [directExpensesList, setDirectExpensesList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_direct_expenses');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_DIRECT_EXPENSES;
+    } catch (e) {
+      return INITIAL_DIRECT_EXPENSES;
+    }
+  });
+
+  const [expenseCategories, setExpenseCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_expense_categories');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EXPENSE_CATEGORIES;
+    } catch (e) {
+      return INITIAL_EXPENSE_CATEGORIES;
+    }
+  });
+
   const INITIAL_NOTIFICATIONS = [
     {
       id: 'notif-1',
       title: 'Disbursement Authorization Pending',
-      message: 'Milestone 2 payout for David Vance ($6,000.00) requires Super Admin Step-2 signature.',
+      message: 'Deliverable payout for David Vance ($6,000.00) requires Super Admin Step-2 signature.',
       type: 'warning',
       timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       read: false,
@@ -123,8 +195,8 @@ export const AppProvider = ({ children }) => {
     },
     {
       id: 'notif-2',
-      title: 'Project Milestone Nearing Due Date',
-      message: 'Milestone 2 for Quantum Ledger Node is scheduled for review.',
+      title: 'Project Deliverable Nearing Due Date',
+      message: 'Deliverables for Quantum Ledger Node are scheduled for review.',
       type: 'info',
       timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
       read: false,
@@ -145,7 +217,7 @@ export const AppProvider = ({ children }) => {
     {
       id: 'notif-4',
       title: 'Contractor Commission Agreement Active',
-      message: 'Your 22.5% milestone commission model for Decentralized Identity Vault is active.',
+      message: 'Your 22.5% direct project commission model for Decentralized Identity Vault is active.',
       type: 'success',
       timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
       read: false,
@@ -174,6 +246,77 @@ export const AppProvider = ({ children }) => {
       return INITIAL_CLIENTS_DIRECTORY;
     }
   });
+
+  // Selected Month Filter for Global Monthly Financial Calculations
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_selected_month');
+      return (saved && saved !== 'undefined') ? saved : '2026-10';
+    } catch (e) {
+      return '2026-10';
+    }
+  });
+
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set(['2026-10', '2026-09', '2026-08', '2026-07', '2026-06']);
+    
+    // Scan all transactions
+    (clientInvoices || []).forEach(i => {
+      const d = i.issueDate || i.date;
+      if (d && d.length >= 7) monthSet.add(d.slice(0, 7));
+    });
+    (clientPayments || []).forEach(p => {
+      const d = p.paymentDate || p.date;
+      if (d && d.length >= 7) monthSet.add(d.slice(0, 7));
+    });
+    (sourcePayouts || []).forEach(s => {
+      const d = s.payoutDate || s.date;
+      if (d && d.length >= 7) monthSet.add(d.slice(0, 7));
+    });
+    (directExpensesList || []).forEach(e => {
+      const d = e.expenseDate || e.date;
+      if (d && d.length >= 7) monthSet.add(d.slice(0, 7));
+    });
+    (payoutLedger || []).forEach(pl => {
+      const d = pl.step2AuthorizedAt ? pl.step2AuthorizedAt.split('T')[0] : (pl.date || pl.createdAt);
+      if (d && d.length >= 7) monthSet.add(d.slice(0, 7));
+    });
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const sorted = Array.from(monthSet).sort().reverse();
+    const list = [
+      { id: 'ALL', value: 'ALL', label: 'All Time (Full Ledger History)' }
+    ];
+
+    sorted.forEach(m => {
+      const parts = m.split('-');
+      if (parts.length === 2) {
+        const year = parts[0];
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        const name = monthNames[monthIndex] || parts[1];
+        const isCurrent = m === '2026-10';
+        list.push({
+          id: m,
+          value: m,
+          label: `${name} ${year}${isCurrent ? ' (Current Month)' : ''}`
+        });
+      }
+    });
+
+    return list;
+  }, [clientInvoices, clientPayments, sourcePayouts, directExpensesList, payoutLedger]);
+
+  useEffect(() => {
+    try {
+      if (selectedMonth) {
+        localStorage.setItem('lincoz_selected_month', selectedMonth);
+      }
+    } catch (e) {}
+  }, [selectedMonth]);
 
   // Sync to local storage
   useEffect(() => {
@@ -229,6 +372,36 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('lincoz_clients_directory', JSON.stringify(clients));
     } catch (e) {}
   }, [clients]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_client_invoices', JSON.stringify(clientInvoices));
+    } catch (e) {}
+  }, [clientInvoices]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_client_payments', JSON.stringify(clientPayments));
+    } catch (e) {}
+  }, [clientPayments]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_source_payouts', JSON.stringify(sourcePayouts));
+    } catch (e) {}
+  }, [sourcePayouts]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_direct_expenses', JSON.stringify(directExpensesList));
+    } catch (e) {}
+  }, [directExpensesList]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_expense_categories', JSON.stringify(expenseCategories));
+    } catch (e) {}
+  }, [expenseCategories]);
 
   const currentUser = users.find(u => u.id === currentUserId) || users[0] || {
     id: 'usr-admin',
@@ -610,7 +783,6 @@ export const AppProvider = ({ children }) => {
       grossInvoiced: 0,
       accountsReceivable: 0,
       directExpenses: 0,
-      milestones: [],
       assignedTeamIds: ['usr-pm', currentUser.id],
       ...projectData
     };
@@ -642,6 +814,20 @@ export const AppProvider = ({ children }) => {
   const updateProject = (projectId, updates) => {
     let oldProj = null;
     let newProj = null;
+
+    if (updates.totalContractValue !== undefined) {
+      const existing = projects.find(p => p.id === projectId);
+      const newTcv = Number(updates.totalContractValue) || 0;
+      const currentGross = Number(existing?.grossInvoiced) || 0;
+      if (newTcv < currentGross) {
+        pushNotification(
+          'Invalid Contract Value',
+          `Total contract value ($${newTcv.toLocaleString()}) cannot be less than already invoiced amount ($${currentGross.toLocaleString()}).`,
+          'error'
+        );
+        return false;
+      }
+    }
 
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
@@ -773,52 +959,378 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const authorizeDisbursementStep2 = (payoutId, customRef, authPasscode) => {
+  const authorizeDisbursementStep2 = (payoutId, customRef, authPasscode, payoutItemMeta = null) => {
     if (currentUser.role !== 'SUPER_ADMIN') {
-      alert('Security Policy Violation: Only Super Admin (Owner) has authorization to sign-off and disburse contractor funds.');
+      alert('Security Policy Violation: Only Super Admin (Owner) has authorization to sign-off and record settlements.');
       return false;
     }
 
-    let updatedItem = null;
     const txRef = customRef || `TX-AUTH-${Math.random().toString(36).substring(2, 9).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    let updatedItem = null;
 
-    setPayoutLedger(prev => prev.map(p => {
-      if (p.id === payoutId) {
+    setPayoutLedger(prev => {
+      const exists = prev.some(p => p.id === payoutId);
+      if (exists) {
+        return prev.map(p => {
+          if (p.id === payoutId) {
+            updatedItem = {
+              ...p,
+              status: 'DISBURSED',
+              step2AuthorizedBy: currentUser.id,
+              step2AuthorizedAt: new Date().toISOString(),
+              disbursementRef: txRef
+            };
+            return updatedItem;
+          }
+          return p;
+        });
+      } else {
+        const payeeName = payoutItemMeta?.contractorName || payoutItemMeta?.employeeName || 'Staff Member';
+        const amount = payoutItemMeta?.calculatedPayoutAmount || payoutItemMeta?.monthlyAmount || 10000;
+        const projName = payoutItemMeta?.projectName || 'Company Payroll';
+        const channel = payoutItemMeta?.disbursementChannel || 'Direct Deposit / Bank ACH';
+
         updatedItem = {
-          ...p,
+          id: payoutId,
+          contractorId: payoutItemMeta?.employeeId || payoutItemMeta?.contractorId || 'usr-staff',
+          contractorName: payeeName,
+          projectId: payoutItemMeta?.projectId || 'payroll',
+          projectName: projName,
+          deliverableTitle: payoutItemMeta?.deliverableTitle || payoutItemMeta?.period || 'Project Deliverable Settlement',
+          calculatedPayoutAmount: amount,
           status: 'DISBURSED',
+          step1ApprovedBy: currentUser.id,
+          step1ApprovedAt: new Date().toISOString(),
           step2AuthorizedBy: currentUser.id,
           step2AuthorizedAt: new Date().toISOString(),
-          disbursementRef: txRef
+          disbursementRef: txRef,
+          disbursementChannel: channel
         };
-        return updatedItem;
+        return [updatedItem, ...prev];
+      }
+    });
+
+    const payeeName = payoutItemMeta?.contractorName || payoutItemMeta?.employeeName || 'Staff Member';
+    const amount = payoutItemMeta?.calculatedPayoutAmount || payoutItemMeta?.monthlyAmount || 0;
+    const channel = payoutItemMeta?.disbursementChannel || 'Bank Wire';
+
+    recordAuditLog({
+      projectId: payoutItemMeta?.projectId || null,
+      projectName: payoutItemMeta?.projectName || 'Company Financial Settlement',
+      actionType: 'PAYOUT_DISBURSED',
+      itemText: `Super Admin logged payment settlement for ${payeeName} ($${Number(amount).toLocaleString()}) [Ref: ${txRef}]`,
+      previousState: { status: 'APPROVED' },
+      newState: { status: 'DISBURSED', disbursementRef: txRef, authorizedBy: currentUser.name }
+    });
+
+    pushNotification(
+      'Payment Settlement Logged',
+      `Payment ($${Number(amount).toLocaleString()}) logged for ${payeeName} via ${channel}. Reference: ${txRef}`,
+      'success',
+      {
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+        targetUserId: payoutItemMeta?.employeeId || payoutItemMeta?.contractorId
+      }
+    );
+
+    return true;
+  };
+
+  const addClientInvoice = (invoiceData) => {
+    const project = projects.find(p => p.id === invoiceData.projectId);
+    const amount = Number(invoiceData.amount) || 0;
+
+    if (amount <= 0) {
+      pushNotification('Invalid Amount', 'Invoice amount must be greater than zero.', 'error');
+      return { success: false, error: 'Invoice amount must be greater than zero.' };
+    }
+
+    // Commercial Rule: Cumulative invoices must not exceed the project's total contract value
+    const totalContractValue = Number(project?.totalContractValue) || 0;
+    const currentTotalInvoiced = (clientInvoices || [])
+      .filter(i => i.projectId === invoiceData.projectId)
+      .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
+    const projectedTotal = currentTotalInvoiced + amount;
+
+    if (totalContractValue > 0 && projectedTotal > totalContractValue) {
+      const remainingAllowed = Math.max(0, totalContractValue - currentTotalInvoiced);
+      pushNotification(
+        'Invoice Cap Exceeded',
+        `Invoice for $${amount.toLocaleString()} rejected. Total invoiced would reach $${projectedTotal.toLocaleString()}, exceeding the project contract value of $${totalContractValue.toLocaleString()}. Remaining allowance: $${remainingAllowed.toLocaleString()}.`,
+        'error'
+      );
+      return {
+        success: false,
+        error: `Total invoice amount ($${projectedTotal.toLocaleString()}) would exceed the project's total value ($${totalContractValue.toLocaleString()}). Maximum remaining allowed: $${remainingAllowed.toLocaleString()}.`
+      };
+    }
+
+    const newInvoice = {
+      id: 'inv-' + Date.now(),
+      _createdTimestamp: Date.now(),
+      createdAt: new Date().toISOString(),
+      projectId: invoiceData.projectId,
+      projectName: invoiceData.projectName || project?.name || 'Client Project',
+      clientName: invoiceData.clientName || project?.clientName || 'Client Organization',
+      invoiceNumber: invoiceData.invoiceNumber || `INV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      amount,
+      issueDate: invoiceData.issueDate || new Date().toISOString().split('T')[0],
+      dueDate: invoiceData.dueDate || '2026-11-30',
+      status: invoiceData.status || 'PENDING',
+      notes: invoiceData.notes || 'Invoiced client for project deliverables.'
+    };
+
+    setClientInvoices(prev => [newInvoice, ...prev]);
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === newInvoice.projectId) {
+        const updatedGross = (p.grossInvoiced || 0) + amount;
+        const updatedAR = (p.accountsReceivable || 0) + amount;
+        return { ...p, grossInvoiced: updatedGross, accountsReceivable: updatedAR };
       }
       return p;
     }));
 
-    if (updatedItem) {
-      recordAuditLog({
-        projectId: updatedItem.projectId,
-        projectName: updatedItem.projectName,
-        actionType: 'PAYOUT_DISBURSED',
-        itemText: `Super Admin executed 2-Step Disbursement Authorization for ${updatedItem.contractorName} ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) [Ref: ${txRef}]`,
-        previousState: { status: 'APPROVED' },
-        newState: { status: 'DISBURSED', disbursementRef: txRef, authorizedBy: currentUser.name }
-      });
+    recordAuditLog({
+      projectId: newInvoice.projectId,
+      projectName: newInvoice.projectName,
+      actionType: 'INVOICE_GENERATED',
+      itemText: `Logged Client Invoice ${newInvoice.invoiceNumber} for $${amount.toLocaleString()} on ${newInvoice.projectName}`,
+      previousState: null,
+      newState: newInvoice
+    });
 
-      pushNotification(
-        'Disbursement Authorized & Disbursed',
-        `Funds ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) disbursed to ${updatedItem.contractorName} via ${updatedItem.disbursementChannel}. Reference: ${txRef}`,
-        'success',
-        {
-          projectId: updatedItem.projectId,
-          targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
-          targetUserId: updatedItem.contractorId
-        }
-      );
-      return true;
+    pushNotification(
+      'Client Invoice Recorded',
+      `Invoice ${newInvoice.invoiceNumber} ($${amount.toLocaleString()}) recorded for ${newInvoice.projectName}.`,
+      'success'
+    );
+
+    return { success: true, invoice: newInvoice };
+  };
+
+  const addClientPayment = (paymentData) => {
+    const project = projects.find(p => p.id === paymentData.projectId);
+    const amount = Number(paymentData.amount) || 0;
+    const newPayment = {
+      id: 'payin-' + Date.now(),
+      _createdTimestamp: Date.now(),
+      createdAt: new Date().toISOString(),
+      projectId: paymentData.projectId,
+      projectName: paymentData.projectName || project?.name || 'Client Project',
+      clientName: paymentData.clientName || project?.clientName || 'Client Organization',
+      amount,
+      paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+      paymentMethod: paymentData.paymentMethod || 'Bank Wire Transfer',
+      referenceNumber: paymentData.referenceNumber || `TX-IN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      notes: paymentData.notes || 'Received client payment towards project delivery.'
+    };
+
+    setClientPayments(prev => [newPayment, ...prev]);
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === newPayment.projectId) {
+        const updatedAR = Math.max(0, (p.accountsReceivable || 0) - amount);
+        return { ...p, accountsReceivable: updatedAR };
+      }
+      return p;
+    }));
+
+    recordAuditLog({
+      projectId: newPayment.projectId,
+      projectName: newPayment.projectName,
+      actionType: 'PAYMENT_RECEIVED',
+      itemText: `Received Client Payment (Pay-In) of $${amount.toLocaleString()} for ${newPayment.projectName} [Ref: ${newPayment.referenceNumber}]`,
+      previousState: null,
+      newState: newPayment
+    });
+
+    pushNotification(
+      'Client Payment Received (Pay-In)',
+      `Pay-In of $${amount.toLocaleString()} received from ${newPayment.clientName} for ${newPayment.projectName}.`,
+      'success'
+    );
+  };
+
+  const addSourcePayout = (payoutData) => {
+    const project = projects.find(p => p.id === payoutData.projectId);
+    const amount = Number(payoutData.amount) || 0;
+    const pDate = payoutData.payoutDate || payoutData.paymentDate || payoutData.date || new Date().toISOString().split('T')[0];
+    const newPayout = {
+      id: 'src-' + Date.now(),
+      _createdTimestamp: Date.now(),
+      createdAt: new Date().toISOString(),
+      projectId: payoutData.projectId,
+      projectName: payoutData.projectName || project?.name || 'Project',
+      sourceName: payoutData.sourceName || 'Source / Referral Partner',
+      amount,
+      payoutDate: pDate,
+      date: pDate,
+      status: payoutData.status || 'DISBURSED',
+      paymentMethod: payoutData.paymentMethod || 'Direct Wire Transfer',
+      referenceNumber: payoutData.referenceNumber || `SRC-TX-${Date.now().toString().slice(-4)}`,
+      notes: payoutData.notes || 'Origination / referral commission for project.'
+    };
+
+    setSourcePayouts(prev => [newPayout, ...prev]);
+
+    recordAuditLog({
+      projectId: newPayout.projectId,
+      projectName: newPayout.projectName,
+      actionType: 'SOURCE_PAYOUT_LOGGED',
+      itemText: `Disbursed $${amount.toLocaleString()} Source Referral Fee to ${newPayout.sourceName} on ${newPayout.projectName}`,
+      previousState: null,
+      newState: newPayout
+    });
+
+    pushNotification(
+      'Source Payout Logged',
+      `Source fee of $${amount.toLocaleString()} disbursed to ${newPayout.sourceName}.`,
+      'success'
+    );
+  };
+
+  const addPercentagePayout = (payoutData) => {
+    const isSalaried = payoutData.isSalaried || payoutData.payoutType === 'SALARIED' || payoutData.agreementModel === 'FIXED_SALARY';
+    const project = projects.find(p => p.id === payoutData.projectId);
+    const contractor = users.find(u => u.id === payoutData.contractorId);
+    const amount = Number(payoutData.amount) || 0;
+    const projectTcv = payoutData.projectTotalValue || project?.totalContractValue || (isSalaried ? 0 : 100000);
+    const sharePercentage = isSalaried ? 0 : (payoutData.agreementPercentage || contractor?.percentage || 15.0);
+    const pDate = payoutData.payoutDate || payoutData.paymentDate || payoutData.date || new Date().toISOString().split('T')[0];
+
+    const newRecord = {
+      id: (isSalaried ? 'salary-' : 'payout-') + Date.now(),
+      _createdTimestamp: Date.now(),
+      contractorId: payoutData.contractorId || contractor?.id || (isSalaried ? 'usr-staff' : 'usr-partner-1'),
+      contractorName: payoutData.contractorName || contractor?.name || (isSalaried ? 'Salaried Employee' : 'Percentage-Based Employee'),
+      employeeId: payoutData.contractorId || contractor?.id,
+      employeeName: payoutData.contractorName || contractor?.name,
+      projectId: payoutData.projectId || (isSalaried ? 'INTERNAL' : undefined),
+      projectName: payoutData.projectName || (isSalaried ? 'Company Payroll' : project?.name || 'Project'),
+      deliverableTitle: payoutData.deliverableTitle || (isSalaried ? 'Monthly Payroll Settlement' : 'Project Share Payout'),
+      agreementModel: isSalaried ? 'FIXED_SALARY' : (payoutData.agreementModel || 'PROJECT_DIRECT_SHARE'),
+      agreementPercentage: sharePercentage,
+      projectTotalValue: projectTcv,
+      calculatedPayoutAmount: amount,
+      amount,
+      payoutDate: pDate,
+      date: pDate,
+      month: payoutData.month || pDate.slice(0, 7),
+      totalProjectShare: isSalaried ? amount : (payoutData.totalProjectShare || Math.round(projectTcv * (sharePercentage / 100))),
+      status: payoutData.status || 'DISBURSED',
+      step1ApprovedBy: currentUser.id,
+      step1ApprovedAt: `${pDate}T12:00:00.000Z`,
+      step2AuthorizedBy: currentUser.id,
+      step2AuthorizedAt: `${pDate}T12:00:00.000Z`,
+      createdAt: new Date().toISOString(),
+      disbursementRef: payoutData.disbursementRef || `${isSalaried ? 'ACH-PAYROLL' : 'TX-SHARE'}-${Date.now().toString().slice(-4)}`,
+      disbursementChannel: payoutData.disbursementChannel || (isSalaried ? 'Direct Deposit / Bank ACH' : 'Wise Multi-Currency Wire'),
+      notes: payoutData.notes || (isSalaried ? 'Fixed monthly salary payroll settlement.' : 'Project percentage share settlement.'),
+      isSalaried: !!isSalaried,
+      payoutType: isSalaried ? 'SALARIED' : 'PERCENTAGE'
+    };
+
+    setPayoutLedger(prev => [newRecord, ...prev]);
+
+    recordAuditLog({
+      projectId: newRecord.projectId,
+      projectName: newRecord.projectName,
+      actionType: 'PAYOUT_DISBURSED',
+      itemText: isSalaried
+        ? `Disbursed Monthly Salary Payout of $${amount.toLocaleString()} to ${newRecord.contractorName}`
+        : `Disbursed Project Share Payout of $${amount.toLocaleString()} to ${newRecord.contractorName} for ${newRecord.projectName}`,
+      previousState: null,
+      newState: newRecord
+    });
+
+    pushNotification(
+      isSalaried ? 'Monthly Salary Logged' : 'Percentage Share Payout Logged',
+      `Disbursed $${amount.toLocaleString()} to ${newRecord.contractorName} (${isSalaried ? 'Fixed Salary' : newRecord.projectName}).`,
+      'success'
+    );
+  };
+
+  const addDirectExpense = (expenseData) => {
+    const amount = Number(expenseData.amount) || 0;
+    const expDate = expenseData.expenseDate || expenseData.date || (expenseData.month ? `${expenseData.month}-15` : new Date().toISOString().split('T')[0]);
+    const expMonth = expenseData.month || expDate.slice(0, 7);
+
+    const newExpense = {
+      id: 'exp-' + Date.now(),
+      _createdTimestamp: Date.now(),
+      createdAt: new Date().toISOString(),
+      month: expMonth,
+      category: expenseData.category || 'Cloud Infrastructure & Security',
+      vendor: expenseData.vendor || 'Infrastructure Vendor',
+      amount,
+      expenseDate: expDate,
+      date: expDate,
+      projectName: expenseData.projectName || 'General Operations',
+      projectId: expenseData.projectId || 'GENERAL',
+      receiptRef: expenseData.receiptRef || `REC-${Math.floor(1000 + Math.random() * 9000)}`,
+      status: expenseData.status || 'PAID',
+      notes: expenseData.notes || 'Monthly operational infrastructure expense.'
+    };
+
+    setDirectExpensesList(prev => [newExpense, ...prev]);
+
+    recordAuditLog({
+      actionType: 'DIRECT_EXPENSE_LOGGED',
+      itemText: `Recorded Monthly Expense of $${amount.toLocaleString()} (${newExpense.category} - ${newExpense.vendor}) for ${newExpense.month}`,
+      previousState: null,
+      newState: newExpense
+    });
+
+    pushNotification(
+      'Monthly Expense Recorded',
+      `Expense of $${amount.toLocaleString()} recorded for ${newExpense.month} (${newExpense.category}).`,
+      'success'
+    );
+  };
+
+  const deleteTransaction = (type, id) => {
+    if (type === 'INVOICE') {
+      const invToDelete = clientInvoices.find(i => i.id === id);
+      if (invToDelete) {
+        setClientInvoices(prev => prev.filter(i => i.id !== id));
+        setProjects(prev => prev.map(p => {
+          if (p.id === invToDelete.projectId) {
+            const arDecrease = invToDelete.status === 'PAID' ? 0 : (invToDelete.amount || 0);
+            return {
+              ...p,
+              grossInvoiced: Math.max(0, (p.grossInvoiced || 0) - (invToDelete.amount || 0)),
+              accountsReceivable: Math.max(0, (p.accountsReceivable || 0) - arDecrease)
+            };
+          }
+          return p;
+        }));
+      }
+    } else if (type === 'PAYMENT' || type === 'PAYMENT_IN') {
+      const payToDelete = clientPayments.find(p => p.id === id);
+      if (payToDelete) {
+        setClientPayments(prev => prev.filter(p => p.id !== id));
+        setProjects(prev => prev.map(p => {
+          if (p.id === payToDelete.projectId) {
+            return {
+              ...p,
+              accountsReceivable: (p.accountsReceivable || 0) + (payToDelete.amount || 0)
+            };
+          }
+          return p;
+        }));
+      }
+    } else if (type === 'SOURCE' || type === 'SOURCE_PAYOUT') {
+      setSourcePayouts(prev => prev.filter(s => s.id !== id));
+    } else if (type === 'EXPENSE' || type === 'DIRECT_EXPENSE') {
+      const expToDelete = directExpensesList.find(e => e.id === id);
+      if (expToDelete) {
+        setDirectExpensesList(prev => prev.filter(e => e.id !== id));
+      }
+    } else if (type === 'PERCENTAGE' || type === 'PERCENTAGE_PAYOUT' || type === 'EMPLOYEE' || type === 'SALARIED' || type === 'SALARIED_PAYOUT') {
+      setPayoutLedger(prev => prev.filter(p => p.id !== id));
     }
-    return false;
   };
 
   const createUser = (userData) => {
@@ -826,35 +1338,27 @@ export const AppProvider = ({ children }) => {
       id: 'usr-' + Date.now(),
       avatar: `https://images.unsplash.com/photo-${1530000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
       isMfaEnabled: userData.role === 'SUPER_ADMIN',
+      workMode: userData.workMode || 'ONSITE',
+      compensationType: userData.compensationType || 'SALARIED',
       ...userData
     };
 
     setUsers(prev => [...prev, newUser]);
 
-    if (userData.role === 'PARTNER') {
-      const newContractor = {
-        userId: newUser.id,
-        legalName: userData.legalName || `${newUser.name} Solutions`,
-        taxClassification: userData.taxClassification || 'Individual / Contractor',
-        taxId: userData.taxId || 'PENDING-TAX-ID',
-        country: userData.country || 'Remote',
-        defaultPayoutChannel: userData.payoutChannel || 'Wise Wire Transfer',
-        payoutDetails: userData.payoutDetails || 'wise://account',
-        agreements: []
-      };
-      setContractors(prev => [...prev, newContractor]);
-    }
+    const compSummary = newUser.compensationType === 'PERCENTAGE'
+      ? `${newUser.percentage || 15}% Share`
+      : newUser.salary ? `$${Number(newUser.salary).toLocaleString()}/yr` : 'Salaried';
 
     recordAuditLog({
       actionType: 'USER_PROVISIONED',
-      itemText: `Provisioned new system user "${newUser.name}" (Role: ${newUser.role}${newUser.salary ? `, Salary: $${Number(newUser.salary).toLocaleString()}/yr` : ''})`,
+      itemText: `Provisioned new employee "${newUser.name}" (${newUser.workMode === 'REMOTE' ? 'Remote' : 'On-Site'}, ${compSummary})`,
       previousState: null,
       newState: newUser
     });
 
     pushNotification(
-      'User Provisioned',
-      `New user "${newUser.name}" (${newUser.role}) added to the platform.`,
+      'Employee Provisioned',
+      `New employee "${newUser.name}" (${newUser.workMode === 'REMOTE' ? 'Remote' : 'On-Site'}, ${compSummary}) added to the platform.`,
       'success',
       {
         targetRoles: ['SUPER_ADMIN'],
@@ -979,6 +1483,72 @@ export const AppProvider = ({ children }) => {
     return [];
   };
 
+  const addExpenseCategory = (catData) => {
+    if (!catData || !catData.name) return null;
+    const newCat = {
+      id: 'exp-cat-' + Date.now(),
+      name: catData.name.trim(),
+      description: catData.description ? catData.description.trim() : '',
+      createdAt: new Date().toISOString()
+    };
+    setExpenseCategories(prev => [newCat, ...prev]);
+    recordAuditLog({
+      actionType: 'CREATED',
+      itemText: `Created Expense Category "${newCat.name}"`,
+      previousState: null,
+      newState: newCat
+    });
+    pushNotification(
+      'Expense Created',
+      `Expense "${newCat.name}" added to system categories.`,
+      'success'
+    );
+    return newCat;
+  };
+
+  const updateExpenseCategory = (id, updates) => {
+    let updated = null;
+    let old = null;
+    setExpenseCategories(prev => prev.map(c => {
+      if (c.id === id) {
+        old = c;
+        updated = { ...c, ...updates };
+        return updated;
+      }
+      return c;
+    }));
+    if (updated) {
+      recordAuditLog({
+        actionType: 'MODIFIED',
+        itemText: `Updated Expense Category "${updated.name}"`,
+        previousState: old,
+        newState: updated
+      });
+      pushNotification(
+        'Expense Updated',
+        `Expense "${updated.name}" was updated.`,
+        'info'
+      );
+    }
+  };
+
+  const deleteExpenseCategory = (id) => {
+    const target = expenseCategories.find(c => c.id === id);
+    if (!target) return;
+    setExpenseCategories(prev => prev.filter(c => c.id !== id));
+    recordAuditLog({
+      actionType: 'DELETED',
+      itemText: `Deleted Expense Category "${target.name}"`,
+      previousState: target,
+      newState: null
+    });
+    pushNotification(
+      'Expense Deleted',
+      `Expense "${target.name}" removed from categories.`,
+      'info'
+    );
+  };
+
   const resetToDefaults = () => {
     try {
       localStorage.clear();
@@ -992,6 +1562,11 @@ export const AppProvider = ({ children }) => {
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setNotifications(INITIAL_NOTIFICATIONS);
     setClients(INITIAL_CLIENTS_DIRECTORY);
+    setClientInvoices(INITIAL_CLIENT_INVOICES);
+    setClientPayments(INITIAL_CLIENT_PAYMENTS);
+    setSourcePayouts(INITIAL_SOURCE_PAYOUTS);
+    setDirectExpensesList(INITIAL_DIRECT_EXPENSES);
+    setExpenseCategories(INITIAL_EXPENSE_CATEGORIES);
     pushNotification('System Reset', 'All data restored to default initial state.', 'info', { isGlobal: true });
   };
 
@@ -1040,52 +1615,130 @@ export const AppProvider = ({ children }) => {
     return filtered.filter(t => t.assigneeId === currentUser.id);
   };
 
-  const getScopedFinancials = () => {
+  const getScopedFinancials = (monthFilter = selectedMonth) => {
     if (isSuperAdmin()) {
+      const isAllMonths = !monthFilter || monthFilter === 'ALL';
+
+      const matchesMonth = (dateStr, monthStr) => {
+        if (isAllMonths) return true;
+        if (monthStr && monthStr === monthFilter) return true;
+        if (!dateStr) return false;
+        return dateStr.startsWith(monthFilter);
+      };
+
+      const filteredInvoices = (clientInvoices || []).filter(i => matchesMonth(i.issueDate || i.date || i.invoiceDate));
+      const filteredPayments = (clientPayments || []).filter(p => matchesMonth(p.paymentDate || p.date));
+      const filteredSourcePayouts = (sourcePayouts || []).filter(s => matchesMonth(s.payoutDate || s.date));
+      const filteredDirectExpenses = (directExpensesList || []).filter(e => matchesMonth(e.expenseDate || e.date, e.month));
+      const filteredPayoutLedger = (payoutLedger || []).filter(p => {
+        const dateStr = p.step2AuthorizedAt ? p.step2AuthorizedAt.split('T')[0] : (p.date || p.createdAt || '2026-10-01');
+        return matchesMonth(dateStr);
+      });
+
       const totalContractValue = (projects || []).reduce((sum, p) => sum + (p.totalContractValue || 0), 0);
-      const grossInvoiced = (projects || []).reduce((sum, p) => sum + (p.grossInvoiced || 0), 0);
-      const accountsReceivable = (projects || []).reduce((sum, p) => sum + (p.accountsReceivable || 0), 0);
-      const directExpenses = (projects || []).reduce((sum, p) => sum + (p.directExpenses || 0), 0);
-      
-      const accruedLiabilities = (payoutLedger || [])
+      const grossInvoiced = filteredInvoices.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalCollected = filteredPayments.reduce((sum, pay) => sum + (pay.amount || 0), 0);
+      const accountsReceivable = filteredInvoices.filter(i => i.status !== 'PAID').reduce((sum, i) => sum + (i.amount || 0), 0);
+      const directExpenses = filteredDirectExpenses.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      const totalSourcePayouts = filteredSourcePayouts.reduce((sum, src) => sum + (src.amount || 0), 0);
+      const totalPercentagePayouts = filteredPayoutLedger.reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+
+      const accruedLiabilities = filteredPayoutLedger
         .filter(p => p.status === 'ACCRUING' || p.status === 'INVOICED' || p.status === 'APPROVED')
         .reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
 
-      const totalDisbursed = (payoutLedger || [])
+      const totalDisbursed = filteredPayoutLedger
         .filter(p => p.status === 'DISBURSED')
-        .reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+        .reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0) +
+        filteredSourcePayouts.filter(s => s.status === 'DISBURSED').reduce((sum, s) => sum + (s.amount || 0), 0);
+
+      // Monthly Salaried commitments
+      const salariedStaff = (users || []).filter(u => u.compensationType !== 'PERCENTAGE' && u.role !== 'PARTNER');
+      const totalMonthlySalaries = salariedStaff.reduce((sum, u) => {
+        const defaultSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
+        return sum + Math.round((u.salary || defaultSalary) / 12);
+      }, 0);
+
+      const totalOutflows = directExpenses + totalSourcePayouts + totalPercentagePayouts;
+      const totalPayroll = totalMonthlySalaries + totalPercentagePayouts;
+      const netMonthlyCashflow = totalCollected - totalOutflows - totalMonthlySalaries;
+      const totalMonthlyProfit = grossInvoiced - directExpenses - totalMonthlySalaries - totalPercentagePayouts - totalSourcePayouts;
+      const totalProfitMarginPercent = grossInvoiced > 0 ? Math.round((totalMonthlyProfit / grossInvoiced) * 100) : 0;
+      const netProjectGrossProfit = grossInvoiced - directExpenses - totalSourcePayouts - totalPercentagePayouts;
+      const netOperatingMargin = grossInvoiced > 0 ? Math.round((netProjectGrossProfit / grossInvoiced) * 100) : 0;
 
       return {
         roleAllowed: true,
         canAuthorizeDisbursement: true,
         canEditCalculations: true,
+        selectedMonth: monthFilter,
         totalContractValue,
+        // Overall Company Financials Core Indicators
+        totalIncome: totalCollected,
+        monthlyInvoiced: grossInvoiced,
+        monthlyExpense: directExpenses,
+        payroll: totalPayroll,
+        fixedPayroll: totalMonthlySalaries,
+        variablePayroll: totalPercentagePayouts,
+        totalPayroll,
+        netCashFlow: netMonthlyCashflow,
+        totalMonthlyProfit,
+        totalProfitMarginPercent,
+        // Legacy / Component keys
         grossInvoiced,
+        totalCollected,
         accountsReceivable,
         directExpenses,
+        totalSourcePayouts,
+        totalPercentagePayouts,
+        totalMonthlySalaries,
+        totalOutflows,
         accruedLiabilities,
         totalDisbursed,
-        ledger: payoutLedger || []
+        netProjectGrossProfit,
+        netOperatingMargin,
+        netMonthlyCashflow,
+        invoices: filteredInvoices,
+        payments: filteredPayments,
+        sourcePayouts: filteredSourcePayouts,
+        directExpensesList: filteredDirectExpenses,
+        ledger: filteredPayoutLedger,
+        allInvoices: clientInvoices || [],
+        allPayments: clientPayments || [],
+        allSourcePayouts: sourcePayouts || [],
+        allDirectExpenses: directExpensesList || [],
+        allLedger: payoutLedger || []
       };
     }
 
     if (isPartner()) {
       const partnerLedger = (payoutLedger || []).filter(p => p.contractorId === currentUser.id);
-      const totalEarned = partnerLedger.reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
-      const totalDisbursed = partnerLedger.filter(p => p.status === 'DISBURSED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
-      const pendingDisbursement = partnerLedger.filter(p => p.status === 'APPROVED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
-      const unbilledAccruing = partnerLedger.filter(p => p.status === 'ACCRUING' || p.status === 'INVOICED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+      const isAllMonths = !monthFilter || monthFilter === 'ALL';
+      const filteredPartnerLedger = isAllMonths
+        ? partnerLedger
+        : partnerLedger.filter(p => {
+            const dateStr = p.step2AuthorizedAt ? p.step2AuthorizedAt.split('T')[0] : (p.date || p.createdAt || '2026-10-01');
+            return dateStr.startsWith(monthFilter);
+          });
+
+      const totalEarned = filteredPartnerLedger.reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+      const totalDisbursed = filteredPartnerLedger.filter(p => p.status === 'DISBURSED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+      const pendingDisbursement = filteredPartnerLedger.filter(p => p.status === 'APPROVED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
+      const unbilledAccruing = filteredPartnerLedger.filter(p => p.status === 'ACCRUING' || p.status === 'INVOICED').reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0);
 
       return {
         roleAllowed: true,
         isPartnerIsolated: true,
         canAuthorizeDisbursement: false,
         canEditCalculations: false,
+        selectedMonth: monthFilter,
         totalEarned,
         totalDisbursed,
         pendingDisbursement,
         unbilledAccruing,
-        ledger: partnerLedger
+        ledger: filteredPartnerLedger,
+        allLedger: partnerLedger
       };
     }
 
@@ -1213,6 +1866,9 @@ export const AppProvider = ({ children }) => {
       value={{
         theme,
         toggleTheme,
+        selectedMonth,
+        setSelectedMonth,
+        availableMonths,
         users,
         currentUser,
         currentUserId,
@@ -1228,6 +1884,25 @@ export const AppProvider = ({ children }) => {
         deleteClient,
         getScopedClients,
         payoutLedger,
+        clientInvoices,
+        setClientInvoices,
+        clientPayments,
+        setClientPayments,
+        sourcePayouts,
+        setSourcePayouts,
+        directExpensesList,
+        setDirectExpensesList,
+        expenseCategories,
+        setExpenseCategories,
+        addExpenseCategory,
+        updateExpenseCategory,
+        deleteExpenseCategory,
+        addClientInvoice,
+        addClientPayment,
+        addSourcePayout,
+        addPercentagePayout,
+        addDirectExpense,
+        deleteTransaction,
         auditLogs,
         notifications,
         pushNotification,

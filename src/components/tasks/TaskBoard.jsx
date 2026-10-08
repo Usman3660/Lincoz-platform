@@ -9,7 +9,7 @@ import { SubmitDeliverableModal } from './SubmitDeliverableModal';
 import {
   LayoutGrid,
   List,
-  Milestone,
+  Calendar,
   Plus,
   Filter,
   FolderKanban,
@@ -99,7 +99,7 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
                 Operational Task & Sprint Engine
               </h1>
               <p className="text-xs text-slate-400">
-                Interactive Kanban, Granular Verification Checklists, and Milestone Roadmap.
+                Interactive Kanban, Granular Verification Checklists, and Delivery Roadmap.
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Milestone className="w-3.5 h-3.5" /> Gantt
+              <Calendar className="w-3.5 h-3.5" /> Gantt
             </button>
           </div>
 

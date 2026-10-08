@@ -70,11 +70,14 @@ export const AddClientModal = ({ isOpen, onClose, initialCategory = 'CLIENT' }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto custom-scrollbar">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-fadeIn" onClick={onClose} />
+      
+      <div className="min-h-full flex items-start justify-center p-3 sm:p-5 pt-8 sm:pt-12 md:pt-14 pb-12">
+        <div className="relative w-full max-w-xl max-h-[85vh] flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#182234]/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#182234] border border-slate-700/80 text-indigo-400 flex items-center justify-center">
               {category === 'FREELANCER' ? <UserCheck className="w-5 h-5 text-emerald-400" /> : <Building2 className="w-5 h-5 text-indigo-400" />}
@@ -96,18 +99,20 @@ export const AddClientModal = ({ isOpen, onClose, initialCategory = 'CLIENT' }) 
           </button>
         </div>
 
-        {/* Category Switcher */}
-        <div className="px-6 pt-5">
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#182234] border border-slate-700/80">
-            <button
-              type="button"
-              onClick={() => { setCategory('CLIENT'); setErrors({}); }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                category === 'CLIENT'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {/* Category Switcher */}
+          <div className="px-6 pt-5">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#182234] border border-slate-700/80">
+              <button
+                type="button"
+                onClick={() => { setCategory('CLIENT'); setErrors({}); }}
+                className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  category === 'CLIENT'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
               <Building2 className="w-4 h-4" />
               Client
             </button>
@@ -272,8 +277,10 @@ export const AddClientModal = ({ isOpen, onClose, initialCategory = 'CLIENT' }) 
             </button>
           </div>
         </form>
+        </div>
 
       </div>
     </div>
+  </div>
   );
 };

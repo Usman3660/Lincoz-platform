@@ -19,7 +19,7 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
     setIsProcessing(true);
 
     setTimeout(() => {
-      const success = authorizeDisbursementStep2(payoutItem.id, customRef, authPin);
+      const success = authorizeDisbursementStep2(payoutItem.id, customRef, authPin, payoutItem);
       setIsProcessing(false);
       if (success) {
         try {
@@ -38,8 +38,8 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Step 2: Executive Disbursement Sign-Off"
-      subtitle="Final authorization by Super Admin before releasing funds to contractor payout channel."
+      title="Step 2: Record Payment Settlement"
+      subtitle="Record external bank wire, ACH, or check settlement reference into the company ledger."
       maxWidth="max-w-xl"
     >
       <form onSubmit={handleAuthorize} className="space-y-5">
@@ -49,12 +49,12 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-700/80">
             <div>
               <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
-                Authorized Recipient
+                Payee / Recipient
               </span>
               <h4 className="text-sm font-bold text-white">{payoutItem.contractorName}</h4>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Disbursement Amount</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Settlement Amount</span>
               <span className="text-xl font-extrabold text-emerald-400 font-mono">
                 ${payoutItem.calculatedPayoutAmount.toLocaleString()}
               </span>
@@ -63,13 +63,13 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Project & Milestone</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Project & Deliverable</span>
               <span className="text-white font-medium">{payoutItem.projectName}</span>
-              <span className="text-slate-400 block text-[11px] truncate">{payoutItem.milestoneTitle}</span>
+              <span className="text-slate-400 block text-[11px] truncate">{payoutItem.deliverableTitle || 'Project Deliverable'}</span>
             </div>
 
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Payout Destination</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Settlement Channel</span>
               <span className="text-white font-medium">{payoutItem.disbursementChannel}</span>
               <span className="text-indigo-300 text-[10px] font-mono">Step 1 Verified by PM</span>
             </div>
@@ -80,12 +80,13 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Bank / Blockchain Settlement Reference *
+              External Settlement Reference (Bank Wire / ACH / Check No.) *
             </label>
             <input
               type="text"
               value={customRef}
               onChange={(e) => setCustomRef(e.target.value)}
+              placeholder="e.g. WIRE-REF-98421 or CHK-4091"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
               required
             />
@@ -93,14 +94,14 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Super Admin Cryptographic Sign-Off Token (MFA) *
+              Super Admin Authorization Passcode *
             </label>
             <div className="relative">
               <input
                 type="password"
                 value={authPin}
                 onChange={(e) => setAuthPin(e.target.value)}
-                placeholder="Enter 4-digit Master Passkey"
+                placeholder="Enter Master Passcode"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white font-mono tracking-widest focus:outline-none focus:border-amber-500"
                 required
               />
@@ -119,7 +120,7 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
             required
           />
           <span className="text-xs text-slate-300 leading-snug select-none">
-            I, <strong>{currentUser.name} (Super Admin)</strong>, confirm that all deliverable criteria have been reviewed and authorize the non-reversible release of ${payoutItem.calculatedPayoutAmount.toLocaleString()} to {payoutItem.contractorName}.
+            I, <strong>{currentUser.name} (Super Admin)</strong>, confirm that the external payment of ${payoutItem.calculatedPayoutAmount.toLocaleString()} has been executed outside the platform and authorize logging this settlement into the permanent ledger.
           </span>
         </label>
 
@@ -138,7 +139,7 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-extrabold shadow-lg shadow-amber-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShieldCheck className="w-4 h-4" />
-            {isProcessing ? 'Authorizing Cryptographic Token...' : 'Authorize & Disburse Funds'}
+            {isProcessing ? 'Logging Record...' : 'Log & Finalize Settlement Record'}
           </button>
         </div>
 

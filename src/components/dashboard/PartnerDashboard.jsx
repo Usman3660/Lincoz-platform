@@ -26,12 +26,16 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
     toggleChecklistItem,
     updateTaskStatus,
     contractors,
-    projects
+    projects,
+    selectedMonth,
+    setSelectedMonth,
+    availableMonths = []
   } = useApp();
 
   const partnerTasks = getScopedTasks();
   const financials = getScopedFinancials();
   const contractorProfile = contractors.find(c => c.userId === currentUser.id);
+  const selectedMonthObj = availableMonths.find(m => m.id === selectedMonth) || { label: 'Current Month' };
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -41,22 +45,41 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-              <Lock className="w-3.5 h-3.5" /> Data-Isolated Contractor Portal & Ledger
+              <Lock className="w-3.5 h-3.5" /> Data-Isolated Contractor Portal & Ledger • {selectedMonthObj.label}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {contractorProfile?.legalName || currentUser.name}
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl">
-              Strictly scoped external partner workspace. Track your milestone percentage commissions in real-time and submit deliverable pull requests directly to project managers.
+              Strictly scoped external partner workspace. Track your project percentage commissions in real-time and submit deliverable pull requests directly to project managers.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#182234]/80 border border-amber-500/30 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 text-amber-400 font-bold">
-              <CreditCard className="w-4 h-4" /> Default Payout Channel
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Global Month Selector */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#182234] border border-amber-500/40 shadow-inner">
+              <DollarSign className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Month:</span>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              >
+                {availableMonths.map((m) => (
+                  <option key={m.id} value={m.id} className="bg-[#182234] text-white">
+                    {m.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <p className="text-white font-medium">{contractorProfile?.defaultPayoutChannel}</p>
-            <p className="text-slate-400 font-mono text-[10px]">Tax ID: {contractorProfile?.taxId}</p>
+
+            <div className="p-4 rounded-2xl bg-[#182234]/80 border border-amber-500/30 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                <CreditCard className="w-4 h-4" /> Default Payout Channel
+              </div>
+              <p className="text-white font-medium">{contractorProfile?.defaultPayoutChannel}</p>
+              <p className="text-slate-400 font-mono text-[10px]">Tax ID: {contractorProfile?.taxId}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -67,7 +90,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
           <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-amber-400" />
             <h2 className="text-base font-bold text-white uppercase tracking-wider">
-              Real-Time Milestone Commissions Ledger
+              Project Commissions Ledger • {selectedMonthObj.label}
             </h2>
           </div>
           <span className="text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 font-mono">
@@ -77,16 +100,16 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Total Milestone Earnings"
-            value={`$${financials.totalEarned.toLocaleString()}`}
-            subtitle="Accumulated across all milestones"
+            title="Total Earned Share"
+            value={`$${(financials.totalEarned || 0).toLocaleString()}`}
+            subtitle={`Earned in ${selectedMonthObj.label}`}
             icon={DollarSign}
             colorScheme="amber"
           />
           <StatsCard
             title="Funds Disbursed"
-            value={`$${financials.totalDisbursed.toLocaleString()}`}
-            subtitle="Received via Wire / Crypto"
+            value={`$${(financials.totalDisbursed || 0).toLocaleString()}`}
+            subtitle={`Settled in ${selectedMonthObj.label}`}
             icon={CheckCircle2}
             colorScheme="emerald"
             badgeText="Paid"
@@ -102,7 +125,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
           <StatsCard
             title="Accruing & Invoiced (WIP)"
             value={`$${financials.unbilledAccruing.toLocaleString()}`}
-            subtitle="Active deliverable milestones"
+            subtitle="Active project deliverables"
             icon={Sparkles}
             colorScheme="cyan"
           />
@@ -126,8 +149,8 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
         </div>
 
         <div className="p-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 text-xs font-mono text-indigo-300">
-          <span className="text-amber-400">Milestone Payout</span> = Billed Milestone Amount &times; (
-          <span className="text-emerald-400">Agreement %</span> / 100)
+          <span className="text-amber-400">Total Share</span> = <span className="text-white">Whole Project TCV</span> &times; (
+          <span className="text-emerald-400">Share %</span> / 100)
         </div>
       </div>
 
@@ -187,7 +210,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-slate-300 uppercase tracking-wider text-[10px]">
-                      Milestone Deliverable Checklist ({doneItems}/{totalItems})
+                      Task Deliverable Checklist ({doneItems}/{totalItems})
                     </span>
                     <span className="font-mono text-amber-400 font-semibold text-[11px]">
                       {totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0}%
@@ -255,7 +278,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
                   )}
                   {t.status === 'COMPLETED' && (
                     <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Approved & Milestone Completed
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Approved & Task Completed
                     </span>
                   )}
                 </div>

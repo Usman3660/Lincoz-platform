@@ -32,7 +32,7 @@ export const SubmitDeliverableModal = ({ isOpen, onClose, task }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Submit Milestone Deliverable"
+      title="Submit Task Deliverable"
       subtitle={`Submit proof of work for "${task.title}". This will transition task to Pending Review.`}
       maxWidth="max-w-lg"
     >

@@ -64,7 +64,6 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
   const [editDueDate, setEditDueDate] = useState('');
   const [editEstimatedHours, setEditEstimatedHours] = useState(10);
   const [editProjectId, setEditProjectId] = useState('');
-  const [editMilestoneId, setEditMilestoneId] = useState('');
   const [editChecklists, setEditChecklists] = useState([]);
   const [newChecklistText, setNewChecklistText] = useState('');
 
@@ -81,7 +80,6 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
       setEditDueDate(liveTask.dueDate || '');
       setEditEstimatedHours(liveTask.estimatedHours || 10);
       setEditProjectId(liveTask.projectId || '');
-      setEditMilestoneId(liveTask.milestoneId || '');
       setEditChecklists(liveTask.checklists ? JSON.parse(JSON.stringify(liveTask.checklists)) : []);
     }
   }, [liveTask, isOpen]);
@@ -94,7 +92,6 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
 
   const scopedProjects = getScopedProjects ? getScopedProjects() : projects;
   const project = projects.find((p) => p.id === (isEditing ? editProjectId : liveTask.projectId));
-  const milestone = project?.milestones?.find((m) => m.id === (isEditing ? editMilestoneId : liveTask.milestoneId));
   const assignee = users.find((u) => u.id === liveTask.assigneeId);
 
   // Filter audit logs strictly for this task
@@ -155,7 +152,6 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
       dueDate: editDueDate,
       estimatedHours: Number(editEstimatedHours) || 0,
       projectId: editProjectId || liveTask.projectId,
-      milestoneId: editMilestoneId || liveTask.milestoneId,
       checklists: editChecklists
     });
 
@@ -190,7 +186,7 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? `Edit Task: ${liveTask.title}` : liveTask.title}
-      subtitle={`${project?.name || 'Project'} • ${milestone?.title || 'Milestone'}`}
+      subtitle={`${project?.name || 'Project'} • ${liveTask.priority} Priority`}
       maxWidth="max-w-4xl"
     >
       <div className="space-y-6">
@@ -294,45 +290,22 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
               />
             </div>
 
-            {/* Project & Milestone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Project
-                </label>
-                <select
-                  value={editProjectId}
-                  onChange={(e) => {
-                    setEditProjectId(e.target.value);
-                    const p = projects.find((x) => x.id === e.target.value);
-                    if (p?.milestones?.length) setEditMilestoneId(p.milestones[0].id);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {scopedProjects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Milestone Tranche
-                </label>
-                <select
-                  value={editMilestoneId}
-                  onChange={(e) => setEditMilestoneId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {(project?.milestones || []).map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Project */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Target Project
+              </label>
+              <select
+                value={editProjectId}
+                onChange={(e) => setEditProjectId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                {scopedProjects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Description */}

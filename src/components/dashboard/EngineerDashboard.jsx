@@ -53,7 +53,7 @@ export const EngineerDashboard = ({ setActiveTab, onSelectTask }) => {
               Welcome back, {currentUser.name}
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl">
-              Focused sprint queue: complete granular checklist criteria, submit code pull requests, and push milestones to Pending Review with sub-250ms latency.
+              Focused sprint queue: complete granular checklist criteria, submit code pull requests, and push deliverables to Pending Review with sub-250ms latency.
             </p>
           </div>
 
