@@ -12,7 +12,9 @@ import {
   KeyRound,
   Building2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckSquare,
+  CalendarCheck2
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -42,6 +44,8 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: 'projects', label: 'Projects', icon: Briefcase },
         { id: 'clients', label: 'Clients/Sources', icon: Building2 },
         { id: 'tasks', label: 'Task Board', icon: FolderKanban },
+        { id: 'todos', label: 'Personal To-Do', icon: CheckSquare },
+        { id: 'attendance', label: 'Attendance', icon: CalendarCheck2 },
         { id: 'payin_payout', label: 'Pay-In & Pay-Out', icon: ArrowLeftRight },
         { id: 'expenses', label: 'Expenses', icon: Receipt },
         { id: 'financials', label: 'Finance & Analytics', icon: DollarSign },
@@ -52,22 +56,31 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
     if (isPM()) {
       return [
-        { id: 'dashboard', label: 'PM Operations Hub', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'PM Dashboard', icon: LayoutDashboard },
         { id: 'projects', label: 'Assigned Projects', icon: Briefcase },
-        { id: 'clients', label: 'Clients & Sources', icon: Building2 },
-        { id: 'tasks', label: 'Task & Sprint Engine', icon: FolderKanban },
+        { id: 'tasks', label: 'Task Board', icon: FolderKanban },
+        { id: 'todos', label: 'Personal To-Do', icon: CheckSquare },
+        { id: 'attendance', label: 'Staff Attendance', icon: CalendarCheck2 },
         { id: 'users', label: 'Team Members & Staff', icon: Users },
         { id: 'audit', label: 'Project Audit Trail', icon: History },
       ];
     }
 
-    // On-Site & Remote Employees (Salaried or Percentage-Based)
+    if (isPartner()) {
+      return [
+        { id: 'dashboard', label: 'Contractor Portal', icon: LayoutDashboard },
+        { id: 'tasks', label: 'My Assigned Tasks', icon: FolderKanban },
+        { id: 'todos', label: 'Personal To-Do', icon: CheckSquare },
+        { id: 'attendance', label: 'My Attendance', icon: CalendarCheck2 },
+        { id: 'audit', label: 'My Activity Stream', icon: History },
+      ];
+    }
+
+    // On-Site & Remote Employees (Salaried Staff / Engineers / Designers)
     return [
-      { id: 'dashboard', label: 'Employee Workspace', icon: LayoutDashboard },
       { id: 'tasks', label: 'My Assigned Tasks', icon: FolderKanban },
-      ...(currentUser?.compensationType === 'PERCENTAGE' || isPartner() ? [
-        { id: 'financials', label: 'My Project Earnings', icon: DollarSign }
-      ] : []),
+      { id: 'todos', label: 'Personal To-Do', icon: CheckSquare },
+      { id: 'attendance', label: 'My Attendance', icon: CalendarCheck2 },
       { id: 'audit', label: 'My Activity Stream', icon: History },
     ];
   };

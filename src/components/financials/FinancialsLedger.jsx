@@ -571,52 +571,52 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
       {/* 4 TABLE SWITCHER BUTTONS (For Super Admin / PM) */}
       {(isSuperAdmin() || isPM()) && (
-        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-[#111827] border border-slate-800 w-full sm:w-fit">
+        <div className="table-switcher flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-[#111827] border border-slate-800 w-full sm:w-fit">
           <button
             onClick={() => setActiveTable('CLIENTS_SOURCES')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTable === 'CLIENTS_SOURCES'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTable === 'CLIENTS_SOURCES'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/30'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/70'
               }`}
           >
-            <Building2 className="w-4 h-4" />
-            <span>1. Clients & Sources (Freelancers)</span>
+            <Building2 className={`w-4 h-4 ${activeTable === 'CLIENTS_SOURCES' ? 'text-white' : 'text-slate-400'}`} />
+            <span className={activeTable === 'CLIENTS_SOURCES' ? 'text-white' : ''}>1. Clients & Sources (Freelancers)</span>
           </button>
 
           <button
             onClick={() => setActiveTable('EMPLOYEES')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTable === 'EMPLOYEES'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTable === 'EMPLOYEES'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/30'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/70'
               }`}
           >
-            <Users className="w-4 h-4" />
-            <span>2. All Employee Pays & Payroll</span>
+            <Users className={`w-4 h-4 ${activeTable === 'EMPLOYEES' ? 'text-white' : 'text-slate-400'}`} />
+            <span className={activeTable === 'EMPLOYEES' ? 'text-white' : ''}>2. All Employee Pays & Payroll</span>
           </button>
 
           {isSuperAdmin() && (
             <button
               onClick={() => setActiveTable('PROJECT_EXPENSES')}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTable === 'PROJECT_EXPENSES'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTable === 'PROJECT_EXPENSES'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/30'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/70'
                 }`}
             >
-              <FolderKanban className="w-4 h-4" />
-              <span>3. Project Financials</span>
+              <FolderKanban className={`w-4 h-4 ${activeTable === 'PROJECT_EXPENSES' ? 'text-white' : 'text-slate-400'}`} />
+              <span className={activeTable === 'PROJECT_EXPENSES' ? 'text-white' : ''}>3. Project Financials</span>
             </button>
           )}
 
           {isSuperAdmin() && (
             <button
               onClick={() => setActiveTable('COMPANY_WHOLE')}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTable === 'COMPANY_WHOLE'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTable === 'COMPANY_WHOLE'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/30'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/70'
                 }`}
             >
-              <Briefcase className="w-4 h-4" />
-              <span>4. Company Overall Financials</span>
+              <Briefcase className={`w-4 h-4 ${activeTable === 'COMPANY_WHOLE' ? 'text-white' : 'text-slate-400'}`} />
+              <span className={activeTable === 'COMPANY_WHOLE' ? 'text-white' : ''}>4. Company Overall Financials</span>
             </button>
           )}
         </div>
@@ -1176,44 +1176,44 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
           </div>
 
           {/* Sub-Filter Controls: Client vs Source (Freelancer) */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#111827] border border-slate-800">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#111827] border border-slate-800 shadow-xs">
+            <div className="flex flex-wrap items-center gap-2.5">
               <span className="text-xs font-bold text-slate-400">View Category:</span>
-              <div className="flex items-center gap-1 bg-[#182234] p-1 rounded-xl border border-slate-700">
+              <div className="category-switcher flex items-center gap-1 bg-[#182234] p-1 rounded-xl border border-slate-700/80">
                 <button
                   type="button"
                   onClick={() => setClientSourceFilter('CLIENT')}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     clientSourceFilter === 'CLIENT'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-1 ring-blue-400/30'
+                      : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700/60'
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Client ({clientSourceSummary.clientCount})</span>
+                  <Building2 className={`w-3.5 h-3.5 ${clientSourceFilter === 'CLIENT' ? 'text-white' : 'text-slate-400'}`} />
+                  <span className={clientSourceFilter === 'CLIENT' ? 'text-white' : ''}>Client ({clientSourceSummary.clientCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setClientSourceFilter('SOURCE')}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     clientSourceFilter === 'SOURCE'
-                      ? 'bg-amber-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30 ring-1 ring-amber-400/30'
+                      : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700/60'
                   }`}
                 >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Source ({clientSourceSummary.sourceCount})</span>
+                  <Users className={`w-3.5 h-3.5 ${clientSourceFilter === 'SOURCE' ? 'text-white' : 'text-slate-400'}`} />
+                  <span className={clientSourceFilter === 'SOURCE' ? 'text-white' : ''}>Source ({clientSourceSummary.sourceCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setClientSourceFilter('ALL')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     clientSourceFilter === 'ALL'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/30'
+                      : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700/60'
                   }`}
                 >
-                  <span>All ({displayClients.length})</span>
+                  <span className={clientSourceFilter === 'ALL' ? 'text-white' : ''}>All ({displayClients.length})</span>
                 </button>
               </div>
             </div>

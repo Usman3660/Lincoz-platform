@@ -141,33 +141,14 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         salary: compensationType === 'SALARIED' && salary ? Number(salary) : undefined,
         percentage: compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined,
       };
-
-      recordAuditLog({
-        actionType: 'USER_PROVISIONED',
-        itemText: `Super Admin updated organizational profile for ${targetUser.name} (${department.trim()} • ${title.trim()}).`,
-        previousState: {
-          title: targetUser.title,
-          department: targetUser.department,
-          location: targetUser.location,
-          compensationType: targetUser.compensationType,
-          salary: targetUser.salary,
-          percentage: targetUser.percentage,
-          workMode: targetUser.workMode
-        },
-        newState: {
-          title: title.trim(),
-          department: department.trim(),
-          location: location.trim(),
-          compensationType,
-          salary: compensationType === 'SALARIED' && salary ? Number(salary) : undefined,
-          percentage: compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined,
-          workMode
-        }
-      });
     } else {
       // User editing their own profile
       if (!name.trim()) {
         alert('Please provide a valid name.');
+        return;
+      }
+      if (!email.trim()) {
+        alert('Please provide a valid email address.');
         return;
       }
 
@@ -178,41 +159,38 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       updatedData = {
         name: name.trim(),
         email: email.trim(),
-        title: title.trim(),
-        department: department.trim(),
         phone: phone.trim(),
-        location: location.trim(),
         bio: bio.trim(),
         avatar: avatar || targetUser.avatar,
-        skills: parsedSkills,
-        workMode: isSuperAdmin() ? workMode : (targetUser.workMode || 'ONSITE'),
-        compensationType: isSuperAdmin() ? compensationType : (targetUser.compensationType || 'SALARIED'),
-        salary: isSuperAdmin()
-          ? (compensationType === 'SALARIED' && salary ? Number(salary) : undefined)
-          : targetUser.salary,
-        percentage: isSuperAdmin()
-          ? (compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined)
-          : targetUser.percentage
+        skills: parsedSkills
       };
-
-      recordAuditLog({
-        actionType: 'USER_PROVISIONED',
-        itemText: `User ${targetUser.name} updated their personal profile information.`,
-        previousState: null,
-        newState: null
-      });
     }
 
     try {
-      updateUser(targetUser.id, updatedData);
+      if (typeof updateUser === 'function') {
+        updateUser(targetUser.id, updatedData);
+      }
 
-      pushNotification(
-        'Profile Saved',
-        isEditingOther
-          ? `Organizational terms for ${targetUser.name} were updated successfully.`
-          : `Your profile details have been saved.`,
-        'success'
-      );
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog({
+          actionType: 'USER_PROVISIONED',
+          itemText: isEditingOther
+            ? `Super Admin updated organizational profile for ${targetUser.name} (${department.trim()} • ${title.trim()}).`
+            : `User ${targetUser.name} updated their personal profile information.`,
+          previousState: null,
+          newState: updatedData
+        });
+      }
+
+      if (typeof pushNotification === 'function') {
+        pushNotification(
+          'Profile Saved',
+          isEditingOther
+            ? `Organizational terms for ${targetUser.name} were updated successfully.`
+            : `Your profile details have been saved.`,
+          'success'
+        );
+      }
     } catch (err) {
       console.error('Error saving profile:', err);
     } finally {
@@ -240,7 +218,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
               <p className="text-[11px] sm:text-xs text-slate-300">
                 {isEditingOther
                   ? 'Super Admin Administration: Update department, title, location, and compensation.'
-                  : 'Update your personal details, contact info, and profile avatar.'}
+                  : 'Update your photo, name, email, phone, bio, and skills.'}
               </p>
             </div>
           </div>
@@ -537,7 +515,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                 </div>
               </div>
 
-              {/* Personal Details */}
+              {/* Personal Details: Name, Email, Phone, Skills */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-300">
@@ -575,38 +553,6 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-300">
-                    Job Title
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Senior Software Engineer"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-300">
-                    Department / Team
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      placeholder="e.g. Core Engineering"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-300">
                     Phone Number
                   </label>
                   <div className="relative">
@@ -623,137 +569,19 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-300">
-                    Location & Timezone
+                    Skills & Expertise (Comma separated)
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <Sparkles className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. San Francisco, CA (UTC-7)"
+                      value={skills}
+                      onChange={(e) => setSkills(e.target.value)}
+                      placeholder="e.g. React, Node.js, Python, System Architecture"
                       className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Super Admin editing own compensation */}
-              {isSuperAdmin() && (
-                <div className="p-4 rounded-2xl bg-[#182234] border border-indigo-500/30 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5" /> Workplace & Compensation Governance (Admin)
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                        Work Location
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setWorkMode('ONSITE')}
-                          className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-all ${
-                            workMode === 'ONSITE'
-                              ? 'bg-teal-500/20 text-teal-300 border-teal-500/50'
-                              : 'bg-slate-900 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          <Building className="w-3 h-3" /> On-Site
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setWorkMode('REMOTE')}
-                          className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-all ${
-                            workMode === 'REMOTE'
-                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
-                              : 'bg-slate-900 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          <Laptop className="w-3 h-3" /> Remote
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                        Compensation Model
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCompensationType('SALARIED')}
-                          className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-all ${
-                            compensationType === 'SALARIED'
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                              : 'bg-slate-900 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          <DollarSign className="w-3 h-3" /> Salaried
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCompensationType('PERCENTAGE')}
-                          className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-all ${
-                            compensationType === 'PERCENTAGE'
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                              : 'bg-slate-900 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          <Percent className="w-3 h-3" /> % Share
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {compensationType === 'SALARIED' ? (
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1">
-                        <DollarSign className="w-3 h-3 text-emerald-400" /> Annual Salary (USD)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        value={salary}
-                        onChange={(e) => setSalary(e.target.value)}
-                        placeholder="e.g. 120000"
-                        className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1">
-                        <Percent className="w-3 h-3 text-amber-400" /> Project Share Percentage (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0.1"
-                        max="100"
-                        step="0.5"
-                        value={percentage}
-                        onChange={(e) => setPercentage(e.target.value)}
-                        placeholder="e.g. 15.0"
-                        className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Skills */}
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-300">
-                  Skills & Expertise (Comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  placeholder="e.g. React, Node.js, Python, System Architecture"
-                  className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                />
               </div>
 
               {/* Bio */}
@@ -762,11 +590,11 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                   Professional Bio & Summary
                 </label>
                 <textarea
-                  rows="2"
+                  rows="3"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Brief summary about your role and responsibilities..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 custom-scrollbar"
                 />
               </div>
             </>
@@ -803,7 +631,8 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
+              onClick={handleSave}
+              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" /> Save {isEditingOther ? 'Record Changes' : 'Profile Changes'}
             </button>

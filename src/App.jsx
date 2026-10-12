@@ -1,4 +1,4 @@
-import React, { useState, Component, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Component, Suspense, lazy } from 'react';
 import { useApp } from './context/AppContext';
 import { LandingPage } from './components/auth/LandingPage';
 import { Header } from './components/layout/Header';
@@ -9,7 +9,6 @@ import { RotateCcw, AlertTriangle, Loader2 } from 'lucide-react';
 const AuthPage = lazy(() => import('./components/auth/AuthPage').then(m => ({ default: m.AuthPage })));
 const SuperAdminDashboard = lazy(() => import('./components/dashboard/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })));
 const ProjectManagerDashboard = lazy(() => import('./components/dashboard/ProjectManagerDashboard').then(m => ({ default: m.ProjectManagerDashboard })));
-const EngineerDashboard = lazy(() => import('./components/dashboard/EngineerDashboard').then(m => ({ default: m.EngineerDashboard })));
 const PartnerDashboard = lazy(() => import('./components/dashboard/PartnerDashboard').then(m => ({ default: m.PartnerDashboard })));
 const TaskBoard = lazy(() => import('./components/tasks/TaskBoard').then(m => ({ default: m.TaskBoard })));
 const ProjectList = lazy(() => import('./components/projects/ProjectList').then(m => ({ default: m.ProjectList })));
@@ -24,6 +23,8 @@ const TaskDetailModal = lazy(() => import('./components/tasks/TaskDetailModal').
 const CreateTaskModal = lazy(() => import('./components/tasks/CreateTaskModal').then(m => ({ default: m.CreateTaskModal })));
 const SubmitDeliverableModal = lazy(() => import('./components/tasks/SubmitDeliverableModal').then(m => ({ default: m.SubmitDeliverableModal })));
 const EditProfileModal = lazy(() => import('./components/profile/EditProfileModal').then(m => ({ default: m.EditProfileModal })));
+const PersonalTodoList = lazy(() => import('./components/todos/PersonalTodoList').then(m => ({ default: m.PersonalTodoList })));
+const AttendanceModule = lazy(() => import('./components/attendance/AttendanceModule').then(m => ({ default: m.AttendanceModule })));
 
 const ComponentLoader = () => (
   <div className="flex items-center justify-center p-12 text-slate-400 text-xs animate-fadeIn">
@@ -87,6 +88,7 @@ class ErrorBoundary extends Component {
 export const MainApp = () => {
   const {
     currentUser,
+    users,
     setCurrentUserId,
     isSuperAdmin,
     isPM,
@@ -108,17 +110,33 @@ export const MainApp = () => {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [taskForDeliverableSubmission, setTaskForDeliverableSubmission] = useState(null);
 
+  // Automatically route onsite employees directly to 'tasks' (My Assigned Tasks)
+  useEffect(() => {
+    if (isOnsiteMember() && activeTab === 'dashboard') {
+      setActiveTab('tasks');
+    }
+  }, [currentUser?.id, currentUser?.role, activeTab]);
+
   // Handle direct quick login from Landing Page
   const handleQuickLoginFromLanding = (userId) => {
     setCurrentUserId(userId);
     setCurrentRoute('app');
-    setActiveTab('dashboard');
+    const targetUser = users.find(u => u.id === userId);
+    if (targetUser?.role === 'ONSITE_MEMBER') {
+      setActiveTab('tasks');
+    } else {
+      setActiveTab('dashboard');
+    }
   };
 
   // Handle successful login or registration
   const handleLoginSuccess = (user) => {
     setCurrentRoute('app');
-    setActiveTab('dashboard');
+    if (user?.role === 'ONSITE_MEMBER') {
+      setActiveTab('tasks');
+    } else {
+      setActiveTab('dashboard');
+    }
   };
 
   // Handle Logout
@@ -169,14 +187,6 @@ export const MainApp = () => {
         />
       );
     }
-    if (isOnsiteMember()) {
-      return (
-        <EngineerDashboard
-          setActiveTab={setActiveTab}
-          onSelectTask={(task) => setSelectedTaskForModal(task)}
-        />
-      );
-    }
     if (isPartner()) {
       return (
         <PartnerDashboard
@@ -204,13 +214,15 @@ export const MainApp = () => {
             <Suspense fallback={<ComponentLoader />}>
               {activeTab === 'dashboard' && renderDashboard()}
               {activeTab === 'projects' && <ProjectList />}
-              {activeTab === 'clients' && <ClientDirectory />}
+              {activeTab === 'clients' && isSuperAdmin() && <ClientDirectory />}
               {activeTab === 'tasks' && (
                 <TaskBoard
                   selectedTaskId={selectedTaskForModal?.id}
                   onClearSelectedTask={() => setSelectedTaskForModal(null)}
                 />
               )}
+              {activeTab === 'todos' && <PersonalTodoList />}
+              {activeTab === 'attendance' && <AttendanceModule />}
               {activeTab === 'payin_payout' && <PayinPayoutManager />}
               {activeTab === 'expenses' && <ExpenseCategoryManagement />}
               {activeTab === 'financials' && (

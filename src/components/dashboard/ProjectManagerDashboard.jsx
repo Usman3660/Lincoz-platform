@@ -19,6 +19,7 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
   const {
     getScopedProjects,
     getScopedTasks,
+    updateProject,
     users
   } = useApp();
 
@@ -283,7 +284,26 @@ export const ProjectManagerDashboard = ({ setActiveTab, onSelectTask, onOpenCrea
                       {proj.name}
                     </h4>
                   </div>
-                  <StatusBadge status={proj.status} />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <StatusBadge status={proj.status} />
+                    {proj.status !== 'COMPLETED' ? (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Mark project "${proj.name}" as Completed?`)) {
+                            updateProject(proj.id, { status: 'COMPLETED' });
+                          }
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm"
+                        title="Mark Project as Completed"
+                      >
+                        <CheckCircle2 className="w-3 h-3" /> Complete
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Done
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Progress */}

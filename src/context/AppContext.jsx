@@ -11,7 +11,8 @@ import {
   INITIAL_CLIENT_PAYMENTS,
   INITIAL_SOURCE_PAYOUTS,
   INITIAL_DIRECT_EXPENSES,
-  INITIAL_EXPENSE_CATEGORIES
+  INITIAL_EXPENSE_CATEGORIES,
+  INITIAL_ATTENDANCE
 } from '../data/initialData';
 
 const AppContext = createContext();
@@ -62,14 +63,15 @@ export const AppProvider = ({ children }) => {
             workMode: u.workMode || (u.role === 'ONSITE_MEMBER' ? 'ONSITE' : 'REMOTE'),
             compensationType: isPercentage ? 'PERCENTAGE' : 'SALARIED',
             salary: !isPercentage ? (u.salary || defaultSalary) : undefined,
-            percentage: isPercentage ? (u.percentage || 15.0) : undefined
+            percentage: isPercentage ? (u.percentage || 15.0) : undefined,
+            password: u.password || 'password123'
           };
         });
         return merged;
       }
-      return INITIAL_USERS;
+      return INITIAL_USERS.map(u => ({ ...u, password: u.password || 'password123' }));
     } catch (e) {
-      return INITIAL_USERS;
+      return INITIAL_USERS.map(u => ({ ...u, password: u.password || 'password123' }));
     }
   });
 
@@ -96,7 +98,19 @@ export const AppProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('lincoz_projects');
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PROJECTS;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const existingIds = new Set(parsed.map(p => p.id));
+        const missing = INITIAL_PROJECTS.filter(p => !existingIds.has(p.id));
+        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed;
+        return combined.map(p => {
+          const init = INITIAL_PROJECTS.find(ip => ip.id === p.id);
+          if (init?.requirementDoc && !p.requirementDoc) {
+            return { ...p, requirementDoc: init.requirementDoc };
+          }
+          return p;
+        });
+      }
+      return INITIAL_PROJECTS;
     } catch (e) {
       return INITIAL_PROJECTS;
     }
@@ -182,6 +196,16 @@ export const AppProvider = ({ children }) => {
     }
   });
 
+  const [attendanceRecords, setAttendanceRecords] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_attendance');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_ATTENDANCE;
+    } catch (e) {
+      return INITIAL_ATTENDANCE;
+    }
+  });
+
   const INITIAL_NOTIFICATIONS = [
     {
       id: 'notif-1',
@@ -241,7 +265,17 @@ export const AppProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('lincoz_clients_directory');
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CLIENTS_DIRECTORY;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(c => {
+          const init = INITIAL_CLIENTS_DIRECTORY.find(ic => ic.id === c.id);
+          if (init && Array.isArray(init.associatedProjects)) {
+            const merged = Array.from(new Set([...(c.associatedProjects || []), ...init.associatedProjects]));
+            return { ...c, associatedProjects: merged };
+          }
+          return c;
+        });
+      }
+      return INITIAL_CLIENTS_DIRECTORY;
     } catch (e) {
       return INITIAL_CLIENTS_DIRECTORY;
     }
@@ -399,6 +433,12 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     try {
+      localStorage.setItem('lincoz_attendance', JSON.stringify(attendanceRecords));
+    } catch (e) {}
+  }, [attendanceRecords]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem('lincoz_expense_categories', JSON.stringify(expenseCategories));
     } catch (e) {}
   }, [expenseCategories]);
@@ -517,15 +557,220 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const calculateNextDueDate = (currentDueDate, frequency) => {
+    const freq = (frequency || '').toUpperCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let baseDate = today;
+    if (currentDueDate && typeof currentDueDate === 'string') {
+      const parts = currentDueDate.trim().split('-');
+      if (parts.length === 3) {
+        const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (!isNaN(parsed.getTime())) {
+          baseDate = parsed;
+        }
+      }
+    }
+
+    const next = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+
+    if (freq === 'DAILY') {
+      next.setDate(next.getDate() + 1);
+    } else if (freq === 'WEEKLY') {
+      next.setDate(next.getDate() + 7);
+    } else if (freq === 'MONTHLY') {
+      const currentMonth = next.getMonth();
+      next.setMonth(currentMonth + 1);
+      if (next.getMonth() > (currentMonth + 1) % 12) {
+        next.setDate(0);
+      }
+    }
+
+    // If extending from an old past due date still results in a past date,
+    // advance starting from today so the new task has a forward-looking deadline
+    if (next < today) {
+      const fresh = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (freq === 'DAILY') {
+        fresh.setDate(fresh.getDate() + 1);
+      } else if (freq === 'WEEKLY') {
+        fresh.setDate(fresh.getDate() + 7);
+      } else if (freq === 'MONTHLY') {
+        const cm = fresh.getMonth();
+        fresh.setMonth(cm + 1);
+        if (fresh.getMonth() > (cm + 1) % 12) {
+          fresh.setDate(0);
+        }
+      }
+      const y = fresh.getFullYear();
+      const m = String(fresh.getMonth() + 1).padStart(2, '0');
+      const d = String(fresh.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    const y = next.getFullYear();
+    const m = String(next.getMonth() + 1).padStart(2, '0');
+    const d = String(next.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const createTask = (taskData) => {
+    const newTask = {
+      id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      createdById: currentUser?.id || 'usr-pm',
+      status: taskData.status || 'BACKLOG',
+      repeatFrequency: taskData.repeatFrequency || 'NONE',
+      recurrenceSpawned: false,
+      checklists: taskData.checklists || [],
+      deliverables: taskData.deliverables || [],
+      comments: taskData.comments || [],
+      isBlocked: false,
+      blockReason: '',
+      ...taskData,
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+
+    recordAuditLog({
+      taskId: newTask.id,
+      taskTitle: newTask.title,
+      projectId: newTask.projectId,
+      actionType: 'CREATED',
+      itemText: `Created task "${newTask.title}" (Priority: ${newTask.priority}${newTask.repeatFrequency && newTask.repeatFrequency !== 'NONE' ? `, Repeats: ${newTask.repeatFrequency}` : ''})`,
+      previousState: null,
+      newState: newTask
+    });
+
+    pushNotification(
+      'New Task Created',
+      `"${newTask.title}" was added to project backlog.`,
+      'success',
+      {
+        projectId: newTask.projectId,
+        taskId: newTask.id,
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+        targetUserId: newTask.assigneeId
+      }
+    );
+    return newTask;
+  };
+
+  const triggerRecurrenceIfEligible = (completedTask) => {
+    if (!completedTask) return;
+
+    const freq = (completedTask.repeatFrequency || '').toUpperCase();
+    if (!freq || freq === 'NONE') return;
+
+    // Prevent double execution on the same completed task
+    if (completedTask.recurrenceSpawned) return;
+
+    const nextDueDate = calculateNextDueDate(completedTask.dueDate, freq);
+
+    // Reset checklist verification criteria for the new task
+    const resetChecklists = (completedTask.checklists || []).map((chk, idx) => ({
+      id: `chk-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+      text: chk.text,
+      isCompleted: false,
+    }));
+
+    const newTask = {
+      id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      createdById: currentUser?.id || 'usr-pm',
+      projectId: completedTask.projectId,
+      title: completedTask.title,
+      description: completedTask.description || '',
+      priority: completedTask.priority || 'Medium',
+      assigneeId: completedTask.assigneeId || '',
+      dueDate: nextDueDate,
+      estimatedHours: completedTask.estimatedHours || 10,
+      status: completedTask.assigneeId ? 'ASSIGNED' : 'BACKLOG',
+      repeatFrequency: completedTask.repeatFrequency,
+      checklists: resetChecklists,
+      deliverables: [],
+      comments: [],
+      isBlocked: false,
+      blockReason: '',
+      recurrenceSpawned: false,
+    };
+
+    // Mark completed task as recurrenceSpawned and prepend the newly created task atomically
+    setTasks(prev => {
+      const updatedPrev = prev.map(t =>
+        t.id === completedTask.id ? { ...t, recurrenceSpawned: true } : t
+      );
+      return [newTask, ...updatedPrev];
+    });
+
+    recordAuditLog({
+      taskId: newTask.id,
+      taskTitle: newTask.title,
+      projectId: newTask.projectId,
+      actionType: 'CREATED',
+      itemText: `Auto-scheduled recurring task "${newTask.title}" for ${freq.toLowerCase()} cycle (Due: ${nextDueDate})`,
+      previousState: { sourceTaskId: completedTask.id },
+      newState: newTask
+    });
+
+    pushNotification(
+      'Recurring Task Re-Created',
+      `"${completedTask.title}" re-created with deadline extended to ${nextDueDate} (${freq.toLowerCase()} repeat).`,
+      'success',
+      {
+        projectId: completedTask.projectId,
+        taskId: newTask.id,
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+        targetUserId: completedTask.assigneeId
+      }
+    );
+  };
+
   const updateTaskStatus = (taskId, newStatus) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+
+    // Only Project Managers and Super Admins can verify and move tasks to COMPLETED
+    if (newStatus === 'COMPLETED' && !isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can verify and mark tasks as Completed.',
+        'warning'
+      );
+      return;
+    }
+
+    // Only Project Managers and Super Admins can move tasks into BACKLOG
+    if (newStatus === 'BACKLOG' && !isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can move tasks to Backlog.',
+        'warning'
+      );
+      return;
+    }
+
     let oldStatus = '';
     let taskRef = null;
 
     setTasks(prevTasks => {
       return prevTasks.map(task => {
         if (task.id !== taskId) return task;
+        // Non-managers cannot alter already COMPLETED tasks
+        if (task.status === 'COMPLETED' && !isManagerOrAdmin && newStatus !== 'COMPLETED') {
+          return task;
+        }
+        // Non-managers cannot move tasks from BACKLOG to ASSIGNED or any other status
+        if (task.status === 'BACKLOG' && !isManagerOrAdmin) {
+          pushNotification(
+            'Action Restricted',
+            'Only Project Managers and Super Admins can move tasks from the Backlog to Assigned.',
+            'warning'
+          );
+          return task;
+        }
         oldStatus = task.status;
-        taskRef = { ...task, status: newStatus };
+        taskRef = {
+          ...task,
+          status: newStatus
+        };
         return taskRef;
       });
     });
@@ -552,6 +797,11 @@ export const AppProvider = ({ children }) => {
           targetUserId: taskRef.assigneeId
         }
       );
+
+      // Automatically trigger repeating task generation if completed
+      if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED') {
+        triggerRecurrenceIfEligible(taskRef);
+      }
     }
   };
 
@@ -599,53 +849,40 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const createTask = (taskData) => {
-    const newTask = {
-      id: 'task-' + Date.now(),
-      createdById: currentUser.id,
-      status: taskData.status || 'BACKLOG',
-      checklists: taskData.checklists || [],
-      deliverables: taskData.deliverables || [],
-      comments: taskData.comments || [],
-      isBlocked: false,
-      blockReason: '',
-      ...taskData,
-    };
-
-    setTasks(prev => [newTask, ...prev]);
-
-    recordAuditLog({
-      taskId: newTask.id,
-      taskTitle: newTask.title,
-      projectId: newTask.projectId,
-      actionType: 'CREATED',
-      itemText: `Created task "${newTask.title}" (Priority: ${newTask.priority})`,
-      previousState: null,
-      newState: newTask
-    });
-
-    pushNotification(
-      'New Task Created',
-      `"${newTask.title}" was added to project backlog.`,
-      'success',
-      {
-        projectId: newTask.projectId,
-        taskId: newTask.id,
-        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
-        targetUserId: newTask.assigneeId
-      }
-    );
-    return newTask;
-  };
-
   const updateTask = (taskId, updates) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (updates.status === 'COMPLETED' && !isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can verify and mark tasks as Completed.',
+        'warning'
+      );
+      delete updates.status;
+      if (Object.keys(updates).length === 0) return;
+    }
+    if (updates.status === 'BACKLOG' && !isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can manage tasks in the Backlog.',
+        'warning'
+      );
+      delete updates.status;
+      if (Object.keys(updates).length === 0) return;
+    }
+
     let oldTask = null;
     let updatedTask = null;
 
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
         oldTask = t;
-        updatedTask = { ...t, ...updates };
+        if (t.status === 'COMPLETED' && !isManagerOrAdmin && updates.status && updates.status !== 'COMPLETED') {
+          delete updates.status;
+        }
+        updatedTask = {
+          ...t,
+          ...updates
+        };
         return updatedTask;
       }
       return t;
@@ -673,6 +910,11 @@ export const AppProvider = ({ children }) => {
           targetUserId: updatedTask.assigneeId
         }
       );
+
+      // Trigger repeating task if updated to COMPLETED
+      if (oldTask && oldTask.status !== 'COMPLETED' && updatedTask.status === 'COMPLETED') {
+        triggerRecurrenceIfEligible(updatedTask);
+      }
     }
   };
 
@@ -815,6 +1057,15 @@ export const AppProvider = ({ children }) => {
     let oldProj = null;
     let newProj = null;
 
+    if (updates.status && currentUser?.role !== 'SUPER_ADMIN' && currentUser?.role !== 'PROJECT_MANAGER') {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can update project status.',
+        'warning'
+      );
+      return false;
+    }
+
     if (updates.totalContractValue !== undefined) {
       const existing = projects.find(p => p.id === projectId);
       const newTcv = Number(updates.totalContractValue) || 0;
@@ -846,14 +1097,35 @@ export const AppProvider = ({ children }) => {
       const isPmChanged = oldProj && updates.projectManagerId && oldProj.projectManagerId !== updates.projectManagerId;
       const oldPm = isPmChanged ? users.find(u => u.id === oldProj.projectManagerId) : null;
       const newPm = isPmChanged ? users.find(u => u.id === updates.projectManagerId) : null;
+      const isStatusChanged = oldProj && updates.status && oldProj.status !== updates.status;
+      const isCompleted = isStatusChanged && updates.status === 'COMPLETED';
+
+      // When the project is marked completed, remove all tasks related to it from the task list
+      if (updates.status === 'COMPLETED') {
+        setTasks(prevTasks => prevTasks.filter(t => t.projectId !== projectId));
+      }
+
+      const actionType = isPmChanged
+        ? 'PM_REASSIGNED'
+        : isCompleted
+        ? 'PROJECT_COMPLETED'
+        : isStatusChanged
+        ? 'PROJECT_STATUS_CHANGED'
+        : 'PROJECT_UPDATED';
+
+      const itemText = isPmChanged
+        ? `Reassigned Project Manager for "${newProj.name}" from ${oldPm?.name || 'Unassigned'} to ${newPm?.name || 'New Manager'}`
+        : isCompleted
+        ? `Marked project "${newProj.name}" as Completed and removed all associated tasks from task list`
+        : isStatusChanged
+        ? `Updated project status to ${updates.status}`
+        : `Updated project configuration for "${newProj.name}"`;
 
       recordAuditLog({
         projectId,
         projectName: newProj.name,
-        actionType: isPmChanged ? 'PM_REASSIGNED' : 'PROJECT_UPDATED',
-        itemText: isPmChanged
-          ? `Reassigned Project Manager for "${newProj.name}" from ${oldPm?.name || 'Unassigned'} to ${newPm?.name || 'New Manager'}`
-          : `Updated project configuration for "${newProj.name}"`,
+        actionType,
+        itemText,
         previousState: oldProj,
         newState: newProj
       });
@@ -867,6 +1139,17 @@ export const AppProvider = ({ children }) => {
             projectId: newProj.id,
             targetRoles: ['SUPER_ADMIN'],
             targetUserIds: [oldPm?.id, newPm?.id].filter(Boolean)
+          }
+        );
+      } else if (isCompleted) {
+        pushNotification(
+          'Project Completed',
+          `"${newProj.name}" was marked as Completed by ${currentUser.name}. All associated tasks have been removed from the task list.`,
+          'success',
+          {
+            projectId: newProj.id,
+            targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
+            isGlobal: true
           }
         );
       } else {
@@ -1369,11 +1652,75 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUser = (userId, updates) => {
+    // If password is being updated, verify Super Admin
+    if (updates.password && !isSuperAdmin()) {
+      pushNotification(
+        'Action Restricted',
+        'Only Super Admins can change employee passwords.',
+        'warning'
+      );
+      delete updates.password;
+    }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
     pushNotification('User Updated', 'User profile details were updated.', 'info', {
       targetRoles: ['SUPER_ADMIN'],
       targetUserId: userId
     });
+  };
+
+  const updateUserPassword = (userId, newPassword) => {
+    if (!isSuperAdmin()) {
+      pushNotification(
+        'Action Restricted',
+        'Only Super Admins can change employee passwords.',
+        'warning'
+      );
+      return false;
+    }
+
+    const cleanPass = (newPassword || '').trim();
+    if (cleanPass.length < 6) {
+      pushNotification(
+        'Invalid Password',
+        'Password must be at least 6 characters long.',
+        'error'
+      );
+      return false;
+    }
+
+    let targetUser = null;
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        targetUser = u;
+        return {
+          ...u,
+          password: cleanPass,
+          passwordUpdatedAt: new Date().toISOString()
+        };
+      }
+      return u;
+    }));
+
+    if (targetUser) {
+      recordAuditLog({
+        actionType: 'PASSWORD_RESET',
+        itemText: `Super Admin reset password for "${targetUser.name}" (${targetUser.email})`,
+        previousState: null,
+        newState: { userId, passwordUpdatedAt: new Date().toISOString() }
+      });
+
+      pushNotification(
+        'Password Updated Successfully',
+        `Password for "${targetUser.name}" was successfully changed by Super Admin.`,
+        'success',
+        {
+          targetRoles: ['SUPER_ADMIN'],
+          targetUserId: userId
+        }
+      );
+      return true;
+    }
+    return false;
   };
 
   const createClient = (clientData) => {
@@ -1476,10 +1823,6 @@ export const AppProvider = ({ children }) => {
 
   const getScopedClients = () => {
     if (isSuperAdmin()) return clients || [];
-    if (isPM()) {
-      const pmProjectIds = new Set((projects || []).filter(p => p.projectManagerId === currentUser.id).map(p => p.id));
-      return (clients || []).filter(c => (c.associatedProjects || []).some(pId => pmProjectIds.has(pId)));
-    }
     return [];
   };
 
@@ -1588,31 +1931,49 @@ export const AppProvider = ({ children }) => {
           directExpenses: 'CONFIDENTIAL',
         }));
     }
-    if (isOnsiteMember()) return (projects || []).filter(p => p.assignedTeamIds && p.assignedTeamIds.includes(currentUser.id));
+    if (isOnsiteMember()) {
+      return (projects || [])
+        .filter(p => p.assignedTeamIds && p.assignedTeamIds.includes(currentUser.id))
+        .map(p => {
+          const { requirementDoc, ...rest } = p;
+          return rest;
+        });
+    }
     if (isPartner()) {
       const partnerTaskProjectIds = (tasks || []).filter(t => t.assigneeId === currentUser.id).map(t => t.projectId);
       const contractorRecord = (contractors || []).find(c => c.userId === currentUser.id);
       const agreementProjectIds = contractorRecord ? (contractorRecord.agreements || []).map(a => a.projectId) : [];
       const allowedIds = new Set([...partnerTaskProjectIds, ...agreementProjectIds]);
       
-      return (projects || []).filter(p => allowedIds.has(p.id)).map(p => ({
-        ...p,
-        totalContractValue: 'CONFIDENTIAL',
-        grossInvoiced: 'CONFIDENTIAL',
-        accountsReceivable: 'CONFIDENTIAL',
-        directExpenses: 'CONFIDENTIAL',
-      }));
+      return (projects || []).filter(p => allowedIds.has(p.id)).map(p => {
+        const { requirementDoc, ...rest } = p;
+        return {
+          ...rest,
+          totalContractValue: 'CONFIDENTIAL',
+          grossInvoiced: 'CONFIDENTIAL',
+          accountsReceivable: 'CONFIDENTIAL',
+          directExpenses: 'CONFIDENTIAL',
+        };
+      });
     }
     return [];
   };
 
   const getScopedTasks = (projectId = null) => {
     let filtered = tasks || [];
+
+    // Exclude all tasks belonging to completed projects from the active task list
+    const completedProjectIds = new Set(
+      (projects || []).filter(p => p.status === 'COMPLETED').map(p => p.id)
+    );
+    filtered = filtered.filter(t => !completedProjectIds.has(t.projectId));
+
     if (projectId) {
       filtered = filtered.filter(t => t.projectId === projectId);
     }
     if (isSuperAdmin() || isPM()) return filtered;
-    return filtered.filter(t => t.assigneeId === currentUser.id);
+    // Employees should only see tasks assigned to them, and backlogs are strictly hidden
+    return filtered.filter(t => t.assigneeId === currentUser.id && t.status !== 'BACKLOG');
   };
 
   const getScopedFinancials = (monthFilter = selectedMonth) => {
@@ -1861,6 +2222,332 @@ export const AppProvider = ({ children }) => {
     setProfileModalUser(null);
   };
 
+  // Personal To-Do list state (Private per user, completely decoupled from projects)
+  const [personalTodos, setPersonalTodos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lincoz_personal_todos');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      {
+        id: 'todo-1',
+        userId: 'usr-eng',
+        text: 'Review TypeScript 5.4 release notes for personal study',
+        isCompleted: true,
+        priority: 'Medium',
+        dueDate: '2026-10-10',
+        createdAt: '2026-10-08T10:00:00.000Z'
+      },
+      {
+        id: 'todo-2',
+        userId: 'usr-eng',
+        text: 'Clean up local Docker containers and cache',
+        isCompleted: false,
+        priority: 'Low',
+        dueDate: '2026-10-12',
+        createdAt: '2026-10-09T08:30:00.000Z'
+      },
+      {
+        id: 'todo-3',
+        userId: 'usr-eng',
+        text: 'Prepare personal questions for Friday 1-on-1 meeting',
+        isCompleted: false,
+        priority: 'High',
+        dueDate: '2026-10-10',
+        createdAt: '2026-10-09T09:15:00.000Z'
+      },
+      {
+        id: 'todo-4',
+        userId: 'usr-partner-1',
+        text: 'Submit updated tax invoice details',
+        isCompleted: false,
+        priority: 'High',
+        dueDate: '2026-10-15',
+        createdAt: '2026-10-09T09:00:00.000Z'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_personal_todos', JSON.stringify(personalTodos));
+    } catch (e) {}
+  }, [personalTodos]);
+
+  const getMyPersonalTodos = useCallback(() => {
+    if (!currentUser?.id) return [];
+    return personalTodos.filter(t => t.userId === currentUser.id);
+  }, [personalTodos, currentUser?.id]);
+
+  const addPersonalTodo = useCallback((text, priority = 'Medium', dueDate = '') => {
+    if (!text || !text.trim() || !currentUser?.id) return null;
+    const newTodo = {
+      id: `todo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      userId: currentUser.id,
+      text: text.trim(),
+      isCompleted: false,
+      priority,
+      dueDate,
+      createdAt: new Date().toISOString()
+    };
+    setPersonalTodos(prev => [newTodo, ...prev]);
+    return newTodo;
+  }, [currentUser?.id]);
+
+  const togglePersonalTodo = useCallback((id) => {
+    setPersonalTodos(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
+  }, []);
+
+  const deletePersonalTodo = useCallback((id) => {
+    setPersonalTodos(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const clearCompletedPersonalTodos = useCallback(() => {
+    if (!currentUser?.id) return;
+    setPersonalTodos(prev => prev.filter(t => !(t.userId === currentUser.id && t.isCompleted)));
+  }, [currentUser?.id]);
+
+  const recordAttendance = useCallback((entry) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (!isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can record employee attendance.',
+        'warning'
+      );
+      return false;
+    }
+
+    if (!entry.userId || !entry.date) {
+      pushNotification('Missing Information', 'Employee and Date are required.', 'error');
+      return false;
+    }
+
+    const employee = users.find(u => u.id === entry.userId);
+
+    setAttendanceRecords(prev => {
+      const existingIndex = prev.findIndex(
+        r => r.userId === entry.userId && r.date === entry.date
+      );
+
+      if (existingIndex >= 0) {
+        const recordSaved = {
+          ...prev[existingIndex],
+          ...entry,
+          status: entry.status || prev[existingIndex].status || 'PRESENT',
+          markedById: currentUser?.id,
+          markedByName: currentUser?.name,
+          updatedAt: new Date().toISOString()
+        };
+        const updated = [...prev];
+        updated[existingIndex] = recordSaved;
+        return updated;
+      } else {
+        const recordSaved = {
+          id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          status: 'PRESENT',
+          workMode: employee?.workMode || 'ON_SITE',
+          checkIn: '09:00 AM',
+          checkOut: '06:00 PM',
+          hoursWorked: 8.5,
+          notes: '',
+          ...entry,
+          markedById: currentUser?.id,
+          markedByName: currentUser?.name,
+          createdAt: new Date().toISOString()
+        };
+        return [recordSaved, ...prev];
+      }
+    });
+
+    recordAuditLog({
+      actionType: 'ATTENDANCE_RECORDED',
+      itemText: `Recorded attendance for ${employee?.name || 'Staff'} on ${entry.date}: ${entry.status || 'PRESENT'}`,
+      previousState: null,
+      newState: entry
+    });
+
+    pushNotification(
+      'Attendance Recorded',
+      `Attendance for ${employee?.name || 'Employee'} on ${entry.date} was marked as ${(entry.status || 'PRESENT').replace('_', ' ')}.`,
+      'success',
+      {
+        targetUserId: entry.userId,
+        targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER']
+      }
+    );
+
+    return true;
+  }, [currentUser, users, pushNotification, recordAuditLog]);
+
+  const updateAttendance = useCallback((recordId, updates) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (!isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can update attendance records.',
+        'warning'
+      );
+      return false;
+    }
+
+    let updatedRecord = null;
+    let oldRecord = null;
+
+    setAttendanceRecords(prev => prev.map(r => {
+      if (r.id === recordId) {
+        oldRecord = r;
+        updatedRecord = {
+          ...r,
+          ...updates,
+          updatedAt: new Date().toISOString()
+        };
+        return updatedRecord;
+      }
+      return r;
+    }));
+
+    if (updatedRecord) {
+      const employee = users.find(u => u.id === updatedRecord.userId);
+      recordAuditLog({
+        actionType: 'ATTENDANCE_UPDATED',
+        itemText: `Updated attendance for ${employee?.name || 'Staff'} on ${updatedRecord.date}`,
+        previousState: oldRecord,
+        newState: updatedRecord
+      });
+      pushNotification('Attendance Updated', 'Attendance record was updated successfully.', 'success');
+      return true;
+    }
+    return false;
+  }, [currentUser, users, pushNotification, recordAuditLog]);
+
+  const deleteAttendance = useCallback((recordId) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (!isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can delete attendance records.',
+        'warning'
+      );
+      return false;
+    }
+
+    const recordToDelete = attendanceRecords.find(r => r.id === recordId);
+    if (!recordToDelete) return false;
+
+    setAttendanceRecords(prev => prev.filter(r => r.id !== recordId));
+
+    recordAuditLog({
+      actionType: 'ATTENDANCE_DELETED',
+      itemText: `Deleted attendance log for ${recordToDelete.date}`,
+      previousState: recordToDelete,
+      newState: null
+    });
+
+    pushNotification('Attendance Record Removed', 'Attendance entry has been deleted.', 'info');
+    return true;
+  }, [currentUser, attendanceRecords, pushNotification, recordAuditLog]);
+
+  const bulkMarkAttendance = useCallback(({ userIds = [], date, status = 'PRESENT', workMode = 'ON_SITE', checkIn = '09:00 AM', checkOut = '06:00 PM', notes = '' }) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (!isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can bulk mark attendance.',
+        'warning'
+      );
+      return false;
+    }
+
+    if (!userIds.length || !date) {
+      pushNotification('Invalid Batch', 'Please specify at least one staff member and date.', 'error');
+      return false;
+    }
+
+    const targetIdsSet = new Set(userIds);
+    let newEntries = [];
+
+    setAttendanceRecords(prev => {
+      const existingMap = new Map();
+      prev.forEach(r => {
+        if (r.date === date) {
+          existingMap.set(r.userId, r);
+        }
+      });
+
+      const updatedExisting = prev.map(r => {
+        if (r.date === date && targetIdsSet.has(r.userId)) {
+          return {
+            ...r,
+            status,
+            workMode,
+            checkIn: status === 'ON_LEAVE' || status === 'ABSENT' ? '-' : checkIn,
+            checkOut: status === 'ON_LEAVE' || status === 'ABSENT' ? '-' : checkOut,
+            hoursWorked: status === 'HALF_DAY' ? 4 : status === 'ON_LEAVE' || status === 'ABSENT' ? 0 : 8.5,
+            notes: notes || r.notes,
+            markedById: currentUser?.id,
+            markedByName: currentUser?.name,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return r;
+      });
+
+      // Add missing users for this date
+      userIds.forEach(uid => {
+        if (!existingMap.has(uid)) {
+          const emp = users.find(u => u.id === uid);
+          newEntries.push({
+            id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000) + '-' + uid,
+            userId: uid,
+            date,
+            status,
+            workMode: workMode || emp?.workMode || 'ON_SITE',
+            checkIn: status === 'ON_LEAVE' || status === 'ABSENT' ? '-' : checkIn,
+            checkOut: status === 'ON_LEAVE' || status === 'ABSENT' ? '-' : checkOut,
+            hoursWorked: status === 'HALF_DAY' ? 4 : status === 'ON_LEAVE' || status === 'ABSENT' ? 0 : 8.5,
+            notes,
+            markedById: currentUser?.id,
+            markedByName: currentUser?.name,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+
+      return [...newEntries, ...updatedExisting];
+    });
+
+    recordAuditLog({
+      actionType: 'BULK_ATTENDANCE_RECORDED',
+      itemText: `Bulk marked attendance for ${userIds.length} team members on ${date} as ${status}`,
+      previousState: null,
+      newState: { count: userIds.length, date, status }
+    });
+
+    pushNotification(
+      'Bulk Attendance Recorded',
+      `Successfully marked ${userIds.length} team members as ${status.replace('_', ' ')} for ${date}.`,
+      'success'
+    );
+    return true;
+  }, [currentUser, users, pushNotification, recordAuditLog]);
+
+  const getScopedAttendance = useCallback((dateFilter = null) => {
+    let list = attendanceRecords || [];
+    if (dateFilter) {
+      list = list.filter(r => r.date === dateFilter);
+    }
+
+    // Role-based visibility rule:
+    // Manager and Admin can see all records
+    // Employees can ONLY see their respective attendance records
+    if (isSuperAdmin() || isPM()) {
+      return list;
+    }
+
+    return list.filter(r => r.userId === currentUser?.id);
+  }, [attendanceRecords, isSuperAdmin, isPM, currentUser?.id]);
+
   return (
     <AppContext.Provider
       value={{
@@ -1904,6 +2591,7 @@ export const AppProvider = ({ children }) => {
         addDirectExpense,
         deleteTransaction,
         auditLogs,
+        recordAuditLog,
         notifications,
         pushNotification,
         getScopedNotifications,
@@ -1926,6 +2614,7 @@ export const AppProvider = ({ children }) => {
         authorizeDisbursementStep2,
         createUser,
         updateUser,
+        updateUserPassword,
         resetToDefaults,
         isSuperAdmin,
         isPM,
@@ -1938,7 +2627,19 @@ export const AppProvider = ({ children }) => {
         isProfileModalOpen,
         profileModalUser,
         openProfileModal,
-        closeProfileModal
+        closeProfileModal,
+        personalTodos,
+        getMyPersonalTodos,
+        addPersonalTodo,
+        togglePersonalTodo,
+        deletePersonalTodo,
+        clearCompletedPersonalTodos,
+        attendanceRecords,
+        recordAttendance,
+        updateAttendance,
+        deleteAttendance,
+        bulkMarkAttendance,
+        getScopedAttendance
       }}
     >
       {children}

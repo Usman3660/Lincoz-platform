@@ -82,6 +82,53 @@ export const PayinPayoutManager = () => {
     return list.length > 0 ? list : (users || []);
   }, [users]);
 
+  // List of all referral partners & origination sources across the system
+  const availableSources = useMemo(() => {
+    const list = [];
+    const seenNames = new Set();
+
+    // 1. Sources from clients directory where category === 'FREELANCER'
+    (clients || []).forEach(c => {
+      if (c.category === 'FREELANCER' && c.name && !seenNames.has(c.name.trim().toLowerCase())) {
+        seenNames.add(c.name.trim().toLowerCase());
+        list.push({
+          id: c.id,
+          name: c.name,
+          percentage: c.percentage || 10,
+          associatedProjects: c.associatedProjects || [],
+          country: c.country || '',
+          type: 'FREELANCER'
+        });
+      }
+    });
+
+    // 2. Sources from recorded source payouts
+    (sourcePayouts || []).forEach(sp => {
+      if (sp.sourceName && !seenNames.has(sp.sourceName.trim().toLowerCase())) {
+        seenNames.add(sp.sourceName.trim().toLowerCase());
+        list.push({
+          id: sp.sourceId || `src-payout-${sp.id}`,
+          name: sp.sourceName,
+          percentage: sp.percentage || 10,
+          associatedProjects: sp.projectId ? [sp.projectId] : [],
+          country: '',
+          type: 'PARTNER'
+        });
+      }
+    });
+
+    // 3. Fallback defaults if none registered yet
+    if (list.length === 0) {
+      list.push(
+        { id: 'src-1', name: 'Nexus Lead Capital Ltd', percentage: 10, associatedProjects: [] },
+        { id: 'src-2', name: 'HealthTech Ventures Alliance', percentage: 10, associatedProjects: [] },
+        { id: 'src-3', name: 'SupplyChain Growth Partners', percentage: 10, associatedProjects: [] }
+      );
+    }
+
+    return list;
+  }, [clients, sourcePayouts]);
+
   // Modal Action State
   const [modalType, setModalType] = useState(null); // 'INVOICE' | 'PAYMENT' | 'SOURCE' | 'PERCENTAGE' | 'EXPENSE'
 
@@ -110,6 +157,7 @@ export const PayinPayoutManager = () => {
   const [paymentMethod, setPaymentMethod] = useState('Bank Wire Transfer');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [sourceName, setSourceName] = useState('');
+  const [isCustomSource, setIsCustomSource] = useState(false);
   const [contractorId, setContractorId] = useState('');
   const [deliverableTitle, setDeliverableTitle] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('Cloud Infrastructure & Security');
@@ -305,6 +353,19 @@ export const PayinPayoutManager = () => {
     }
   };
 
+  const handleSourceSelect = (selectedName) => {
+    setSourceName(selectedName);
+    const src = availableSources.find(s => s.name === selectedName);
+    if (src && targetProjectId) {
+      const proj = projects.find(p => p.id === targetProjectId);
+      const pTcv = proj?.totalContractValue || 0;
+      const rate = src.percentage || 10;
+      if (pTcv > 0) {
+        setAmount(String(Math.round(pTcv * (rate / 100))));
+      }
+    }
+  };
+
   // Open specific modal helper
   const handleOpenModal = (type, explicitProjectId = null, explicitEmployeeType = null) => {
     setModalType(type);
@@ -343,8 +404,21 @@ export const PayinPayoutManager = () => {
     setNewCategoryError('');
 
     // Default source / contractor
-    const firstSource = clients?.find(c => c.category === 'FREELANCER') || { name: 'Lead Referral Partner' };
-    setSourceName(firstSource.name);
+    setIsCustomSource(false);
+    const firstSource = (clients || []).find(c => c.category === 'FREELANCER') || availableSources[0];
+    const initialSourceName = firstSource?.name || 'Nexus Lead Capital Ltd';
+    setSourceName(initialSourceName);
+
+    if (type === 'SOURCE') {
+      const proj = projects.find(p => p.id === (explicitProjectId || targetProjectId || projects[0]?.id));
+      const pTcv = proj?.totalContractValue || 0;
+      const rate = firstSource?.percentage || 10;
+      if (pTcv > 0) {
+        setAmount(String(Math.round(pTcv * (rate / 100))));
+      } else {
+        setAmount('3500');
+      }
+    }
 
     const activeEmpType = explicitEmployeeType || employeePayoutType;
     if (type === 'PERCENTAGE' || type === 'EMPLOYEE') {
@@ -480,11 +554,14 @@ export const PayinPayoutManager = () => {
         setActiveTab('PAYMENTS_IN');
       }
     } else if (modalType === 'SOURCE') {
+      const matchedSource = availableSources.find(s => s.name.trim().toLowerCase() === sourceName.trim().toLowerCase());
       addSourcePayout({
         projectId: targetProjectId,
         projectName: projName,
+        sourceId: matchedSource?.id || null,
         sourceName: sourceName.trim() || 'Source Partner',
         amount: Number(amount),
+        percentage: matchedSource?.percentage || 10,
         payoutDate: paymentDate,
         date: paymentDate,
         status: 'DISBURSED',
@@ -1930,18 +2007,106 @@ export const PayinPayoutManager = () => {
             )}
 
             {modalType === 'SOURCE' && (
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Source / Referral Partner Name *
-                </label>
-                <input
-                  type="text"
-                  value={sourceName}
-                  onChange={(e) => setSourceName(e.target.value)}
-                  placeholder="e.g. Nexus Lead Capital Ltd"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Source / Referral Partner Name *
+                  </label>
+                  {!isCustomSource ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomSource(true);
+                        setSourceName('');
+                      }}
+                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+                    >
+                      + Enter Custom Source
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomSource(false);
+                        const fallback = availableSources[0]?.name || '';
+                        setSourceName(fallback);
+                        handleSourceSelect(fallback);
+                      }}
+                      className="text-[11px] text-slate-400 hover:text-white font-medium cursor-pointer"
+                    >
+                      &larr; Select from List
+                    </button>
+                  )}
+                </div>
+
+                {!isCustomSource ? (
+                  <select
+                    value={sourceName}
+                    onChange={(e) => {
+                      if (e.target.value === '__NEW__') {
+                        setIsCustomSource(true);
+                        setSourceName('');
+                      } else {
+                        handleSourceSelect(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white font-semibold focus:outline-none focus:border-amber-500 cursor-pointer shadow-inner"
+                    required
+                  >
+                    <option value="" disabled>-- Select a Referral Source / Partner --</option>
+                    {availableSources.map((src) => (
+                      <option key={src.id} value={src.name} className="bg-[#182234] text-white">
+                        {src.name} {src.percentage ? `(${src.percentage}% Commission)` : ''} {src.country ? `• ${src.country}` : ''}
+                      </option>
+                    ))}
+                    <option value="__NEW__" className="bg-[#182234] text-amber-400 font-bold">
+                      + Enter New / Other Source Partner...
+                    </option>
+                  </select>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                      placeholder="e.g. Nexus Lead Capital Ltd"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-amber-500/70 text-xs text-white focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                      required
+                    />
+                    <span className="text-[10px] text-slate-400 block">
+                      Type the legal organization or partner entity name.
+                    </span>
+                  </div>
+                )}
+
+                {/* Selected Source Helper Card */}
+                {(() => {
+                  const selectedSourceObj = availableSources.find(s => s.name === sourceName);
+                  if (!selectedSourceObj) return null;
+                  const selProj = projects.find(p => p.id === targetProjectId);
+                  const projTcv = selProj?.totalContractValue || 0;
+                  const rate = selectedSourceObj.percentage || 10;
+                  const estFee = Math.round(projTcv * (rate / 100));
+
+                  return (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-white block">{selectedSourceObj.name}</span>
+                        <span className="text-[11px] text-amber-400/90">
+                          {rate}% standard commission rate {selectedSourceObj.country ? `&bull; ${selectedSourceObj.country}` : ''}
+                        </span>
+                      </div>
+                      {projTcv > 0 && (
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block uppercase font-mono">Suggested Fee</span>
+                          <span className="font-mono font-bold text-white">${estFee.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">({rate}% of ${projTcv.toLocaleString()})</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

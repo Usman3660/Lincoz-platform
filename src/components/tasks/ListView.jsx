@@ -9,7 +9,8 @@ import {
   AlertTriangle,
   CheckSquare,
   CheckCircle2,
-  Edit3
+  Edit3,
+  Repeat
 } from 'lucide-react';
 
 export const ListView = ({ tasks, onSelectTask }) => {
@@ -59,7 +60,7 @@ export const ListView = ({ tasks, onSelectTask }) => {
             className="px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
           >
             <option value="ALL">All Statuses</option>
-            <option value="BACKLOG">Backlog</option>
+            {(isSuperAdmin() || isPM()) && <option value="BACKLOG">Backlog</option>}
             <option value="ASSIGNED">Assigned</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="PENDING_REVIEW">Pending Review</option>
@@ -120,12 +121,23 @@ export const ListView = ({ tasks, onSelectTask }) => {
                       {/* Task details */}
                       <td className="py-3.5 px-4 max-w-xs">
                         <div className="space-y-0.5">
-                          <span
-                            onClick={() => onSelectTask(t)}
-                            className="font-bold text-white hover:text-indigo-300 cursor-pointer block truncate"
-                          >
-                            {t.title}
-                          </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              onClick={() => onSelectTask(t)}
+                              className="font-bold text-white hover:text-indigo-300 cursor-pointer truncate"
+                            >
+                              {t.title}
+                            </span>
+                            {t.repeatFrequency && t.repeatFrequency !== 'NONE' && (
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 flex items-center gap-1 shrink-0"
+                                title={`Repeats ${t.repeatFrequency.toLowerCase()} on completion`}
+                              >
+                                <Repeat className="w-2.5 h-2.5 text-indigo-400" />
+                                <span className="capitalize">{t.repeatFrequency.toLowerCase()}</span>
+                              </span>
+                            )}
+                          </div>
                           {t.isBlocked && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-rose-400 font-medium">
                               <AlertTriangle className="w-3 h-3" /> Blocked: {t.blockReason}

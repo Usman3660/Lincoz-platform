@@ -22,7 +22,8 @@ import {
   User,
   Calendar,
   Layers,
-  FileText
+  FileText,
+  Repeat
 } from 'lucide-react';
 
 export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false }) => {
@@ -64,6 +65,7 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
   const [editDueDate, setEditDueDate] = useState('');
   const [editEstimatedHours, setEditEstimatedHours] = useState(10);
   const [editProjectId, setEditProjectId] = useState('');
+  const [editRepeatFrequency, setEditRepeatFrequency] = useState('NONE');
   const [editChecklists, setEditChecklists] = useState([]);
   const [newChecklistText, setNewChecklistText] = useState('');
 
@@ -80,6 +82,7 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
       setEditDueDate(liveTask.dueDate || '');
       setEditEstimatedHours(liveTask.estimatedHours || 10);
       setEditProjectId(liveTask.projectId || '');
+      setEditRepeatFrequency(liveTask.repeatFrequency || 'NONE');
       setEditChecklists(liveTask.checklists ? JSON.parse(JSON.stringify(liveTask.checklists)) : []);
     }
   }, [liveTask, isOpen]);
@@ -152,6 +155,7 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
       dueDate: editDueDate,
       estimatedHours: Number(editEstimatedHours) || 0,
       projectId: editProjectId || liveTask.projectId,
+      repeatFrequency: editRepeatFrequency,
       checklists: editChecklists
     });
 
@@ -198,6 +202,11 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
               <>
                 <PriorityBadge priority={liveTask.priority} />
                 <StatusBadge status={liveTask.status} />
+                {liveTask.repeatFrequency && liveTask.repeatFrequency !== 'NONE' && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <Repeat className="w-3.5 h-3.5 text-indigo-400" /> Repeats {liveTask.repeatFrequency.toLowerCase()}
+                  </span>
+                )}
                 {liveTask.isBlocked && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
                     <AlertTriangle className="w-3.5 h-3.5" /> Blocked
@@ -222,13 +231,21 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
                   <select
                     value={liveTask.status}
                     onChange={(e) => updateTaskStatus(liveTask.id, e.target.value)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500"
+                    disabled={!canManageTask && liveTask.status === 'COMPLETED'}
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                    title={!canManageTask && liveTask.status === 'COMPLETED' ? 'Task is verified and completed' : undefined}
                   >
-                    <option value="BACKLOG">Backlog</option>
+                    {canManageTask && <option value="BACKLOG">Backlog</option>}
                     <option value="ASSIGNED">Assigned</option>
                     <option value="IN_PROGRESS">In Progress</option>
                     <option value="PENDING_REVIEW">Pending Review</option>
-                    <option value="COMPLETED">Completed</option>
+                    {canManageTask ? (
+                      <option value="COMPLETED">Completed</option>
+                    ) : (
+                      <option value="COMPLETED" disabled>
+                        Completed (Requires PM / Admin Approval)
+                      </option>
+                    )}
                   </select>
                 </div>
 
@@ -322,8 +339,8 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
               />
             </div>
 
-            {/* Attributes Grid: Priority, Status, Assignee, Due Date, Est Hours */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4 rounded-xl bg-[#182234]/60 border border-slate-800">
+            {/* Attributes Grid: Priority, Status, Assignee, Due Date, Est Hours, Repeat */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 rounded-xl bg-[#182234]/60 border border-slate-800">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Priority
@@ -353,7 +370,13 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
                   <option value="ASSIGNED">Assigned</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="PENDING_REVIEW">Pending Review</option>
-                  <option value="COMPLETED">Completed</option>
+                  {canManageTask ? (
+                    <option value="COMPLETED">Completed</option>
+                  ) : (
+                    <option value="COMPLETED" disabled>
+                      Completed (Requires PM / Admin Approval)
+                    </option>
+                  )}
                 </select>
               </div>
 
@@ -399,6 +422,23 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
                   onChange={(e) => setEditEstimatedHours(e.target.value)}
                   className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <Repeat className="w-3 h-3 text-indigo-400" />
+                  Repeat
+                </label>
+                <select
+                  value={editRepeatFrequency}
+                  onChange={(e) => setEditRepeatFrequency(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="NONE">None</option>
+                  <option value="DAILY">Daily</option>
+                  <option value="WEEKLY">Weekly</option>
+                  <option value="MONTHLY">Monthly</option>
+                </select>
               </div>
             </div>
 
@@ -708,6 +748,17 @@ export const TaskDetailModal = ({ isOpen, onClose, task, initialEditMode = false
                       <span className="text-white font-mono">{liveTask.estimatedHours} hrs</span>
                     </div>
                   </div>
+
+                  {liveTask.repeatFrequency && liveTask.repeatFrequency !== 'NONE' && (
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-400 text-[10px] uppercase font-bold flex items-center gap-1">
+                        <Repeat className="w-3 h-3 text-indigo-400" /> Repeat Schedule
+                      </span>
+                      <span className="text-indigo-400 font-semibold text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 capitalize">
+                        {liveTask.repeatFrequency.toLowerCase()}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Block/Unblock action trigger */}
                   <div className="pt-2 border-t border-slate-800">

@@ -17,11 +17,20 @@ import {
   DollarSign,
   Percent,
   MapPin,
-  Laptop
+  Laptop,
+  Eye,
+  EyeOff,
+  AlertCircle
 } from 'lucide-react';
 
 export const UserManagement = () => {
-  const { users, createUser, isSuperAdmin, isPM, openProfileModal, currentUser } = useApp();
+  const { users, createUser, updateUserPassword, isSuperAdmin, isPM, openProfileModal, currentUser } = useApp();
+
+  const [passwordModalUser, setPasswordModalUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const [isProvisionModalOpen, setIsProvisionModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -69,6 +78,31 @@ export const UserManagement = () => {
     });
 
     setIsProvisionModalOpen(false);
+  };
+
+  const handleSavePassword = (e) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    const cleanPass = newPassword.trim();
+    if (cleanPass.length < 6) {
+      setPasswordError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (cleanPass !== confirmPassword.trim()) {
+      setPasswordError('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    if (passwordModalUser) {
+      const ok = updateUserPassword(passwordModalUser.id, cleanPass);
+      if (ok) {
+        setPasswordModalUser(null);
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    }
   };
 
   const baseUsers = isSuperAdmin()
@@ -222,16 +256,35 @@ export const UserManagement = () => {
                   </div>
                 </div>
 
-                {canEditUser && (
-                  <button
-                    onClick={() => openProfileModal(u)}
-                    className="p-1.5 rounded-xl bg-[#182234] hover:bg-indigo-600/20 text-slate-400 hover:text-indigo-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
-                    title="Edit Employee Profile"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span className="text-[11px]">Edit</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {canEditUser && (
+                    <button
+                      onClick={() => openProfileModal(u)}
+                      className="p-1.5 rounded-xl bg-[#182234] hover:bg-indigo-600/20 text-slate-400 hover:text-indigo-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
+                      title="Edit Employee Profile"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">Edit</span>
+                    </button>
+                  )}
+
+                  {isSuperAdmin() && (
+                    <button
+                      onClick={() => {
+                        setPasswordModalUser(u);
+                        setNewPassword('');
+                        setConfirmPassword('');
+                        setPasswordError('');
+                        setShowPassword(false);
+                      }}
+                      className="p-1.5 rounded-xl bg-[#182234] hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
+                      title={`Change Password for ${u.name}`}
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-[11px]">Password</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#182234] border border-slate-700/80 space-y-2 text-xs">
@@ -269,6 +322,23 @@ export const UserManagement = () => {
                       salary={u.salary}
                       percentage={u.percentage}
                     />
+                  </div>
+                )}
+
+                {/* Password / Credentials Status (Super Admin Only) */}
+                {isSuperAdmin() && (
+                  <div className="flex items-center justify-between pt-1.5 border-t border-slate-700/50">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-amber-400" /> Security
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-300 flex items-center gap-1">
+                      <span className="text-amber-400 font-bold">{u.password ? '●●●●●●●●' : 'Default'}</span>
+                      {u.passwordUpdatedAt && (
+                        <span className="text-[10px] text-slate-500 font-normal">
+                          (Set {new Date(u.passwordUpdatedAt).toLocaleDateString()})
+                        </span>
+                      )}
+                    </span>
                   </div>
                 )}
               </div>
@@ -485,6 +555,123 @@ export const UserManagement = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Super Admin Change Employee Password Modal */}
+      {passwordModalUser && (
+        <Modal
+          isOpen={!!passwordModalUser}
+          onClose={() => setPasswordModalUser(null)}
+          title="Change Employee Password"
+          subtitle={`Admin credential override for ${passwordModalUser.name}`}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleSavePassword} className="space-y-4">
+            {/* User Target Card */}
+            <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80 flex items-center gap-3">
+              <img
+                src={passwordModalUser.avatar}
+                alt={passwordModalUser.name}
+                className="w-10 h-10 rounded-xl object-cover ring-1 ring-amber-500/40"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-white truncate">{passwordModalUser.name}</h4>
+                  <RoleBadge role={passwordModalUser.role} />
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">{passwordModalUser.email}</p>
+                <p className="text-[10px] text-indigo-400 font-medium">{passwordModalUser.title}</p>
+              </div>
+            </div>
+
+            {passwordError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            {/* Password input with toggle & auto-generate */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-300">
+                  New Password *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const generated = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000) + '!';
+                    setNewPassword(generated);
+                    setConfirmPassword(generated);
+                    setShowPassword(true);
+                  }}
+                  className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" /> Auto-Generate
+                </button>
+              </div>
+
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min 6 characters..."
+                  required
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                Confirm New Password *
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password..."
+                  required
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
+                />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              The employee will immediately be required to use this new password to sign in.
+            </p>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setPasswordModalUser(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+              >
+                <KeyRound className="w-3.5 h-3.5" /> Save Password
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
     </div>
   );

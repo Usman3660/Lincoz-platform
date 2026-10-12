@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
-import { Plus, Trash2, CheckSquare, Sparkles } from 'lucide-react';
+import { Plus, Trash2, CheckSquare, Sparkles, Repeat } from 'lucide-react';
 
 export const CreateTaskModal = ({ isOpen, onClose }) => {
   const { projects, users, createTask, getScopedProjects } = useApp();
-  const availableProjects = getScopedProjects();
+  const availableProjects = getScopedProjects().filter(p => p.status !== 'COMPLETED');
 
   const [projectId, setProjectId] = useState(availableProjects[0]?.id || '');
   const [title, setTitle] = useState('');
@@ -14,6 +14,7 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
   const [assigneeId, setAssigneeId] = useState(users[0]?.id || '');
   const [dueDate, setDueDate] = useState('2026-10-30');
   const [estimatedHours, setEstimatedHours] = useState(20);
+  const [repeatFrequency, setRepeatFrequency] = useState('NONE');
 
   // Dynamic checklists builder
   const [checklistItems, setChecklistItems] = useState([
@@ -52,11 +53,13 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
       dueDate,
       estimatedHours: Number(estimatedHours) || 10,
       status: 'BACKLOG',
+      repeatFrequency,
       checklists: formattedChecklists,
       deliverables: [],
       comments: [],
     });
 
+    setRepeatFrequency('NONE');
     onClose();
   };
 
@@ -177,6 +180,33 @@ export const CreateTaskModal = ({ isOpen, onClose }) => {
               className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
+        </div>
+
+        {/* Repeat Task Schedule Option */}
+        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <Repeat className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-200">
+                Repeat Task Schedule
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Automatically recreates task upon completion with advanced due date
+              </p>
+            </div>
+          </div>
+          <select
+            value={repeatFrequency}
+            onChange={(e) => setRepeatFrequency(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs font-medium text-white focus:outline-none focus:border-indigo-500 sm:w-48 shrink-0"
+          >
+            <option value="NONE">Does Not Repeat</option>
+            <option value="DAILY">Daily (+1 Day)</option>
+            <option value="WEEKLY">Weekly (+7 Days)</option>
+            <option value="MONTHLY">Monthly (+1 Month)</option>
+          </select>
         </div>
 
         {/* Checklist Criteria Builder */}

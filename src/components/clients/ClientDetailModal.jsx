@@ -111,6 +111,8 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
   };
 
   const associatedProjectObjs = (projects || []).filter(p => (formData.associatedProjects || []).includes(p.id));
+  const activeProjects = associatedProjectObjs.filter(p => p.status?.toUpperCase() !== 'COMPLETED');
+  const completedProjects = associatedProjectObjs.filter(p => p.status?.toUpperCase() === 'COMPLETED');
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto custom-scrollbar">
@@ -298,50 +300,95 @@ export const ClientDetailModal = ({ isOpen, onClose, client }) => {
           )}
 
           {/* Associated Projects */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+          <div className="space-y-3">
+            <label className="block text-xs font-medium text-slate-400 flex items-center gap-1.5">
               <FolderKanban className="w-3.5 h-3.5 text-slate-400" /> Associated Projects
             </label>
             {isEditing ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-[#182234] border border-slate-700/80 rounded-xl custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-2 bg-[#182234] border border-slate-700/80 rounded-xl custom-scrollbar">
                 {projects.map((proj) => {
                   const isSelected = formData.associatedProjects.includes(proj.id);
+                  const isCompleted = proj.status?.toUpperCase() === 'COMPLETED';
                   return (
                     <button
                       key={proj.id}
                       type="button"
                       onClick={() => toggleProject(proj.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all ${
+                      className={`flex items-center justify-between p-2 rounded-lg border text-left text-xs transition-all ${
                         isSelected
                           ? 'bg-indigo-600/20 border-indigo-500/50 text-white'
                           : 'bg-[#111827] border-slate-800 text-slate-400 hover:text-white'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="rounded border-slate-700 text-indigo-600 focus:ring-0"
-                      />
-                      <span className="truncate">{proj.name}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="rounded border-slate-700 text-indigo-600 focus:ring-0 shrink-0"
+                        />
+                        <span className="truncate">{proj.name}</span>
+                      </div>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ml-1.5 ${
+                        isCompleted
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                      }`}>
+                        {isCompleted ? 'Completed' : 'Active'}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {associatedProjectObjs.length > 0 ? (
-                  associatedProjectObjs.map(p => (
-                    <span
-                      key={p.id}
-                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#182234] border border-slate-700/80 text-slate-300"
-                    >
-                      {p.name}
+              <div className="space-y-3">
+                {/* Active Projects */}
+                <div className="p-3 rounded-xl bg-[#182234] border border-slate-700/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                      Active Projects ({activeProjects.length})
                     </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-slate-500 italic">No projects linked.</p>
-                )}
+                  </div>
+                  {activeProjects.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeProjects.map(p => (
+                        <span
+                          key={p.id}
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#111827] border border-slate-700/80 text-slate-200"
+                        >
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No active projects linked.</p>
+                  )}
+                </div>
+
+                {/* Completed Projects */}
+                <div className="p-3 rounded-xl bg-[#182234] border border-slate-700/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      Completed Projects ({completedProjects.length})
+                    </span>
+                  </div>
+                  {completedProjects.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {completedProjects.map(p => (
+                        <span
+                          key={p.id}
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#111827] border border-slate-700/80 text-slate-200"
+                        >
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No completed projects linked.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>

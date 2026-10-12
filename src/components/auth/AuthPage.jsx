@@ -43,6 +43,12 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
       return;
     }
 
+    const expectedPassword = targetUser.password || 'password123';
+    if (!password || password !== expectedPassword) {
+      setAuthError('Incorrect password. Please enter the valid credentials set by Super Admin.');
+      return;
+    }
+
     if (requiresMfa && (!mfaCode || mfaCode.trim().length < 4)) {
       setAuthError('Two-factor authentication code is required.');
       return;

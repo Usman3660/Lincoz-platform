@@ -108,30 +108,33 @@ export const StatusBadge = ({ status }) => {
   }
 };
 
-export const PriorityBadge = ({ priority }) => {
+export const PriorityBadge = ({ priority, size = 'md' }) => {
+  const isSm = size === 'sm';
+  const sizeClasses = isSm ? 'px-1.5 py-0.5 rounded text-[10px]' : 'px-2 py-0.5 rounded text-xs';
+
   switch (priority) {
     case 'Urgent':
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+        <span className={`inline-flex items-center font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 ${sizeClasses}`}>
           Urgent
         </span>
       );
     case 'High':
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+        <span className={`inline-flex items-center font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30 ${sizeClasses}`}>
           High
         </span>
       );
     case 'Medium':
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+        <span className={`inline-flex items-center font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 ${sizeClasses}`}>
           Medium
         </span>
       );
     case 'Low':
     default:
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700/40 text-slate-400 border border-slate-700/50">
+        <span className={`inline-flex items-center font-medium bg-slate-700/40 text-slate-400 border border-slate-700/50 ${sizeClasses}`}>
           Low
         </span>
       );

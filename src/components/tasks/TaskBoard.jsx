@@ -6,6 +6,7 @@ import { GanttView } from './GanttView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { CreateTaskModal } from './CreateTaskModal';
 import { SubmitDeliverableModal } from './SubmitDeliverableModal';
+import { StatsCard } from '../common/StatsCard';
 import {
   LayoutGrid,
   List,
@@ -15,7 +16,9 @@ import {
   FolderKanban,
   Search,
   CheckCircle2,
+  CheckSquare,
   Clock,
+  Play,
   Flame,
   AlertTriangle,
   Layers,
@@ -28,6 +31,8 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
     getScopedProjects,
     isSuperAdmin,
     isPM,
+    isOnsiteMember,
+    isPartner,
     tasks
   } = useApp();
 
@@ -58,14 +63,38 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
     });
   }, [scopedTasks, selectedProjectId, selectedPriority, filterBlockedOnly, searchQuery]);
 
-  // Metric stats calculated from scoped tasks
-  const stats = useMemo(() => {
+  // Comprehensive analysis metrics calculated from scoped tasks (Assigned tasks, Checklist velocity, In Progress, In PM Review)
+  const analysisMetrics = useMemo(() => {
     const total = scopedTasks.length;
-    const inProgress = scopedTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'ASSIGNED').length;
-    const inReview = scopedTasks.filter(t => t.status === 'PENDING_REVIEW').length;
     const completed = scopedTasks.filter(t => t.status === 'COMPLETED').length;
+    const inProgress = scopedTasks.filter(t => t.status === 'IN_PROGRESS').length;
+    const pendingReview = scopedTasks.filter(t => t.status === 'PENDING_REVIEW').length;
+
+    let totalChecklists = 0;
+    let completedChecklists = 0;
+    scopedTasks.forEach(t => {
+      (t.checklists || []).forEach(c => {
+        totalChecklists++;
+        if (c.isCompleted) completedChecklists++;
+      });
+    });
+
+    const checklistPercent = totalChecklists > 0
+      ? Math.round((completedChecklists / totalChecklists) * 100)
+      : 0;
+
     const blocked = scopedTasks.filter(t => t.isBlocked).length;
-    return { total, inProgress, inReview, completed, blocked };
+
+    return {
+      total,
+      completed,
+      inProgress,
+      pendingReview,
+      totalChecklists,
+      completedChecklists,
+      checklistPercent,
+      blocked
+    };
   }, [scopedTasks]);
 
   // If a selectedTaskId prop is passed from outside, open it
@@ -87,7 +116,40 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
   return (
     <div className="space-y-5 animate-fadeIn">
       
-      {/* Top Header & View Controls */}
+      {/* Task & Checklist Analysis Metric Strip (Top) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title={isOnsiteMember() || isPartner() ? "Assigned Tasks" : "Total Tasks"}
+          value={analysisMetrics.total}
+          subtitle={`${analysisMetrics.completed} Completed`}
+          icon={CheckSquare}
+          colorScheme="cyan"
+        />
+        <StatsCard
+          title="Checklist Item Velocity"
+          value={`${analysisMetrics.completedChecklists}/${analysisMetrics.totalChecklists}`}
+          subtitle={`${analysisMetrics.checklistPercent}% Items Checked`}
+          icon={CheckCircle2}
+          colorScheme="emerald"
+          badgeText={analysisMetrics.totalChecklists > 0 ? "Verified" : undefined}
+        />
+        <StatsCard
+          title="In Progress"
+          value={analysisMetrics.inProgress}
+          subtitle="Currently active"
+          icon={Play}
+          colorScheme="indigo"
+        />
+        <StatsCard
+          title="In PM Review"
+          value={analysisMetrics.pendingReview}
+          subtitle="Awaiting sign-off"
+          icon={Clock}
+          colorScheme="amber"
+        />
+      </div>
+
+      {/* Header & View Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-2xl bg-[#111827] border border-slate-800 shadow-xl">
         <div>
           <div className="flex items-center gap-2.5">
@@ -96,10 +158,12 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                Operational Task & Sprint Engine
+                {isOnsiteMember() || isPartner() ? 'My Assigned Tasks' : 'Operational Task & Sprint Engine'}
               </h1>
               <p className="text-xs text-slate-400">
-                Interactive Kanban, Granular Verification Checklists, and Delivery Roadmap.
+                {isOnsiteMember() || isPartner()
+                  ? 'Personal sprint queue: track assigned deliverables, complete verification checklists, and advance tasks.'
+                  : 'Interactive Kanban, Granular Verification Checklists, and Delivery Roadmap.'}
               </p>
             </div>
           </div>
@@ -212,7 +276,7 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
           </div>
 
           {/* Blocker Quick Toggle Pill */}
-          {stats.blocked > 0 && (
+          {analysisMetrics.blocked > 0 && (
             <button
               onClick={() => setFilterBlockedOnly(!filterBlockedOnly)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
@@ -223,7 +287,7 @@ export const TaskBoard = ({ selectedTaskId, onClearSelectedTask }) => {
               title="Show only blocked tasks"
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>{stats.blocked} Blocked</span>
+              <span>{analysisMetrics.blocked} Blocked</span>
             </button>
           )}
         </div>

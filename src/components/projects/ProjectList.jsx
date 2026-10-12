@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PriorityBadge, StatusBadge, RoleBadge } from '../common/Badge';
 import { CreateProjectModal } from './CreateProjectModal';
@@ -23,7 +23,11 @@ import {
   X,
   FileText,
   TrendingUp,
-  Layers
+  Layers,
+  Download,
+  ExternalLink,
+  UploadCloud,
+  RotateCcw
 } from 'lucide-react';
 
 export const ProjectList = () => {
@@ -32,7 +36,9 @@ export const ProjectList = () => {
     projects,
     users,
     tasks,
+    updateProject,
     isSuperAdmin,
+    isPM,
     isPartner
   } = useApp();
 
@@ -42,7 +48,7 @@ export const ProjectList = () => {
 
   const scopedProjects = getScopedProjects();
   // Find current live project data from state
-  const selectedProject = projects.find(p => p.id === selectedProjectId) || null;
+  const selectedProject = scopedProjects.find(p => p.id === selectedProjectId) || null;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -72,7 +78,7 @@ export const ProjectList = () => {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {scopedProjects.map((proj) => {
-          const projectTasks = tasks.filter((t) => t.projectId === proj.id);
+          const projectTasks = tasks.filter((t) => t.projectId === proj.id && (isSuperAdmin() || isPM() ? true : t.status !== 'BACKLOG'));
           const completedTasks = projectTasks.filter((t) => t.status === 'COMPLETED').length;
           const blockedTasks = projectTasks.filter((t) => t.isBlocked).length;
           const pm = users.find((u) => u.id === proj.projectManagerId);
@@ -91,9 +97,11 @@ export const ProjectList = () => {
                 {/* Top badges */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
-                      {proj.clientName}
-                    </span>
+                    {isSuperAdmin() && proj.clientName && (
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                        {proj.clientName}
+                      </span>
+                    )}
                     <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors">
                       {proj.name}
                     </h3>
@@ -107,6 +115,15 @@ export const ProjectList = () => {
                 <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                   {proj.description}
                 </p>
+
+                {(isSuperAdmin() || isPM()) && proj.requirementDoc && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-[11px] font-semibold text-indigo-300">
+                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                      PRD Attached
+                    </span>
+                  </div>
+                )}
 
                 {/* Assigned Project Manager Card on Grid */}
                 <div className="p-3 rounded-xl bg-[#182234]/70 border border-slate-700/60 flex items-center justify-between gap-3">
@@ -222,6 +239,21 @@ export const ProjectList = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {(isSuperAdmin() || isPM()) && proj.status !== 'COMPLETED' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Mark project "${proj.name}" as Completed?`)) {
+                          updateProject(proj.id, { status: 'COMPLETED' });
+                        }
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                      title="Mark Project as Completed"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                    </button>
+                  )}
+
                   {isSuperAdmin() && !isConfidential && (
                     <button
                       onClick={() => setProjectForInvoice(proj)}
@@ -233,7 +265,7 @@ export const ProjectList = () => {
                   )}
                   <button
                     onClick={() => setSelectedProjectId(proj.id)}
-                    className="px-3.5 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                   >
                     View Details &rarr;
                   </button>
@@ -275,12 +307,13 @@ export const ProjectList = () => {
 
 // Comprehensive Client Project Detail View
 const ProjectDetailModal = ({ isOpen, onClose, project }) => {
-  const { users, tasks, isSuperAdmin, updateProject, clients = [] } = useApp();
+  const { users, tasks, isSuperAdmin, isPM, updateProject, clients = [] } = useApp();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingManager, setIsChangingManager] = useState(false);
   const [isDetailInvoiceOpen, setIsDetailInvoiceOpen] = useState(false);
   const [selectedNewPmId, setSelectedNewPmId] = useState(project.projectManagerId || 'usr-pm');
+  const editFileInputRef = useRef(null);
 
   const [form, setForm] = useState({
     name: project.name || '',
@@ -291,12 +324,54 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
     priority: project.priority || 'High',
     totalContractValue: project.totalContractValue || 0,
     targetDeliveryDate: project.targetDeliveryDate || '',
-    projectManagerId: project.projectManagerId || 'usr-pm'
+    projectManagerId: project.projectManagerId || 'usr-pm',
+    requirementDoc: project.requirementDoc || null
   });
 
   if (!project) return null;
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'md', 'zip'];
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
+  const handleEditFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExt || !ALLOWED_EXTENSIONS.includes(fileExt)) {
+      alert('Invalid file format. Only PDF, DOC, MD, and ZIP files are allowed.');
+      if (editFileInputRef.current) editFileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      alert('File size exceeds the 2MB limit. Please upload a file smaller than 2MB.');
+      if (editFileInputRef.current) editFileInputRef.current.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      let sizeStr = '';
+      if (file.size < 1024) sizeStr = `${file.size} B`;
+      else if (file.size < 1024 * 1024) sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
+      else sizeStr = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      setForm(prev => ({
+        ...prev,
+        requirementDoc: {
+          name: file.name,
+          size: sizeStr,
+          type: file.type || 'application/octet-stream',
+          dataUrl: reader.result,
+          uploadedAt: new Date().toISOString()
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const projectTasks = tasks.filter((t) => t.projectId === project.id && (isSuperAdmin() || isPM() ? true : t.status !== 'BACKLOG'));
   const completedTasks = projectTasks.filter((t) => t.status === 'COMPLETED').length;
   const inProgressTasks = projectTasks.filter((t) => t.status === 'IN_PROGRESS').length;
   const inReviewTasks = projectTasks.filter((t) => t.status === 'PENDING_REVIEW').length;
@@ -336,7 +411,8 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
       priority: form.priority,
       totalContractValue: newTcv,
       targetDeliveryDate: form.targetDeliveryDate,
-      projectManagerId: form.projectManagerId
+      projectManagerId: form.projectManagerId,
+      requirementDoc: form.requirementDoc || null
     });
     setIsEditing(false);
   };
@@ -370,7 +446,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                 {project.name}
               </h2>
 
-              {project.clientContact && (
+              {isSuperAdmin() && project.clientContact && (
                 <p className="text-xs text-slate-400 flex items-center gap-1.5 font-mono">
                   <Mail className="w-3.5 h-3.5 text-slate-400" /> Client Contact: <span className="text-slate-200">{project.clientContact}</span>
                 </p>
@@ -381,7 +457,35 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-start">
+            <div className="flex items-center gap-2 self-start flex-wrap justify-end">
+              {(isSuperAdmin() || isPM()) && !isEditing && (
+                project.status !== 'COMPLETED' ? (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Mark project "${project.name}" as Completed?`)) {
+                        updateProject(project.id, { status: 'COMPLETED' });
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/30"
+                    title="Mark Project as Completed"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Mark Completed
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Reopen "${project.name}" and mark as Active?`)) {
+                        updateProject(project.id, { status: 'ACTIVE' });
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all"
+                    title="Reopen Project"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Reopen Project
+                  </button>
+                )
+              )}
+
               {isSuperAdmin() && !isEditing && (
                 <button
                   onClick={() => {
@@ -394,7 +498,8 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                       priority: project.priority || 'High',
                       totalContractValue: project.totalContractValue || 0,
                       targetDeliveryDate: project.targetDeliveryDate || '',
-                      projectManagerId: project.projectManagerId || 'usr-pm'
+                      projectManagerId: project.projectManagerId || 'usr-pm',
+                      requirementDoc: project.requirementDoc || null
                     });
                     setIsEditing(true);
                   }}
@@ -534,6 +639,79 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                   />
                 </div>
 
+                {/* Requirement Document Field in Edit Mode */}
+                <div className="p-3.5 rounded-xl bg-[#0e1420] border border-slate-700/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-indigo-400" /> Requirement Document
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                      <Lock className="w-3 h-3" /> Admin & PM Access Only
+                    </span>
+                  </div>
+
+                  <input
+                    type="file"
+                    ref={editFileInputRef}
+                    onChange={handleEditFileUpload}
+                    accept=".pdf,.doc,.docx,.md,.zip"
+                    className="hidden"
+                  />
+
+                  {form.requirementDoc ? (
+                    <div className="p-3 rounded-lg bg-[#141d2c] border border-indigo-500/30 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white truncate">{form.requirementDoc.name}</p>
+                          <p className="text-[10px] text-slate-400">{form.requirementDoc.size || 'Document attached'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => editFileInputRef.current?.click()}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+                        >
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, requirementDoc: null })}
+                          className="p-1 rounded bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                          title="Remove requirement doc"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => editFileInputRef.current?.click()}
+                      className="p-3 rounded-lg border border-dashed border-slate-700 hover:border-indigo-500/60 cursor-pointer text-center bg-[#141d2c]/50 hover:bg-[#141d2c] transition-all"
+                    >
+                      <p className="text-xs font-medium text-slate-300">Click to upload requirement document (PDF, DOC, MD, ZIP)</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Max size: 2MB</p>
+                    </div>
+                  )}
+
+                  <input
+                    type="url"
+                    value={form.requirementDoc?.docUrl || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm(prev => ({
+                        ...prev,
+                        requirementDoc: prev.requirementDoc
+                          ? { ...prev.requirementDoc, docUrl: val }
+                          : val ? { name: 'External Requirement Spec', docUrl: val, uploadedAt: new Date().toISOString() } : null
+                      }));
+                    }}
+                    placeholder="Or external document URL (e.g. Google Docs / Notion PRD)"
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#141d2c] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
                 <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-700/80">
                   <button
                     type="button"
@@ -552,15 +730,12 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
               </form>
             )}
 
-            {/* 1. PROJECT MANAGER SECTION (Highlighted & Changeable by Super Admin) */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-[#182234] to-[#121c2e] border border-indigo-500/30 shadow-lg space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-indigo-400" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                    Assigned Project Manager
-                  </h3>
-                </div>
+            {/* 1. PROJECT MANAGER SECTION */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-indigo-400" /> Assigned Project Manager
+                </h3>
 
                 {isSuperAdmin() && !isChangingManager && (
                   <button
@@ -568,7 +743,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                       setSelectedNewPmId(project.projectManagerId || 'usr-pm');
                       setIsChangingManager(true);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-bold transition-all border border-indigo-500/40 flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-bold transition-all border border-indigo-500/30 flex items-center gap-1.5 self-start sm:self-auto"
                   >
                     <Edit3 className="w-3.5 h-3.5" /> Reassign Project Manager
                   </button>
@@ -576,12 +751,12 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
               </div>
 
               {!isChangingManager ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#0e1420]/80 border border-slate-700/80">
+                <div className="p-4 rounded-xl bg-[#182234] border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:border-slate-600 transition-colors">
                   <div className="flex items-center gap-3.5">
                     <img
                       src={currentPm?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
                       alt={currentPm?.name || 'Project Manager'}
-                      className="w-12 h-12 rounded-2xl object-cover ring-2 ring-indigo-500/50"
+                      className="w-12 h-12 rounded-2xl object-cover ring-2 ring-indigo-500/40"
                     />
                     <div>
                       <div className="flex items-center gap-2">
@@ -593,7 +768,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                     </div>
                   </div>
 
-                  <div className="text-right sm:border-l sm:border-slate-800 sm:pl-4">
+                  <div className="text-left sm:text-right sm:border-l sm:border-slate-700/60 sm:pl-4">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Department</span>
                     <span className="text-xs font-bold text-white">{currentPm?.department || 'Operations'}</span>
                     <span className="text-[10px] text-emerald-400 font-mono block mt-0.5">● Active Lead</span>
@@ -601,9 +776,9 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                 </div>
               ) : (
                 /* Super Admin PM Reassignment Selector Form */
-                <div className="p-4 rounded-xl bg-[#0e1420] border border-indigo-500/50 space-y-3 animate-fadeIn">
+                <div className="p-4 rounded-xl bg-[#182234] border border-indigo-500/50 space-y-3 animate-fadeIn">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-indigo-300">
+                    <label className="text-xs font-bold text-indigo-400">
                       Select New Project Manager for &quot;{project.name}&quot;:
                     </label>
                     <span className="text-[10px] text-amber-400 font-mono">Super Admin Action</span>
@@ -614,7 +789,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                       <select
                         value={selectedNewPmId}
                         onChange={(e) => setSelectedNewPmId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-indigo-500/50 text-xs text-white font-semibold focus:outline-none focus:border-indigo-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#0e1420] border border-indigo-500/50 text-xs text-white font-semibold focus:outline-none focus:border-indigo-400"
                       >
                         {availablePMs.map((pmOption) => (
                           <option key={pmOption.id} value={pmOption.id}>
@@ -642,6 +817,104 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                 </div>
               )}
             </div>
+
+            {/* Requirement Document Section - Executive & PM Access Only */}
+            {(isSuperAdmin() || isPM()) && (
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-indigo-400" /> Project Requirement Document
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold border border-amber-500/20 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Admin & PM Only
+                    </span>
+                  </div>
+
+                  {isSuperAdmin() && !isEditing && (
+                    <button
+                      onClick={() => {
+                        setForm({
+                          name: project.name || '',
+                          clientName: project.clientName || '',
+                          clientContact: project.clientContact || '',
+                          description: project.description || '',
+                          status: project.status || 'ACTIVE',
+                          priority: project.priority || 'High',
+                          totalContractValue: project.totalContractValue || 0,
+                          targetDeliveryDate: project.targetDeliveryDate || '',
+                          projectManagerId: project.projectManagerId || 'usr-pm',
+                          requirementDoc: project.requirementDoc || null
+                        });
+                        setIsEditing(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-bold transition-all border border-indigo-500/30 flex items-center gap-1.5 self-start sm:self-auto"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> {project.requirementDoc ? 'Update Requirement Doc' : 'Attach Requirement Doc'}
+                    </button>
+                  )}
+                </div>
+
+                {project.requirementDoc ? (
+                  <div className="p-4 rounded-xl bg-[#182234] border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-indigo-500/40 transition-colors">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center shrink-0 text-indigo-400">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-white truncate font-mono">
+                            {project.requirementDoc.name || 'Requirement Specification'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold font-mono border border-emerald-500/20">
+                            SPEC CONFIDENTIAL
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                          {project.requirementDoc.size && <span className="font-mono">{project.requirementDoc.size}</span>}
+                          {project.requirementDoc.uploadedAt && (
+                            <span>• Uploaded {new Date(project.requirementDoc.uploadedAt).toLocaleDateString()}</span>
+                          )}
+                        </p>
+                        {project.requirementDoc.notes && (
+                          <p className="text-xs text-slate-300 mt-1 italic">
+                            &quot;{project.requirementDoc.notes}&quot;
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      {project.requirementDoc.dataUrl && (
+                        <a
+                          href={project.requirementDoc.dataUrl}
+                          download={project.requirementDoc.name || 'Project_Requirements.pdf'}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.02]"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Download / View
+                        </a>
+                      )}
+                      {project.requirementDoc.docUrl && (
+                        <a
+                          href={project.requirementDoc.docUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Open Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-[#182234] border border-dashed border-slate-700/80 text-center">
+                    <p className="text-xs text-slate-400">
+                      No requirement document has been uploaded for this project yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 2. FINANCIAL METRICS & GOVERNANCE (Super Admin only) */}
             {isSuperAdmin() && !isConfidential && (

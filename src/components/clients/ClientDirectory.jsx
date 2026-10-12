@@ -21,6 +21,17 @@ import {
 export const ClientDirectory = () => {
   const { getScopedClients, projects, isSuperAdmin } = useApp();
 
+  if (!isSuperAdmin()) {
+    return (
+      <div className="p-12 rounded-3xl bg-[#111827] border border-slate-800 text-center space-y-3">
+        <h3 className="text-base font-bold text-white">Access Restricted</h3>
+        <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          Client and source directory details are strictly restricted to Executive Governance (Super Admin).
+        </p>
+      </div>
+    );
+  }
+
   const [activeCategory, setActiveCategory] = useState('ALL'); // 'ALL' | 'CLIENT' | 'FREELANCER'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('ALL');
@@ -194,8 +205,8 @@ export const ClientDirectory = () => {
               key={chip.id}
               onClick={() => setActiveCategory(chip.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${activeCategory === chip.id
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-[#182234] text-slate-400 hover:text-white border border-slate-700/80'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-[#182234] text-slate-400 hover:text-white border border-slate-700/80'
                 }`}
             >
               {chip.label}
@@ -275,7 +286,8 @@ export const ClientDirectory = () => {
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Contact Info</th>
                   <th className="py-3 px-4">Project Share</th>
-                  <th className="py-3 px-4">Linked Projects</th>
+                  <th className="py-3 px-4">Active Projects</th>
+                  <th className="py-3 px-4">Completed Value</th>
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
@@ -283,6 +295,9 @@ export const ClientDirectory = () => {
                 {filteredClients.map((item) => {
                   const isFreelancer = item.category === 'FREELANCER';
                   const associatedProjectObjs = (projects || []).filter(p => (item.associatedProjects || []).includes(p.id));
+                  const totalCompletedValue = associatedProjectObjs
+                    .filter(p => p.status?.toUpperCase() === 'COMPLETED')
+                    .reduce((sum, p) => sum + (Number(p.totalContractValue) || 0), 0);
 
                   return (
                     <tr
@@ -316,8 +331,8 @@ export const ClientDirectory = () => {
                       {/* Category */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${isFreelancer
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
                           }`}>
                           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isFreelancer ? 'bg-emerald-400' : 'bg-indigo-400'}`}></span>
                           {isFreelancer ? 'Source' : 'Client'}
@@ -373,6 +388,13 @@ export const ClientDirectory = () => {
                         ) : (
                           <span className="text-slate-500 text-xs italic">None</span>
                         )}
+                      </td>
+
+                      {/* Total Value */}
+                      <td className="py-3 px-4 whitespace-nowrap font-mono">
+                        <span className="font-bold text-white text-xs">
+                          ${totalCompletedValue.toLocaleString()}
+                        </span>
                       </td>
 
                       {/* Actions */}
