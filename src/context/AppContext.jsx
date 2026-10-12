@@ -2532,6 +2532,91 @@ export const AppProvider = ({ children }) => {
     return true;
   }, [currentUser, users, pushNotification, recordAuditLog]);
 
+  const recordRosterAttendance = useCallback(({ date, roster = [] }) => {
+    const isManagerOrAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PROJECT_MANAGER';
+    if (!isManagerOrAdmin) {
+      pushNotification(
+        'Action Restricted',
+        'Only Project Managers and Super Admins can record employee attendance.',
+        'warning'
+      );
+      return false;
+    }
+
+    if (!date || !roster.length) {
+      pushNotification('Missing Data', 'Date and at least one staff entry are required.', 'error');
+      return false;
+    }
+
+    setAttendanceRecords(prev => {
+      const rosterMap = new Map();
+      roster.forEach(item => rosterMap.set(item.userId, item));
+
+      // Update existing records for this date
+      const updatedExisting = prev.map(r => {
+        if (r.date === date && rosterMap.has(r.userId)) {
+          const item = rosterMap.get(r.userId);
+          const st = item.status || 'PRESENT';
+          return {
+            ...r,
+            status: st,
+            workMode: item.workMode || r.workMode || 'ON_SITE',
+            checkIn: st === 'ABSENT' || st === 'ON_LEAVE' ? '-' : (item.checkIn || r.checkIn || '09:00 AM'),
+            checkOut: st === 'ABSENT' || st === 'ON_LEAVE' ? '-' : (item.checkOut || r.checkOut || '06:00 PM'),
+            hoursWorked: st === 'ABSENT' || st === 'ON_LEAVE' ? 0 : (st === 'HALF_DAY' ? 4 : (item.hoursWorked || 8.5)),
+            notes: item.notes !== undefined ? item.notes : r.notes,
+            markedById: currentUser?.id,
+            markedByName: currentUser?.name,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return r;
+      });
+
+      // Find users in roster that don't have records for this date yet
+      const existingUserIdsOnDate = new Set(prev.filter(r => r.date === date).map(r => r.userId));
+      const newEntries = [];
+
+      roster.forEach(item => {
+        if (!existingUserIdsOnDate.has(item.userId)) {
+          const emp = users.find(u => u.id === item.userId);
+          const st = item.status || 'PRESENT';
+          newEntries.push({
+            id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000) + '-' + item.userId,
+            userId: item.userId,
+            date,
+            status: st,
+            workMode: item.workMode || emp?.workMode || 'ON_SITE',
+            checkIn: st === 'ABSENT' || st === 'ON_LEAVE' ? '-' : (item.checkIn || '09:00 AM'),
+            checkOut: st === 'ABSENT' || st === 'ON_LEAVE' ? '-' : (item.checkOut || '06:00 PM'),
+            hoursWorked: st === 'ABSENT' || st === 'ON_LEAVE' ? 0 : (st === 'HALF_DAY' ? 4 : (item.hoursWorked || 8.5)),
+            notes: item.notes || '',
+            markedById: currentUser?.id,
+            markedByName: currentUser?.name,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+
+      return [...newEntries, ...updatedExisting];
+    });
+
+    recordAuditLog({
+      actionType: 'ROSTER_ATTENDANCE_RECORDED',
+      itemText: `Recorded attendance roster for ${roster.length} staff members on ${date}`,
+      previousState: null,
+      newState: { date, count: roster.length }
+    });
+
+    pushNotification(
+      'Attendance Submitted',
+      `Attendance for ${roster.length} staff members on ${date} has been recorded successfully.`,
+      'success'
+    );
+
+    return true;
+  }, [currentUser, users, pushNotification, recordAuditLog]);
+
   const getScopedAttendance = useCallback((dateFilter = null) => {
     let list = attendanceRecords || [];
     if (dateFilter) {
@@ -2636,6 +2721,7 @@ export const AppProvider = ({ children }) => {
         clearCompletedPersonalTodos,
         attendanceRecords,
         recordAttendance,
+        recordRosterAttendance,
         updateAttendance,
         deleteAttendance,
         bulkMarkAttendance,

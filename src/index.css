@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -490,6 +491,66 @@ html.light .bg-emerald-600 *,
 html.light .bg-rose-600 *,
 html.light .bg-amber-600 * {
   color: #ffffff !important;
+}
+
+/* Attendance Roster Active Status Buttons - Ensure Pure Crisp White Text in Light & Dark Mode */
+.roster-status-btn-active,
+.roster-status-btn-active *,
+html.light .roster-status-btn-active,
+html.light .roster-status-btn-active * {
+  color: #ffffff !important;
+}
+
+/* Attendance Roster Employee Cards - Pristine Light & Dark Modes */
+.roster-employee-card {
+  background-color: #182234;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  transition: all 0.15s ease-in-out;
+}
+.roster-employee-card:hover {
+  border-color: rgba(71, 85, 105, 0.9);
+}
+.roster-employee-card .roster-emp-name {
+  color: #ffffff;
+}
+.roster-employee-card .roster-emp-role {
+  color: #94a3b8;
+}
+.roster-employee-card .roster-btn-unselected {
+  background-color: rgba(30, 41, 59, 0.85);
+  color: #94a3b8;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+}
+.roster-employee-card .roster-btn-unselected:hover {
+  background-color: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
+}
+
+/* Light Mode Overrides for Attendance Roster */
+html.light .roster-employee-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+}
+html.light .roster-employee-card:hover {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04) !important;
+}
+html.light .roster-employee-card .roster-emp-name {
+  color: #0f172a !important;
+}
+html.light .roster-employee-card .roster-emp-role {
+  color: #64748b !important;
+}
+html.light .roster-employee-card .roster-btn-unselected {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+html.light .roster-employee-card .roster-btn-unselected:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 html.light button.bg-indigo-600 svg,

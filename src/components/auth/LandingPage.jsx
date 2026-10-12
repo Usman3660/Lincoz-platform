@@ -59,8 +59,8 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
       
       {/* Navigation Bar */}
       <nav className="sticky top-0 z-50 bg-[#0B0F17]/90 backdrop-blur-xl border-b border-slate-800/80 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-18">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
             
             {/* Brand Logo */}
             <div className="flex items-center gap-3">
