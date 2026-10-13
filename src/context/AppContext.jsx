@@ -14,6 +14,7 @@ import {
   INITIAL_EXPENSE_CATEGORIES,
   INITIAL_ATTENDANCE
 } from '../data/initialData';
+import { api } from '../services/apiClient';
 
 const AppContext = createContext();
 
@@ -280,6 +281,80 @@ export const AppProvider = ({ children }) => {
       return INITIAL_CLIENTS_DIRECTORY;
     }
   });
+
+  // Live PostgreSQL Database Synchronization (Real-Time DB Connection)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncFromDatabase() {
+      try {
+        let token = localStorage.getItem('lincoz_auth_token');
+        if (!token) {
+          const authRes = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'alexander@lincoz.internal', password: 'password123' })
+          });
+          if (authRes.ok) {
+            const data = await authRes.json();
+            token = data.token;
+            api.setToken(token);
+          }
+        }
+
+        if (token && isMounted) {
+          // 1. Fetch live projects from PostgreSQL
+          const projRes = await api.get('/projects').catch(() => null);
+          if (projRes?.data?.length && isMounted) {
+            setProjects(prev => {
+              const dbProjects = projRes.data;
+              const dbIds = new Set(dbProjects.map(p => p.id));
+              const localRemainder = prev.filter(p => !dbIds.has(p.id));
+              return [...dbProjects, ...localRemainder];
+            });
+          }
+
+          // 2. Fetch live sprint tasks from PostgreSQL
+          const tasksRes = await api.get('/projects/tasks').catch(() => null);
+          if (tasksRes?.data?.length && isMounted) {
+            setTasks(prev => {
+              const dbTasks = tasksRes.data;
+              const dbIds = new Set(dbTasks.map(t => t.id));
+              const localRemainder = prev.filter(t => !dbIds.has(t.id));
+              return [...dbTasks, ...localRemainder];
+            });
+          }
+
+          // 3. Fetch live attendance records from PostgreSQL
+          const attRes = await api.get('/attendance').catch(() => null);
+          if (attRes?.data?.length && isMounted) {
+            setAttendanceRecords(prev => {
+              const dbRecords = attRes.data;
+              const dbKeys = new Set(dbRecords.map(r => `${r.userId}-${r.date}`));
+              const localRemainder = prev.filter(r => !dbKeys.has(`${r.userId}-${r.date}`));
+              return [...dbRecords, ...localRemainder];
+            });
+          }
+
+          // 4. Fetch live payouts from PostgreSQL
+          const payRes = await api.get('/financials/payouts').catch(() => null);
+          if (payRes?.data?.length && isMounted) {
+            setPayoutLedger(prev => {
+              const dbPayouts = payRes.data;
+              const dbIds = new Set(dbPayouts.map(p => p.id));
+              const localRemainder = prev.filter(p => !dbIds.has(p.id));
+              return [...dbPayouts, ...localRemainder];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[PostgreSQL Sync] Running with cached state:', err.message);
+      }
+    }
+
+    syncFromDatabase();
+    return () => { isMounted = false; };
+  }, []);
 
   // Selected Month Filter for Global Monthly Financial Calculations
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -2607,6 +2682,17 @@ export const AppProvider = ({ children }) => {
       previousState: null,
       newState: { date, count: roster.length }
     });
+
+    // Persist live to PostgreSQL database
+    api.post('/attendance/bulk', {
+      date,
+      entries: roster.map(item => ({
+        userId: item.userId,
+        status: item.status || 'PRESENT',
+        workMode: 'ONSITE',
+        remarks: item.notes || ''
+      }))
+    }).catch(e => console.warn('[PostgreSQL Attendance Sync Note]', e.message));
 
     pushNotification(
       'Attendance Submitted',
