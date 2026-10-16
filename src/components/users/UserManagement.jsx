@@ -24,13 +24,20 @@ import {
 } from 'lucide-react';
 
 export const UserManagement = () => {
-  const { users, createUser, updateUserPassword, isSuperAdmin, isPM, openProfileModal, currentUser } = useApp();
+  const { users, createUser, updateUserPassword, updateUserMfaKey, isSuperAdmin, isPM, openProfileModal, currentUser } = useApp();
 
   const [passwordModalUser, setPasswordModalUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
+  // 2FA Key Management (Super Admin Exclusive)
+  const [mfaModalUser, setMfaModalUser] = useState(null);
+  const [mfaKeyVal, setMfaKeyVal] = useState('');
+  const [mfaEnabledVal, setMfaEnabledVal] = useState(true);
+  const [showMfaKey, setShowMfaKey] = useState(true);
+  const [mfaError, setMfaError] = useState('');
 
   const [isProvisionModalOpen, setIsProvisionModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -44,6 +51,13 @@ export const UserManagement = () => {
   const [department, setDepartment] = useState('Core Engineering');
   const [activeFilter, setActiveFilter] = useState('ALL');
 
+  // Initial Password & 2FA Provisioning by Super Admin
+  const [provisionPassword, setProvisionPassword] = useState('password123');
+  const [showProvisionPassword, setShowProvisionPassword] = useState(false);
+  const [provisionMfaKey, setProvisionMfaKey] = useState('8892');
+  const [showProvisionMfaKey, setShowProvisionMfaKey] = useState(false);
+  const [provisionIsMfaEnabled, setProvisionIsMfaEnabled] = useState(true);
+
   const handleOpenProvisionModal = () => {
     setRole(isSuperAdmin() ? 'PROJECT_MANAGER' : 'ONSITE_MEMBER');
     setName('');
@@ -53,6 +67,12 @@ export const UserManagement = () => {
     setCompensationType('SALARIED');
     setSalary('');
     setPercentage('15.0');
+    setDepartment('Core Engineering');
+    setProvisionPassword('Lincoz#' + Math.floor(1000 + Math.random() * 9000));
+    setProvisionMfaKey(String(Math.floor(1000 + Math.random() * 9000)));
+    setProvisionIsMfaEnabled(true);
+    setShowProvisionPassword(false);
+    setShowProvisionMfaKey(false);
     setIsProvisionModalOpen(true);
   };
 
@@ -68,6 +88,9 @@ export const UserManagement = () => {
     createUser({
       name: name.trim(),
       email: email.trim(),
+      password: provisionPassword.trim() || 'password123',
+      mfaKey: provisionMfaKey.trim() || '8892',
+      isMfaEnabled: provisionIsMfaEnabled,
       role: finalRole,
       workMode,
       compensationType,
@@ -101,6 +124,25 @@ export const UserManagement = () => {
         setPasswordModalUser(null);
         setNewPassword('');
         setConfirmPassword('');
+      }
+    }
+  };
+
+  const handleSaveMfaKey = (e) => {
+    e.preventDefault();
+    setMfaError('');
+
+    const cleanKey = mfaKeyVal.trim();
+    if (!cleanKey) {
+      setMfaError('2FA Security Key cannot be empty.');
+      return;
+    }
+
+    if (mfaModalUser) {
+      const ok = updateUserMfaKey(mfaModalUser.id, cleanKey, mfaEnabledVal);
+      if (ok) {
+        setMfaModalUser(null);
+        setMfaKeyVal('');
       }
     }
   };
@@ -269,20 +311,37 @@ export const UserManagement = () => {
                   )}
 
                   {isSuperAdmin() && (
-                    <button
-                      onClick={() => {
-                        setPasswordModalUser(u);
-                        setNewPassword('');
-                        setConfirmPassword('');
-                        setPasswordError('');
-                        setShowPassword(false);
-                      }}
-                      className="p-1.5 rounded-xl bg-[#182234] hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
-                      title={`Change Password for ${u.name}`}
-                    >
-                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-[11px]">Password</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setPasswordModalUser(u);
+                          setNewPassword('');
+                          setConfirmPassword('');
+                          setPasswordError('');
+                          setShowPassword(false);
+                        }}
+                        className="p-1.5 rounded-xl bg-[#182234] hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
+                        title={`Change Password for ${u.name}`}
+                      >
+                        <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[11px]">Password</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setMfaModalUser(u);
+                          setMfaKeyVal(u.mfaKey || '8892');
+                          setMfaEnabledVal(u.isMfaEnabled !== false);
+                          setMfaError('');
+                          setShowMfaKey(true);
+                        }}
+                        className="p-1.5 rounded-xl bg-[#182234] hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-300 border border-slate-700/80 text-xs font-semibold flex items-center gap-1 transition-all"
+                        title={`Configure Fixed 2FA Key for ${u.name}`}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-[11px]">2FA Key</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -337,6 +396,21 @@ export const UserManagement = () => {
                         <span className="text-[10px] text-slate-500 font-normal">
                           (Set {new Date(u.passwordUpdatedAt).toLocaleDateString()})
                         </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {/* 2FA Key Status (Super Admin Only) */}
+                {isSuperAdmin() && (
+                  <div className="flex items-center justify-between pt-1.5 border-t border-slate-700/50">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> Fixed 2FA Key
+                    </span>
+                    <span className="font-mono text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                      {u.mfaKey || '8892'}
+                      {(!u.isMfaEnabled && u.role !== 'SUPER_ADMIN') && (
+                        <span className="text-[10px] text-slate-500 font-normal">(Off)</span>
                       )}
                     </span>
                   </div>
@@ -538,6 +612,110 @@ export const UserManagement = () => {
             )}
           </div>
 
+          {/* Super Admin Credential & 2FA Configuration */}
+          {isSuperAdmin() && (
+            <div className="p-4 rounded-2xl bg-[#111827] border border-amber-500/30 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" /> Security & 2FA Credentials Provisioning
+                </h4>
+                <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                  Super Admin
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Initial Password */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-300">
+                      Initial Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const pass = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                        setProvisionPassword(pass);
+                        setShowProvisionPassword(true);
+                      }}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                    >
+                      <Sparkles className="w-3 h-3" /> Auto-Gen
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showProvisionPassword ? 'text' : 'password'}
+                      value={provisionPassword}
+                      onChange={(e) => setProvisionPassword(e.target.value)}
+                      placeholder="Min 6 chars"
+                      required
+                      className="w-full pl-3 pr-8 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowProvisionPassword(!showProvisionPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showProvisionPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fixed 2FA Key */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-300">
+                      Fixed 2FA Key *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const key = String(Math.floor(1000 + Math.random() * 9000));
+                        setProvisionMfaKey(key);
+                        setShowProvisionMfaKey(true);
+                      }}
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5"
+                    >
+                      <Sparkles className="w-3 h-3" /> Auto-Gen
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showProvisionMfaKey ? 'text' : 'password'}
+                      value={provisionMfaKey}
+                      onChange={(e) => setProvisionMfaKey(e.target.value)}
+                      placeholder="e.g. 8892"
+                      required
+                      className="w-full pl-3 pr-8 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowProvisionMfaKey(!showProvisionMfaKey)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showProvisionMfaKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toggle 2FA */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-[#182234] border border-slate-800 cursor-pointer text-xs">
+                <div>
+                  <span className="font-bold text-white block">Enforce 2FA Authentication</span>
+                  <span className="text-[10px] text-slate-400">Employee must enter this exact fixed key at login</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={provisionIsMfaEnabled}
+                  onChange={(e) => setProvisionIsMfaEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
+                />
+              </label>
+            </div>
+          )}
+
           <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -667,6 +845,108 @@ export const UserManagement = () => {
                 className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5"
               >
                 <KeyRound className="w-3.5 h-3.5" /> Save Password
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* 2FA Key Management Modal (Super Admin Exclusive Control) */}
+      {mfaModalUser && (
+        <Modal
+          isOpen={!!mfaModalUser}
+          onClose={() => setMfaModalUser(null)}
+          title={`Configure Fixed 2FA Key — ${mfaModalUser.name}`}
+          subtitle="Set or update the mandatory two-factor authentication key for this employee."
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleSaveMfaKey} className="space-y-4">
+            {/* Super Admin Notice */}
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+              <div>
+                <strong className="text-white block mb-0.5">Super Admin Exclusive Control</strong>
+                Two-factor security keys are fixed and can only be set or modified by the Super Admin. Any arbitrary code typed at login will be rejected.
+              </div>
+            </div>
+
+            {mfaError && (
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{mfaError}</span>
+              </div>
+            )}
+
+            {/* Toggle 2FA */}
+            <label className="flex items-center justify-between p-3 rounded-xl bg-[#182234] border border-slate-700/80 cursor-pointer">
+              <div>
+                <span className="text-xs font-bold text-white block">Enforce 2FA Authentication</span>
+                <span className="text-[11px] text-slate-400">Require this fixed security key at sign-in</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={mfaEnabledVal}
+                onChange={(e) => setMfaEnabledVal(e.target.checked)}
+                className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
+              />
+            </label>
+
+            {/* Fixed Key Input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-300">
+                  Fixed 2FA Security Key *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const randomKey = String(Math.floor(1000 + Math.random() * 9000));
+                    setMfaKeyVal(randomKey);
+                  }}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" /> Generate 4-Digit Key
+                </button>
+              </div>
+
+              <div className="relative">
+                <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showMfaKey ? 'text' : 'password'}
+                  value={mfaKeyVal}
+                  onChange={(e) => setMfaKeyVal(e.target.value)}
+                  placeholder="e.g. 8892 or SEC-9941"
+                  required
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono tracking-widest font-bold"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMfaKey(!showMfaKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  title={showMfaKey ? 'Hide key' : 'Show key'}
+                >
+                  {showMfaKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Share this fixed key securely with <strong className="text-slate-300">{mfaModalUser.name}</strong>. They must enter this exact key upon login.
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setMfaModalUser(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Save 2FA Key
               </button>
             </div>
           </form>

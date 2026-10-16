@@ -43,10 +43,10 @@ async function main() {
 
   // 3. Seed Users
   for (const u of INITIAL_USERS) {
-    const role = u.role === 'PARTNER' ? 'PARTNER' 
+    const role = u.role === 'PARTNER' ? 'PARTNER'
       : u.role === 'PROJECT_MANAGER' ? 'PROJECT_MANAGER'
-      : u.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN'
-      : 'ONSITE_MEMBER';
+        : u.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN'
+          : 'ONSITE_MEMBER';
 
     const compType = u.compensationType === 'PERCENTAGE' ? 'PERCENTAGE' : 'SALARIED';
 
@@ -61,6 +61,7 @@ async function main() {
         salary: u.salary || 0,
         sharePercentage: u.percentage || 0,
         isMfaEnabled: !!u.isMfaEnabled,
+        mfaKey: u.mfaKey || '8892',
       },
       create: {
         id: u.id,
@@ -77,6 +78,7 @@ async function main() {
         sharePercentage: u.percentage || 0,
         avatarUrl: u.avatar || null,
         isMfaEnabled: !!u.isMfaEnabled,
+        mfaKey: u.mfaKey || '8892',
       },
     });
   }
@@ -245,3 +247,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+

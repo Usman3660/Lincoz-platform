@@ -49,9 +49,17 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
       return;
     }
 
-    if (requiresMfa && (!mfaCode || mfaCode.trim().length < 4)) {
-      setAuthError('Two-factor authentication code is required.');
-      return;
+    if (requiresMfa) {
+      const cleanCode = (mfaCode || '').trim();
+      const expectedKey = (targetUser.mfaKey || '8892').trim();
+      if (!cleanCode) {
+        setAuthError('Two-factor authentication key is required.');
+        return;
+      }
+      if (cleanCode !== expectedKey) {
+        setAuthError('Invalid 2FA Security Key. This key is fixed and can only be set or changed by the Super Admin.');
+        return;
+      }
     }
 
     setCurrentUserId(targetUser.id);
@@ -164,17 +172,23 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
             {/* Two-Factor Verification Code (When applicable) */}
             {requiresMfa && (
               <div className="p-3.5 rounded-xl bg-[#182234] border border-indigo-500/30 space-y-1.5 animate-fadeIn">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-indigo-400" /> Two-Factor Verification Code
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" /> Fixed 2FA Security Key
+                  </label>
+                  <span className="text-[10px] text-amber-400 font-semibold">Super Admin Enforced</span>
+                </div>
                 <input
-                  type="text"
+                  type="password"
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value)}
-                  placeholder="6-digit auth code"
+                  placeholder="Enter assigned fixed 2FA key"
                   className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono tracking-widest placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   required
                 />
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  This key is fixed and can only be set or changed by the Super Admin.
+                </p>
               </div>
             )}
 

@@ -1,9 +1,9 @@
 # Lincoz Platform | Software Requirements Specification (SRS) & Product Requirements Document (PRD)
 
-**Document Version:** 2.0.0  
+**Document Version:** 2.2.0  
 **Status:** Approved & Implemented  
 **Classification:** Enterprise Internal  
-**Target Environment:** Web (Vite + React 19 + Tailwind CSS)  
+**Target Environment:** Full-Stack Enterprise (Vite + React 19 + Tailwind CSS + Node.js Express API + PostgreSQL 16 + Redis 7 + Prisma ORM)  
 **System Name:** Lincoz Hybrid Project & Financial Management Platform  
 **Last Updated:** October 2026  
 
@@ -24,6 +24,7 @@ The purpose of this document is to specify the complete functional, technical, s
 - **2-Step Cryptographic Financial Governance**: Provide a dual-authorization queue for contractor disbursements (Step-1 PM Deliverable Verification $\rightarrow$ Step-2 Super Admin Cryptographic Sign-Off).
 - **Quality Gatekeeping & Separation of Duties**: Restrict task and project completion sign-offs to Project Managers and Super Admins, preventing unverified employee self-completion.
 - **Immutable Accountability**: Record all platform mutations in an append-only, WORM-compliant (Write Once, Read Many) audit trail with JSON state diffs.
+- **Enterprise Authentication & Fixed 2FA Governance**: Provide exclusive Super Admin control over employee initial credentials, password resets, and fixed two-factor authentication (2FA) security keys with strict sign-in verification.
 
 ---
 
@@ -35,7 +36,7 @@ The system supports four distinct operational personas with granular Row-Level S
 flowchart TD
     SA["Super Admin (Executive Owner)"] -->|"Full Access"| GL["Global Financial Ledger & 2-Step Sign-Off"]
     SA -->|"Full Access"| PM_MGT["Project, Task & Sprint Governance"]
-    SA -->|"Full Access"| UM["User & Client Directory + Password Control"]
+    SA -->|"Full Access"| UM["User & Client Directory + Password & 2FA Governance"]
     SA -->|"Full Access"| PRD_MGT["Project Requirement Document (PRD) Upload"]
     SA -->|"Full Access"| AUDIT["Global Immutable Audit Log"]
 
@@ -65,7 +66,7 @@ flowchart TD
 
 | Role Identifier | Title | Scope of Authority | Data & Action Boundaries |
 | :--- | :--- | :--- | :--- |
-| `SUPER_ADMIN` | Executive Owner / C-Suite | Global visibility across all entities; CRUD on all projects, tasks, milestones, clients, and users; commercial rate definition; compensation structure configuration; Step-2 payout authorization; financial statement generation; Project Requirement Document (PRD) authoring/upload; employee password management/overrides; system reset. | None. Unrestricted administrative authority. |
+| `SUPER_ADMIN` | Executive Owner / C-Suite | Global visibility across all entities; CRUD on all projects, tasks, milestones, clients, and users; commercial rate definition; compensation structure configuration; Step-2 payout authorization; financial statement generation; Project Requirement Document (PRD) authoring/upload; employee initial password & fixed 2FA security key provisioning, editing, and overrides; system reset. | None. Unrestricted administrative authority. |
 | `PROJECT_MANAGER` | Project Manager (Onsite) | Sprint orchestration; task creation/assignment; milestone lifecycle; blocker escalation/resolution; deliverable QA review; Step-1 contractor calculation verification; task completion sign-off (`PENDING_REVIEW` $\rightarrow$ `COMPLETED`); Backlog management (`BACKLOG` $\rightarrow$ `ASSIGNED`); Project status completion toggle (`ACTIVE` $\leftrightarrow$ `COMPLETED`); PRD view/download access. | **Confidentiality Firewall**: Restricted from executive profit margins, direct expense management, user salary provisioning, and client commercial rate/commission figures in project lists. Cannot change employee passwords. |
 | `ONSITE_MEMBER` | Senior / Staff Engineer, Designer | Personal task board; criteria checklist completion; work logging; deliverable link submission; internal task discussion; self-service profile editing (bio, avatar, contact details, skills). | **Backlog Isolation**: Backlog tasks and Backlog column are hidden. **Completion Barrier**: Cannot transition tasks to `COMPLETED` (must submit to `PENDING_REVIEW` for PM sign-off). Cannot view PRD documents, contractor payouts, or financial ledgers. Cannot edit compensation or role fields. |
 | `PARTNER` / `CONTRACTOR` | Percentage Partner Contractor | Dedicated contractor portal; deliverable submission (GitHub PRs, Figma links, demo servers); personal milestone payout ledger; self-service profile editing (bio, avatar, contact details, skills). | **Strict Confidentiality Firewall**: Client Total Contract Value (TCV), client hourly/milestone rates, peer payouts, and company financials are masked (`CONFIDENTIAL`). Backlog is hidden. Cannot transition tasks to `COMPLETED`. Cannot view PRD documents. |
@@ -277,15 +278,18 @@ sequenceDiagram
 - Department tagging (Engineering, Design, Operations, Product).
 - Work mode tagging (`ONSITE`, `REMOTE`).
 
-#### 3.5.3 Super Admin Employee Password Governance
-- **REQ-USR-03 (Password Management Authority)**:
-  - Only `SUPER_ADMIN` has the administrative privilege to reset, change, or override passwords for any employee or contractor.
-  - Integrated Password Reset modal within the Team Directory (`UserManagement.jsx`).
+#### 3.5.3 Super Admin Employee Credential & Password Governance (Provisioning & Overrides)
+- **REQ-USR-03 (Credential Governance & Password Management)**:
+  - **Account Creation Provisioning**: When provisioning any new employee or contractor in `UserManagement.jsx`, `SUPER_ADMIN` directly defines the initial account password with 1-click `Auto-Gen` generation option (`Lincoz#<random-digits>`).
+  - **Password Overrides**: Only `SUPER_ADMIN` has the administrative privilege to reset, change, or override passwords for any employee or contractor.
+  - **Integrated Management Modals**:
+    1. Dedicated Password Reset modal in the Team Directory (`UserManagement.jsx`).
+    2. Embedded credential management section in the Edit Profile modal (`EditProfileModal.jsx`).
   - **Validation Constraints**:
     - Minimum length: $\ge 6$ characters.
-    - Password confirmation match verification.
+    - Password confirmation match verification in dedicated modal.
     - Optional "Generate Strong Password" feature producing random, secure alphanumeric credentials.
-  - **Authentication Persistence**: Updated passwords persist immediately to local storage and reactive context. Subsequent sign-ins through `AuthPage.jsx` enforce the newly assigned credentials.
+  - **Authentication Persistence**: Updated passwords persist immediately to the PostgreSQL database (`users.passwordHash` via bcrypt cost 12), reactive context, and local storage. Subsequent sign-ins through `AuthPage.jsx` enforce the newly assigned credentials.
 
 #### 3.5.4 Profile Self-Editing Boundaries
 - **REQ-USR-04 (Role-Bounded Profile Editing)**:
@@ -310,6 +314,27 @@ sequenceDiagram
   - Features: Priority tags (`Low`, `Medium`, `High`), optional due dates, instant check/uncheck status, filterable tabs (All, Active, Completed), and batch clear completed.
   - Complete data privacy: Personal to-dos are never broadcast to managers or logged in organizational audit reports.
 
+#### 3.5.6 Fixed Two-Factor Authentication (2FA) Security Key Governance
+- **REQ-USR-06 (Strict Fixed 2FA Key Enforcement)**:
+  - Two-Factor Authentication strictly rejects arbitrary digit inputs or temporary dynamic OTP codes.
+  - Every account with 2FA enabled (`isMfaEnabled: true` or role `SUPER_ADMIN`) is bound to a single, fixed, assigned security key (e.g. `8892`, `4419`, `9021`, or custom alphanumeric key like `SEC-4091`).
+  - **Sign-In Verification**: At login via `AuthPage.jsx` and the backend `POST /api/auth/login`, entering any non-matching code returns an immediate security error:
+    > *"Invalid 2FA Security Key. This key is fixed and can only be set or changed by the Super Admin."*
+- **REQ-USR-07 (Super Admin 2FA Provisioning at Account Creation)**:
+  - The Provision Employee modal embeds the **"Security & 2FA Credentials Provisioning"** card.
+  - Super Admin configures:
+    1. **Initial Password** (with show/hide and Auto-Gen).
+    2. **Fixed 2FA Key** (with show/hide and 4-digit Auto-Gen).
+    3. **Enforce 2FA Toggle**: Checkbox controlling `isMfaEnabled`.
+  - Accounts are provisioned and immediately operational with these exact security parameters.
+- **REQ-USR-08 (Super Admin Credential & 2FA Editing via Edit Profile Modal)**:
+  - When Super Admin clicks "Edit" on any employee card (`EditProfileModal.jsx`), the modal displays the **"Security & 2FA Governance (Super Admin Exclusive)"** card.
+  - Super Admin can update the employee's password, modify their fixed 2FA key, and toggle 2FA requirement on/off.
+  - Non-Super Admin personnel cannot view, modify, or tamper with credential or 2FA fields.
+- **REQ-USR-09 (Dedicated 2FA Management Modal in Team Directory)**:
+  - Each employee card in `UserManagement.jsx` displays a dedicated **`2FA Key`** button (emerald `ShieldCheck` icon) for Super Admin.
+  - Opens a specialized modal for 1-click 4-digit key generation, key copying, and toggle enforcement with automatic immutable audit event capture (`SECURITY_2FA_UPDATED`).
+
 ---
 
 ### 3.6 Module 6: Immutable Append-Only Audit Trail (WORM Compliance)
@@ -323,7 +348,7 @@ sequenceDiagram
     actorId: string;            // User ID
     actorName: string;          // User display name
     actorRole: Role;            // User role at time of action
-    actionType: string;         // e.g., 'PAYOUT_DISBURSED', 'ITEM_CHECKED', 'PASSWORD_CHANGED'
+    actionType: string;         // e.g., 'PAYOUT_DISBURSED', 'ITEM_CHECKED', 'PASSWORD_CHANGED', 'SECURITY_2FA_UPDATED'
     targetEntity: string;       // e.g., 'TASK', 'MILESTONE', 'PAYOUT', 'USER', 'PROJECT'
     targetId: string;           // Entity UUID
     clientIp: string;           // Recorded IPv4 / IPv6
@@ -333,6 +358,49 @@ sequenceDiagram
   }
   ```
 - **Audit Viewer**: Side-by-side JSON state diff inspector accessible to Super Admins.
+
+---
+
+### 3.7 Module 7: Enterprise PostgreSQL 16 & Redis Persistence Architecture (Prisma ORM)
+
+To ensure high-throughput persistence, commercial reliability, and compliance, the platform incorporates an enterprise database architecture:
+
+```mermaid
+flowchart TD
+    UI["Vite + React 19 Frontend (Port 3000)"] -->|"REST API (HTTP/JSON + Cookies)"| API["Express Enterprise API (Port 5000)"]
+    API -->|"Prisma ORM (Connection Pool)"| PG[("PostgreSQL 16 Database (Port 5432)")]
+    API -->|"Session Cache & Rate Limiting"| REDIS[("Redis 7 Cache (Port 6379)")]
+    
+    subgraph Data Models
+        PG --> ORG["Organizations (Multi-Tenancy)"]
+        PG --> USR["Users (RBAC, Bcrypt Passwords, Fixed 2FA Keys)"]
+        PG --> PRJ["Projects & Deliverables"]
+        PG --> TSK["Tasks & Sprint Items"]
+        PG --> FIN["Payouts & Financial Ledgers"]
+        PG --> ATT["Daily Attendance Roster"]
+        PG --> AUD["WORM-Compliant Audit Logs"]
+    end
+```
+
+#### 3.7.1 Functional Specifications
+- **REQ-DB-01 (Prisma Multi-Tenant Relational Schema)**:
+  - Complete relational schema mapped across 10 discrete models (`organizations`, `users`, `clients`, `projects`, `tasks`, `payouts`, `direct_expenses`, `financial_ledger`, `attendance_records`, `audit_logs`).
+  - Strict foreign key constraints and cascade rules ensuring relational integrity.
+  - `User` model stores `passwordHash` (bcrypt salt cost 12), `isMfaEnabled`, `mfaKey`, `failedAttempts`, and `lockedUntil`.
+- **REQ-DB-02 (Docker Compose Orchestration & Healthchecks)**:
+  - Orchestrated via `docker-compose.yml`:
+    - `postgres:16-alpine`: Port `5432`, healthcheck (`pg_isready`), persistent volume `pgdata`.
+    - `redis:7-alpine`: Port `6379`, healthcheck (`redis-cli ping`), persistent volume `redisdata`.
+- **REQ-DB-03 (Authentication Security Hardening & Account Lockout)**:
+  - Password hashing utilizing `bcryptjs` with min salt cost factor of 12.
+  - Account lockout automatically activated upon 5 consecutive failed login attempts (15-minute lock duration).
+  - Short-lived JWT access tokens (15-minute expiry) paired with `httpOnly`, `Secure`, `SameSite=Strict` refresh tokens (7-day expiry).
+- **REQ-DB-04 (Atomic Dual-Stage Payout Financial Transactions)**:
+  - Step 2 final payout disbursement (`POST /api/financials/payouts/disburse-admin`) executes inside an atomic Prisma transaction (`prisma.$transaction`).
+  - Verifies Super Admin cryptographic MFA token, transitions payout state to `DISBURSED`, writes double-entry bookkeeping entry to `financial_ledger`, and records an immutable audit log.
+- **REQ-DB-05 (Super Admin 2FA Key Management API)**:
+  - Protected endpoint `PATCH /api/users/:id/mfa-key` restricted to `SUPER_ADMIN` role.
+  - Updates `mfaKey` and `isMfaEnabled` in PostgreSQL, generating an audit event in `audit_logs`.
 
 ---
 
@@ -362,12 +430,19 @@ sequenceDiagram
 
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Framework** | React | `^19.3.0` | Core UI component hierarchy |
+| **Frontend Framework** | React | `^19.3.0` | Core UI component hierarchy & reactive state |
 | **Bundler & Dev Server** | Vite | `^8.3.1` | Ultra-fast HMR and Rollup-based production builds |
 | **Styling** | Tailwind CSS | `^4.3.3` | Utility-first styling & custom CSS design tokens |
 | **Icons** | Lucide React | `^1.49.0` | Modern SVG iconography |
 | **Date Utilities** | date-fns | `^4.4.0` | Calendar, sprint, and timeline calculations |
 | **Micro-Interactions** | canvas-confetti | `^1.9.4` | Milestone, task completion, and payout sign-off celebrations |
+| **Backend REST API** | Express.js | `^4.21.2` | Enterprise REST API routes, controllers, and services |
+| **Relational Database** | PostgreSQL | `16-alpine` | Multi-tenant ACID relational store on port 5432 |
+| **In-Memory Cache** | Redis | `7-alpine` | Fast session store, token invalidation & rate limiting on port 6379 |
+| **ORM & Migrations** | Prisma ORM | `^5.22.0` | Type-safe schema definition, relations, migrations & transactions |
+| **Password Security** | bcryptjs | `^2.4.3` | Cryptographic password hashing (salt cost factor 12) |
+| **Tokens & Auth** | jsonwebtoken | `^9.0.2` | Short-lived access JWTs & secure httpOnly refresh tokens |
+| **Containerization** | Docker & Compose | `v2+` | Containerized PostgreSQL 16 & Redis 7 development & production infrastructure |
 
 ---
 
@@ -375,17 +450,72 @@ sequenceDiagram
 
 ```
 d:/Lincoz/project managment tool/
+├── docker-compose.yml                       # Docker orchestration for PostgreSQL 16 & Redis 7
 ├── index.html                               # HTML5 Entrypoint with modern meta & typography
-├── package.json                             # Dependencies & scripts
-├── vite.config.js                           # Vite configuration & plugins
-├── README.md                                # Quickstart & persona switcher guide
+├── package.json                             # Frontend dependencies & build scripts
+├── vite.config.js                           # Vite configuration, alias paths & plugins
+├── README.md                                # Platform overview, quickstart & credentials guide
 ├── REQUIREMENTS.md                          # Software Requirements Specification (this document)
-└── src/
-    ├── App.jsx                              # Main routing & state provider shell
+├── DEPLOYMENT_CHECKLIST.md                  # Cloud & server deployment verification guide
+│
+├── server/                                  # Enterprise Node.js / Express Backend (Port 5000)
+│   ├── package.json                         # Backend microservice dependencies
+│   ├── .env                                 # Database URL, Redis URL, JWT Secrets & Server Port
+│   ├── prisma/
+│   │   ├── schema.prisma                    # 10-model PostgreSQL schema with relations & indices
+│   │   └── seed.js                          # Database seeder with bcrypt hashes & default fixed 2FA keys
+│   └── src/
+│       ├── index.js                         # Server bootstrap & lifecycle listener
+│       ├── server.js                        # Express app configuration, CORS, cookies & helmet
+│       ├── config/
+│       │   ├── database.js                  # PrismaClient singleton with connection pooling
+│       │   └── redis.js                     # Redis client connection & caching helpers
+│       ├── infrastructure/
+│       │   └── storage/
+│       │       └── upload.service.js        # Local disk & S3-compatible file storage driver
+│       ├── middleware/
+│       │   ├── auth.js                      # JWT bearer verification & user extraction
+│       │   ├── rbac.js                      # Strict role authorization middleware
+│       │   ├── errorHandler.js              # Centralized JSON error response handler
+│       │   ├── validate.js                  # Zod request schema validation middleware
+│       │   └── rateLimiter.js               # Redis/memory rate limiting on auth endpoints
+│       └── modules/
+│           ├── auth/                        # Login, fixed 2FA challenge, refresh token & lockout
+│           │   ├── auth.controller.js
+│           │   ├── auth.routes.js
+│           │   └── auth.service.js
+│           ├── users/                       # Staff CRUD, password reset & Super Admin 2FA key management
+│           │   ├── users.controller.js
+│           │   ├── users.routes.js
+│           │   └── users.service.js
+│           ├── financials/                  # Invoices, ledgers, and 2-step atomic payout disbursements
+│           │   ├── financials.controller.js
+│           │   ├── financials.routes.js
+│           │   └── financials.service.js
+│           ├── projects/                    # Project lifecycle, PRD document upload & isolation
+│           │   ├── projects.controller.js
+│           │   ├── projects.routes.js
+│           │   └── projects.service.js
+│           ├── tasks/                       # Task boards, checklist items, blockers & PM sign-off
+│           │   ├── tasks.controller.js
+│           │   ├── tasks.routes.js
+│           │   └── tasks.service.js
+│           ├── attendance/                  # Daily roster marking, status summaries & employee self-view
+│           │   ├── attendance.controller.js
+│           │   ├── attendance.routes.js
+│           │   └── attendance.service.js
+│           ├── audit/                       # Immutable WORM audit event stream & JSON diff inspection
+│           │   ├── audit.controller.js
+│           │   ├── audit.routes.js
+│           │   └── audit.service.js
+│           └── ai-proxy/                    # Enterprise AI endpoint proxy & summarization gateway
+│
+└── src/                                     # React 19 Frontend Client (Port 3000)
+    ├── App.jsx                              # Main routing, layout shell & state provider wrapper
     ├── main.jsx                             # React DOM root mounting
-    ├── index.css                            # Design system tokens & print styles
+    ├── index.css                            # Tailored design system tokens & clean print media styles
     ├── context/
-    │   └── AppContext.jsx                   # Unified reactive store (projects, tasks, payouts, audit, auth)
+    │   └── AppContext.jsx                   # Unified reactive store (users, projects, tasks, payouts, audit, auth)
     ├── data/
     │   ├── initialData.js                   # Seed dataset & credentials
     │   └── seedData.js                      # Extended seed records (Alexander, Sarah, Alex, David)
@@ -393,14 +523,15 @@ d:/Lincoz/project managment tool/
     │   └── printDocument.js                 # Window print & document formatting helper
     └── components/
         ├── auth/
-        │   └── AuthPage.jsx                 # Secure login, employee credentials & password authentication
+        │   ├── AuthPage.jsx                 # Secure login, employee credentials & fixed 2FA verification challenge
+        │   └── LandingPage.jsx              # Enterprise product splash page
         ├── layout/
         │   ├── Header.jsx                   # Persona switcher, notifications, profile menu & branding
         │   └── Sidebar.jsx                  # Role-aware navigation drawer
         ├── profile/
-        │   └── EditProfileModal.jsx         # User profile self-editing modal (avatar, bio, skills, contact)
+        │   └── EditProfileModal.jsx         # User profile self-editing + Super Admin 2FA/Password Governance card
         ├── dashboard/
-        │   ├── SuperAdminDashboard.jsx      # Global financials, sign-off queue, KPIs
+        │   ├── SuperAdminDashboard.jsx      # Global financials, sign-off queue, KPIs & liability tracking
         │   ├── ProjectManagerDashboard.jsx  # Sprint velocity, blockers, deliverable QA, project completion
         │   └── PartnerDashboard.jsx         # Data-isolated contractor portal
         ├── projects/
@@ -420,7 +551,7 @@ d:/Lincoz/project managment tool/
         ├── financials/
         │   ├── FinancialsLedger.jsx         # 4-table financial engine (Clients/Sources/Payroll/Expenses)
         │   ├── PayinPayoutManager.jsx       # Milestone invoicing & contractor disbursement
-        │   ├── DisbursementModal.jsx        # 2-step disbursement release dialog
+        │   ├── DisbursementModal.jsx        # 2-step disbursement release dialog with MFA validation
         │   ├── ProjectInvoiceModal.jsx      # Client billing invoice generator
         │   └── MonthlyStatementModal.jsx     # Official printable financial P&L statement
         ├── clients/
@@ -428,7 +559,7 @@ d:/Lincoz/project managment tool/
         │   ├── AddClientModal.jsx           # Client authoring modal
         │   └── ClientDetailModal.jsx        # Client contract & project inspect modal
         ├── users/
-        │   └── UserManagement.jsx           # Staff provisioning, compensation setup & password override
+        │   └── UserManagement.jsx           # Staff provisioning, compensation setup, 2FA provisioning & key reset modal
         ├── attendance/
         │   └── AttendanceModule.jsx         # Attendance governance, check-in logging, bulk-marking & employee self-view
         ├── audit/
@@ -461,4 +592,10 @@ d:/Lincoz/project managment tool/
 | **AC-13** | **Profile Self-Editing Boundaries** | Users can self-edit Photo, Name, Email, Phone, Bio, and Skills via `EditProfileModal.jsx`. Administrative fields (Role, Status, Salary/Percentage) are strictly locked to Super Admin. | ✅ |
 | **AC-14** | **Personal To-Do Decoupling** | Employees can maintain private personal to-do scratchpads strictly scoped to their user account with zero connection to projects, deliverables, or administrative oversight. | ✅ |
 | **AC-15** | **Staff Attendance Module & Interactive Roster Marking** | Project Managers and Super Admins can mark daily attendance through an interactive full-team roster with colored status rows (Green for Present, Red for Absent, Amber for Leave, Cyan for Half Day), circular `[A] [P] [L] [HD]` toggles, real-time summary statistics, and 1-click roster submission. Employees (`ONSITE_MEMBER`, `PARTNER_FREELANCER`) can strictly only view their own verified attendance logs and hours with zero mutation access or peer visibility. | ✅ |
+| **AC-16** | **Fixed 2FA Key Verification & Non-Arbitrary Challenge** | Authentication strictly verifies incoming 2FA challenges against the user's fixed `mfaKey` (default `8892` or customized by Super Admin). Random, arbitrary, or mismatched 4-digit codes are strictly rejected with an explicit invalid-key error message. | ✅ |
+| **AC-17** | **Super Admin Account Creation Provisioning** | When Super Admin creates a new team member in `UserManagement.jsx`, the modal includes dedicated "Security & 2FA Credentials Provisioning" controls, providing auto-generation or manual specification of initial password ($\ge 6$ characters) and fixed 4-digit 2FA key. The new user is immediately operable with these credentials. | ✅ |
+| **AC-18** | **Super Admin Profile Edit Credential & 2FA Governance** | When Super Admin edits any user via `EditProfileModal.jsx`, a dedicated "Security & 2FA Governance" card is rendered, enabling Super Admin to update the password, view/update the fixed 2FA key, and toggle 2FA requirement on/off. Non-admin users editing their own profile see neither password nor 2FA fields. | ✅ |
+| **AC-19** | **Dedicated 2FA Management Action Modal** | User Management provides a dedicated 2FA action button per user row (`ShieldCheck` icon) opening a quick-action modal to toggle 2FA and configure or reassign a fixed 4-digit security key without editing full employee attributes. | ✅ |
+| **AC-20** | **Enterprise PostgreSQL 16 & Redis Persistence with Prisma ORM** | All relational models (organizations, users, clients, projects, tasks, payouts, attendance, audit logs) are backed by a production-ready PostgreSQL 16 database managed via Prisma ORM (`schema.prisma`), with bcrypt salt cost 12 password hashing, Redis 7 session/caching, and Docker Compose orchestration. | ✅ |
+
 

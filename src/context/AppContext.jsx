@@ -1692,10 +1692,12 @@ export const AppProvider = ({ children }) => {
   };
 
   const createUser = (userData) => {
+    const defaultMfaKey = userData.mfaKey || String(Math.floor(1000 + Math.random() * 9000));
     const newUser = {
       id: 'usr-' + Date.now(),
       avatar: `https://images.unsplash.com/photo-${1530000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
-      isMfaEnabled: userData.role === 'SUPER_ADMIN',
+      isMfaEnabled: userData.isMfaEnabled !== undefined ? userData.isMfaEnabled : (userData.role === 'SUPER_ADMIN'),
+      mfaKey: defaultMfaKey,
       workMode: userData.workMode || 'ONSITE',
       compensationType: userData.compensationType || 'SALARIED',
       ...userData
@@ -1727,14 +1729,15 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUser = (userId, updates) => {
-    // If password is being updated, verify Super Admin
-    if (updates.password && !isSuperAdmin()) {
+    // If password or mfaKey is being updated, verify Super Admin
+    if ((updates.password || updates.mfaKey !== undefined) && !isSuperAdmin()) {
       pushNotification(
         'Action Restricted',
-        'Only Super Admins can change employee passwords.',
+        'Only Super Admins can change employee passwords or 2FA keys.',
         'warning'
       );
       delete updates.password;
+      delete updates.mfaKey;
     }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
     pushNotification('User Updated', 'User profile details were updated.', 'info', {
@@ -1792,6 +1795,57 @@ export const AppProvider = ({ children }) => {
           targetRoles: ['SUPER_ADMIN'],
           targetUserId: userId
         }
+      );
+      return true;
+    }
+    return false;
+  };
+
+  const updateUserMfaKey = (userId, newMfaKey, isMfaEnabled = true) => {
+    if (!isSuperAdmin()) {
+      pushNotification(
+        'Action Restricted',
+        'Security Policy: Only the Super Admin has authorization to set or modify 2FA security keys.',
+        'error'
+      );
+      return false;
+    }
+
+    const cleanKey = (newMfaKey || '').trim();
+    if (!cleanKey) {
+      pushNotification(
+        'Invalid Key',
+        '2FA Security Key cannot be empty.',
+        'error'
+      );
+      return false;
+    }
+
+    let targetUser = null;
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        targetUser = u;
+        return {
+          ...u,
+          mfaKey: cleanKey,
+          isMfaEnabled: isMfaEnabled !== undefined ? isMfaEnabled : u.isMfaEnabled,
+        };
+      }
+      return u;
+    }));
+
+    if (targetUser) {
+      recordAuditLog({
+        actionType: 'SECURITY_2FA_UPDATED',
+        itemText: `Super Admin ${currentUser.name} updated fixed 2FA security key for ${targetUser.name} (${targetUser.email}).`,
+        previousState: { mfaKey: targetUser.mfaKey, isMfaEnabled: targetUser.isMfaEnabled },
+        newState: { mfaKey: cleanKey, isMfaEnabled }
+      });
+
+      pushNotification(
+        '2FA Security Key Updated',
+        `Fixed 2FA key updated successfully for ${targetUser.name}.`,
+        'success'
       );
       return true;
     }
@@ -2786,6 +2840,7 @@ export const AppProvider = ({ children }) => {
         createUser,
         updateUser,
         updateUserPassword,
+        updateUserMfaKey,
         resetToDefaults,
         isSuperAdmin,
         isPM,

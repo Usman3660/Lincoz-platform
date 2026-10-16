@@ -18,7 +18,9 @@ import {
   Percent,
   Laptop,
   Lock,
-  Info
+  Info,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
@@ -43,6 +45,13 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
   const [compensationType, setCompensationType] = useState('SALARIED');
   const [salary, setSalary] = useState('');
   const [percentage, setPercentage] = useState('');
+
+  // Super Admin Security Controls (Password & 2FA Key)
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editMfaKey, setEditMfaKey] = useState('');
+  const [showEditMfaKey, setShowEditMfaKey] = useState(false);
+  const [editIsMfaEnabled, setEditIsMfaEnabled] = useState(false);
 
   // Personal Info (Self-managed only)
   const [name, setName] = useState('');
@@ -70,6 +79,13 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       setBio(targetUser.bio || 'Passionate software and engineering professional contributing to high-velocity delivery.');
       setAvatar(targetUser.avatar || '');
       setSkills(targetUser.skills ? targetUser.skills.join(', ') : 'React, Node.js, TypeScript, Cloud Architecture');
+
+      // Super Admin credentials
+      setEditPassword(targetUser.password || 'password123');
+      setEditMfaKey(targetUser.mfaKey || '8892');
+      setEditIsMfaEnabled(targetUser.isMfaEnabled !== false);
+      setShowEditPassword(false);
+      setShowEditMfaKey(false);
     }
   }, [targetUser, isOpen]);
 
@@ -164,6 +180,18 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         avatar: avatar || targetUser.avatar,
         skills: parsedSkills
       };
+    }
+
+    // Super Admin credential & 2FA overrides
+    if (isSuperAdmin()) {
+      if (editPassword && editPassword.trim()) {
+        updatedData.password = editPassword.trim();
+        updatedData.passwordUpdatedAt = new Date().toISOString();
+      }
+      if (editMfaKey && editMfaKey.trim()) {
+        updatedData.mfaKey = editMfaKey.trim();
+      }
+      updatedData.isMfaEnabled = editIsMfaEnabled;
     }
 
     try {
@@ -438,6 +466,108 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                   </div>
                 )}
               </div>
+
+              {/* Security & Access Credentials (Super Admin Control) */}
+              <div className="p-4 rounded-2xl bg-[#182234] border border-amber-500/30 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-amber-400" /> Security & 2FA Governance
+                  </h4>
+                  <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                    Super Admin Exclusive
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Password */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        Account Password *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const gen = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                          setEditPassword(gen);
+                          setShowEditPassword(true);
+                        }}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                      >
+                        <Sparkles className="w-3 h-3" /> Auto-Gen
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showEditPassword ? 'text' : 'password'}
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="Min 6 characters"
+                        required
+                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Fixed 2FA Key */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        Fixed 2FA Key *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const genKey = String(Math.floor(1000 + Math.random() * 9000));
+                          setEditMfaKey(genKey);
+                          setShowEditMfaKey(true);
+                        }}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5"
+                      >
+                        <Sparkles className="w-3 h-3" /> Auto-Gen
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showEditMfaKey ? 'text' : 'password'}
+                        value={editMfaKey}
+                        onChange={(e) => setEditMfaKey(e.target.value)}
+                        placeholder="e.g. 8892"
+                        required
+                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditMfaKey(!showEditMfaKey)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showEditMfaKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle 2FA */}
+                <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs">
+                  <div>
+                    <span className="font-bold text-white block">Enforce 2FA Authentication</span>
+                    <span className="text-[10px] text-slate-400">Employee must enter this exact fixed key at login</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editIsMfaEnabled}
+                    onChange={(e) => setEditIsMfaEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-950 border-slate-700"
+                  />
+                </label>
+              </div>
             </>
           ) : (
             /* ============================================================== */
@@ -597,6 +727,110 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                   className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 custom-scrollbar"
                 />
               </div>
+
+              {/* Super Admin Self-Security Credentials */}
+              {isSuperAdmin() && (
+                <div className="p-4 rounded-2xl bg-[#182234] border border-amber-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-amber-400" /> Security & 2FA Governance
+                    </h4>
+                    <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                      Super Admin Credentials
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Password */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-300">
+                          Super Admin Password *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const gen = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                            setEditPassword(gen);
+                            setShowEditPassword(true);
+                          }}
+                          className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                        >
+                          <Sparkles className="w-3 h-3" /> Auto-Gen
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type={showEditPassword ? 'text' : 'password'}
+                          value={editPassword}
+                          onChange={(e) => setEditPassword(e.target.value)}
+                          placeholder="Min 6 characters"
+                          required
+                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Fixed 2FA Key */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-300">
+                          Fixed 2FA Key *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const genKey = String(Math.floor(1000 + Math.random() * 9000));
+                            setEditMfaKey(genKey);
+                            setShowEditMfaKey(true);
+                          }}
+                          className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5"
+                        >
+                          <Sparkles className="w-3 h-3" /> Auto-Gen
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type={showEditMfaKey ? 'text' : 'password'}
+                          value={editMfaKey}
+                          onChange={(e) => setEditMfaKey(e.target.value)}
+                          placeholder="e.g. 8892"
+                          required
+                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEditMfaKey(!showEditMfaKey)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          {showEditMfaKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle 2FA */}
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs">
+                    <div>
+                      <span className="font-bold text-white block">Enforce 2FA Authentication</span>
+                      <span className="text-[10px] text-slate-400">Require fixed 2FA key at sign-in</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={editIsMfaEnabled}
+                      onChange={(e) => setEditIsMfaEnabled(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-950 border-slate-700"
+                    />
+                  </label>
+                </div>
+              )}
             </>
           )}
 

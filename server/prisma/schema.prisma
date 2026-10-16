@@ -73,6 +73,7 @@ model User {
   sharePercentage  Decimal          @default(0) @db.Decimal(5, 2)
   avatarUrl        String?
   isMfaEnabled     Boolean          @default(false)
+  mfaKey           String?          @default("8892")
   failedAttempts   Int              @default(0) // Rule 4: Account Lockout tracking
   lockedUntil      DateTime?
   isActive         Boolean          @default(true)

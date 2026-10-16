@@ -12,6 +12,7 @@ export const INITIAL_USERS = [
     compensationType: 'SALARIED',
     salary: 180000,
     isMfaEnabled: true,
+    mfaKey: '8892',
   },
   {
     id: 'usr-pm',
@@ -26,6 +27,7 @@ export const INITIAL_USERS = [
     compensationType: 'SALARIED',
     salary: 135000,
     isMfaEnabled: true,
+    mfaKey: '4419',
   },
   {
     id: 'usr-eng',
@@ -138,6 +140,7 @@ export const INITIAL_USERS = [
     compensationType: 'PERCENTAGE',
     percentage: 15.0,
     isMfaEnabled: true,
+    mfaKey: '9021',
   },
   {
     id: 'usr-partner-2',
@@ -152,6 +155,7 @@ export const INITIAL_USERS = [
     compensationType: 'PERCENTAGE',
     percentage: 20.0,
     isMfaEnabled: true,
+    mfaKey: '5173',
   },
 ];
 
