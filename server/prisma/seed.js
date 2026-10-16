@@ -37,12 +37,12 @@ async function main() {
   });
   console.log(`✅ Organization active: ${org.name}`);
 
-  // 2. Hash Default Password (cost factor 12)
+  // 2. Salt for Password Hashing (cost factor 12)
   const salt = await bcrypt.genSalt(12);
-  const passwordHash = await bcrypt.hash('password123', salt);
 
   // 3. Seed Users
   for (const u of INITIAL_USERS) {
+    const passwordHash = await bcrypt.hash(u.password || 'irfan@234', salt);
     const role = u.role === 'PARTNER' ? 'PARTNER'
       : u.role === 'PROJECT_MANAGER' ? 'PROJECT_MANAGER'
         : u.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN'

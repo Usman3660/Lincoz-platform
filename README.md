@@ -86,13 +86,10 @@ npm run preview
 
 | Stakeholder Persona | Email | Default Password | Fixed 2FA Key | Role Scope |
 | :--- | :--- | :--- | :--- | :--- |
-| **Alexander Wright** | `alexander@lincoz.com` | `admin123` | `8892` | `SUPER_ADMIN` |
-| **Sarah Jenkins** | `sarah@lincoz.com` | `pm1234` | `8892` | `PROJECT_MANAGER` |
-| **Alex Rivera** | `alex@lincoz.com` | `dev123` | `8892` | `ONSITE_MEMBER` |
-| **David Vance** | `david@vancedesign.io` | `freelance123` | `8892` | `PARTNER_FREELANCER` |
+| **Irfan** | `irfan@lincoz.com` | `irfan@234` | `8892` | `SUPER_ADMIN` |
 
 > [!NOTE]
-> Fixed 2FA keys can be updated at any time by the **Super Admin** inside User Management or the employee's Edit Profile modal.
+> All legacy demo data has been cleaned. Super Admin (`irfan@lincoz.com`) can provision new Project Managers, Engineers, Designers, and Freelance Partners directly from the **User Management** panel. Fixed 2FA keys can be managed anytime by the Super Admin.
 
 ---
 

@@ -19,6 +19,26 @@ import { api } from '../services/apiClient';
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
+  // Automatic clean state migration check (Wipes legacy demo data from client localStorage)
+  const SCHEMA_VERSION = 'lincoz_v3_irfan_clean';
+  try {
+    const currentVersion = localStorage.getItem('lincoz_schema_version');
+    if (currentVersion !== SCHEMA_VERSION) {
+      localStorage.setItem('lincoz_schema_version', SCHEMA_VERSION);
+      localStorage.removeItem('lincoz_users');
+      localStorage.removeItem('lincoz_projects');
+      localStorage.removeItem('lincoz_tasks');
+      localStorage.removeItem('lincoz_clients');
+      localStorage.removeItem('lincoz_contractors');
+      localStorage.removeItem('lincoz_payout_ledger');
+      localStorage.removeItem('lincoz_attendance');
+      localStorage.removeItem('lincoz_direct_expenses');
+      localStorage.removeItem('lincoz_client_invoices');
+      localStorage.removeItem('lincoz_audit_logs');
+      localStorage.setItem('lincoz_current_user_id', 'usr-admin');
+    }
+  } catch (e) {}
+
   // Theme state ('dark' | 'light')
   const [theme, setTheme] = useState(() => {
     try {
