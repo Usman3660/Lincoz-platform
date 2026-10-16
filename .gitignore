@@ -32,6 +32,8 @@ coverage/
 
 # Secrets & Environment variables (RULE 1: Never commit secrets)
 .env
+**/.env
+server/.env
 .env.local
 .env.development.local
 .env.test.local

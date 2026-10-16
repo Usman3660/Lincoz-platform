@@ -22,10 +22,17 @@ const ALLOWED_MIME_TYPES = {
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;    // 5MB
 const MAX_DOC_SIZE = 25 * 1024 * 1024;    // 25MB
 
-// Local uploads directory (securely outside web root)
-const UPLOAD_DIR = path.resolve(process.cwd(), 'storage', 'secure_uploads');
+// Local uploads directory (securely outside web root, with /tmp fallback for Vercel serverless)
+const UPLOAD_DIR = process.env.VERCEL 
+  ? path.resolve('/tmp', 'storage', 'secure_uploads')
+  : path.resolve(process.cwd(), 'storage', 'secure_uploads');
+
 if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  } catch (err) {
+    // Handled gracefully in read-only serverless environments
+  }
 }
 
 // Memory storage for server-side validation before writing to disk or cloud

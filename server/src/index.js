@@ -1,5 +1,5 @@
 /**
- * Lincoz Enterprise - Application Entrypoint
+ * Lincoz Enterprise - Application Entrypoint (Supabase Cloud Database Connected)
  * Handles process bootstrapping, graceful termination, and unhandled rejection logging.
  */
 

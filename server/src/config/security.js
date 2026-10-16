@@ -20,7 +20,9 @@ export const corsMiddleware = cors({
       'http://127.0.0.1:5173'
     ];
 
-    if (allowedOrigins.includes(origin)) {
+    const isVercelDomain = origin.endsWith('.vercel.app');
+
+    if (allowedOrigins.includes(origin) || isVercelDomain) {
       callback(null, true);
     } else {
       callback(new Error(`CORS blocked: Origin ${origin} not permitted.`));
