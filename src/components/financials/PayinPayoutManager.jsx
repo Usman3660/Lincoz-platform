@@ -993,7 +993,6 @@ export const PayinPayoutManager = () => {
               Pay-In & Pay-Out Hub
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed font-medium">
-              Record client invoices, log inward cash payments (Pay-In), disburse source referral commissions, settle percentage-based team shares, and track project direct infrastructure expenses.
             </p>
           </div>
 
@@ -1604,11 +1603,10 @@ export const PayinPayoutManager = () => {
                           <td className="p-3.5">
                             <div>
                               <p className="font-bold text-white">{p.contractorName || p.employeeName}</p>
-                              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                isSal
+                              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isSal
                                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                                   : 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
-                              }`}>
+                                }`}>
                                 {isSal ? 'Salaried' : `${p.agreementPercentage || 15}% Share`}
                               </span>
                             </div>
@@ -1633,11 +1631,10 @@ export const PayinPayoutManager = () => {
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => setPrintRecord({ ...p, flowType: 'PERCENTAGE_PAYOUT' })}
-                                className={`p-1.5 rounded-lg transition-colors ${
-                                  isSal
+                                className={`p-1.5 rounded-lg transition-colors ${isSal
                                     ? 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10'
                                     : 'text-slate-400 hover:text-purple-400 hover:bg-purple-500/10'
-                                }`}
+                                  }`}
                                 title="Print Payout Voucher"
                               >
                                 <Printer className="w-3.5 h-3.5" />
@@ -1772,11 +1769,10 @@ export const PayinPayoutManager = () => {
                 <button
                   type="button"
                   onClick={() => handleSwitchEmployeePayoutType('PERCENTAGE')}
-                  className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    employeePayoutType === 'PERCENTAGE'
+                  className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${employeePayoutType === 'PERCENTAGE'
                       ? 'bg-purple-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Percent className="w-4 h-4" />
                   Percentage-Based
@@ -1784,11 +1780,10 @@ export const PayinPayoutManager = () => {
                 <button
                   type="button"
                   onClick={() => handleSwitchEmployeePayoutType('SALARIED')}
-                  className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    employeePayoutType === 'SALARIED'
+                  className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${employeePayoutType === 'SALARIED'
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Users className="w-4 h-4" />
                   Salaried Employee
@@ -2262,11 +2257,10 @@ export const PayinPayoutManager = () => {
                                     setDeliverableTitle(`Monthly Payroll (${m.label})`);
                                     setPaymentDate(`${mVal}-28`);
                                   }}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
-                                    isSelected
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${isSelected
                                       ? 'bg-emerald-600 text-white font-bold shadow-xs'
                                       : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700/60'
-                                  }`}
+                                    }`}
                                 >
                                   {m.label.replace(' (Current Month)', '')}
                                 </button>
@@ -2634,134 +2628,134 @@ export const PayinPayoutManager = () => {
                 {/* Printable Document Body */}
                 <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-white text-slate-900 font-sans custom-scrollbar" id="printable-voucher">
 
-                {/* Document Header */}
-                <div className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-black flex items-center justify-center text-sm shadow-sm">
-                        L
-                      </div>
-                      <div>
-                        <span className="text-lg font-black tracking-tight text-slate-900">LINCOZ PLATFORM</span>
-                        <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold">FINANCE</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-1.5">
-                      Enterprise Project Management & Financial Settlement Ledger
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                      Corporate Ref: LCZ-CORP-2026 &bull; Governance & Audit Division
-                    </p>
-                  </div>
-
-                  <div className="sm:text-right">
-                    <span className="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-800 font-mono text-[10px] font-bold uppercase tracking-wider">
-                      {meta.tag}
-                    </span>
-                    <h2 className="text-sm font-black text-slate-900 mt-1">{meta.title}</h2>
-                    <p className="text-xs font-mono font-bold text-indigo-700 mt-0.5">Doc #: {meta.refNo}</p>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">Date: {meta.date}</p>
-                  </div>
-                </div>
-
-                {/* Primary Metadata Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-b border-slate-200 text-xs">
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Project</span>
-                    <span className="font-bold text-slate-900 mt-0.5 block">{meta.project}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">{meta.partyLabel}</span>
-                    <span className="font-bold text-slate-900 mt-0.5 block">{meta.partyName}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Channel / Method</span>
-                    <span className="font-medium text-slate-800 mt-0.5 block font-mono">{meta.channel}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Ledger Status</span>
-                    <span className="font-bold text-emerald-700 mt-0.5 inline-block font-mono">
-                      &bull; {meta.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Line Item Particulars Table */}
-                <div className="py-5 border-b border-slate-200">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    Transaction Particulars & Scope
-                  </h4>
-                  <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-                    <thead className="bg-slate-50 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
-                      <tr>
-                        <th className="p-3">Description / Line Item Scope</th>
-                        <th className="p-3 text-right">Settlement Amount (USD)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      <tr>
-                        <td className="p-3">
-                          <p className="font-bold text-slate-900">{meta.title}</p>
-                          <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{meta.notes}</p>
-                          {meta.deliverable && (
-                            <p className="text-[11px] text-slate-700 mt-1">
-                              <strong>Deliverable Scope:</strong> {meta.deliverable}
-                            </p>
-                          )}
-                          {meta.agreementMeta && (
-                            <p className="text-[10px] text-purple-700 font-mono mt-1 font-semibold">
-                              Agreement Model: {meta.agreementMeta}
-                            </p>
-                          )}
-                          {meta.dueDate && (
-                            <p className="text-[10px] text-slate-500 font-mono mt-1">
-                              Payment Due Date: {meta.dueDate}
-                            </p>
-                          )}
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-base text-slate-900 whitespace-nowrap align-top">
-                          ${meta.amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    </tbody>
-                    <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-300">
-                      <tr>
-                        <td className="p-3 text-right uppercase text-[10px] tracking-wider text-slate-600">Total Transaction Amount:</td>
-                        <td className="p-3 text-right font-mono text-lg text-slate-900">
-                          ${meta.amount.toLocaleString()} USD
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                {/* Verification & Sign-off Footer */}
-                <div className="pt-6 space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[11px] text-slate-500 font-mono bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  {/* Document Header */}
+                  <div className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div>
-                      <span className="font-bold text-slate-700">Audit Verification Seal:</span>
-                      <p className="text-[10px] text-slate-400">TX-HASH: {meta.refNo}-VERIFIED</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-black flex items-center justify-center text-sm shadow-sm">
+                          L
+                        </div>
+                        <div>
+                          <span className="text-lg font-black tracking-tight text-slate-900">LINCOZ PLATFORM</span>
+                          <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold">FINANCE</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-1.5">
+                        Enterprise Project Management & Financial Settlement Ledger
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        Corporate Ref: LCZ-CORP-2026 &bull; Governance & Audit Division
+                      </p>
                     </div>
+
                     <div className="sm:text-right">
-                      <span className="text-emerald-700 font-bold">&bull; Verified by Super Admin</span>
-                      <p className="text-[10px] text-slate-400">Immutable Corporate Ledger Record</p>
+                      <span className="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-800 font-mono text-[10px] font-bold uppercase tracking-wider">
+                        {meta.tag}
+                      </span>
+                      <h2 className="text-sm font-black text-slate-900 mt-1">{meta.title}</h2>
+                      <p className="text-xs font-mono font-bold text-indigo-700 mt-0.5">Doc #: {meta.refNo}</p>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Date: {meta.date}</p>
                     </div>
                   </div>
 
-                  {/* Dual Signature Blocks */}
-                  <div className="grid grid-cols-2 gap-8 pt-4">
-                    <div className="border-t border-slate-400 pt-2 text-center">
-                      <p className="text-xs font-bold text-slate-900">{meta.signatoryTitle}</p>
-                      <p className="text-[10px] text-slate-500">Lincoz Financial Authority</p>
+                  {/* Primary Metadata Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-b border-slate-200 text-xs">
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Project</span>
+                      <span className="font-bold text-slate-900 mt-0.5 block">{meta.project}</span>
                     </div>
-                    <div className="border-t border-slate-400 pt-2 text-center">
-                      <p className="text-xs font-bold text-slate-900">Beneficiary / Counterparty</p>
-                      <p className="text-[10px] text-slate-500">Authorized Acknowledgment</p>
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">{meta.partyLabel}</span>
+                      <span className="font-bold text-slate-900 mt-0.5 block">{meta.partyName}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Channel / Method</span>
+                      <span className="font-medium text-slate-800 mt-0.5 block font-mono">{meta.channel}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Ledger Status</span>
+                      <span className="font-bold text-emerald-700 mt-0.5 inline-block font-mono">
+                        &bull; {meta.status}
+                      </span>
                     </div>
                   </div>
+
+                  {/* Line Item Particulars Table */}
+                  <div className="py-5 border-b border-slate-200">
+                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3">
+                      Transaction Particulars & Scope
+                    </h4>
+                    <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+                      <thead className="bg-slate-50 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
+                        <tr>
+                          <th className="p-3">Description / Line Item Scope</th>
+                          <th className="p-3 text-right">Settlement Amount (USD)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        <tr>
+                          <td className="p-3">
+                            <p className="font-bold text-slate-900">{meta.title}</p>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{meta.notes}</p>
+                            {meta.deliverable && (
+                              <p className="text-[11px] text-slate-700 mt-1">
+                                <strong>Deliverable Scope:</strong> {meta.deliverable}
+                              </p>
+                            )}
+                            {meta.agreementMeta && (
+                              <p className="text-[10px] text-purple-700 font-mono mt-1 font-semibold">
+                                Agreement Model: {meta.agreementMeta}
+                              </p>
+                            )}
+                            {meta.dueDate && (
+                              <p className="text-[10px] text-slate-500 font-mono mt-1">
+                                Payment Due Date: {meta.dueDate}
+                              </p>
+                            )}
+                          </td>
+                          <td className="p-3 text-right font-mono font-bold text-base text-slate-900 whitespace-nowrap align-top">
+                            ${meta.amount.toLocaleString()}
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-300">
+                        <tr>
+                          <td className="p-3 text-right uppercase text-[10px] tracking-wider text-slate-600">Total Transaction Amount:</td>
+                          <td className="p-3 text-right font-mono text-lg text-slate-900">
+                            ${meta.amount.toLocaleString()} USD
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Verification & Sign-off Footer */}
+                  <div className="pt-6 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[11px] text-slate-500 font-mono bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                      <div>
+                        <span className="font-bold text-slate-700">Audit Verification Seal:</span>
+                        <p className="text-[10px] text-slate-400">TX-HASH: {meta.refNo}-VERIFIED</p>
+                      </div>
+                      <div className="sm:text-right">
+                        <span className="text-emerald-700 font-bold">&bull; Verified by Super Admin</span>
+                        <p className="text-[10px] text-slate-400">Immutable Corporate Ledger Record</p>
+                      </div>
+                    </div>
+
+                    {/* Dual Signature Blocks */}
+                    <div className="grid grid-cols-2 gap-8 pt-4">
+                      <div className="border-t border-slate-400 pt-2 text-center">
+                        <p className="text-xs font-bold text-slate-900">{meta.signatoryTitle}</p>
+                        <p className="text-[10px] text-slate-500">Lincoz Financial Authority</p>
+                      </div>
+                      <div className="border-t border-slate-400 pt-2 text-center">
+                        <p className="text-xs font-bold text-slate-900">Beneficiary / Counterparty</p>
+                        <p className="text-[10px] text-slate-500">Authorized Acknowledgment</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-
-              </div>
 
                 {/* Bottom bar for modal (Hidden when printed) */}
                 <div className="shrink-0 p-3.5 border-t border-slate-800 bg-[#182234] flex items-center justify-end gap-2 no-print">

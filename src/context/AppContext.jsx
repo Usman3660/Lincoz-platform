@@ -39,13 +39,19 @@ export const AppProvider = ({ children }) => {
     }
   } catch (e) {}
 
-  // Theme state ('dark' | 'light')
+  // Theme state ('dark' | 'light') - Default to white / light
   const [theme, setTheme] = useState(() => {
     try {
+      const hasThemePreference = localStorage.getItem('lincoz_theme_set_by_user');
+      if (!hasThemePreference) {
+        localStorage.setItem('lincoz_theme', 'light');
+        localStorage.setItem('lincoz_theme_set_by_user', 'true');
+        return 'light';
+      }
       const saved = localStorage.getItem('lincoz_theme');
-      return saved || 'dark';
+      return saved || 'light';
     } catch (e) {
-      return 'dark';
+      return 'light';
     }
   });
 
