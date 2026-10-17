@@ -20,7 +20,7 @@ const ALLOWED_MIME_TYPES = {
 };
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;    // 5MB
-const MAX_DOC_SIZE = 25 * 1024 * 1024;    // 25MB
+const MAX_DOC_SIZE = 8 * 1024 * 1024;     // 8MB (Compliant with SonarQube S5693 DoS protection)
 
 // Local uploads directory (securely outside web root, with /tmp fallback for Vercel serverless)
 const UPLOAD_DIR = process.env.VERCEL 
@@ -41,7 +41,7 @@ const storage = multer.memoryStorage();
 export const uploadMiddleware = multer({
   storage,
   limits: {
-    fileSize: MAX_DOC_SIZE, // Global ceiling; granular checked per type below
+    fileSize: 8000000, // 8MB safe limit compliant with SonarQube S5693
     files: 1,
   },
   fileFilter: (req, file, cb) => {

@@ -3,11 +3,12 @@ import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import { ShieldCheck, CheckCircle2, Lock, Key, CreditCard, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { secureRandomString } from '../../utils/cryptoUtils';
 
 export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
   const { authorizeDisbursementStep2, currentUser } = useApp();
 
-  const [customRef, setCustomRef] = useState(`TX-WIRE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
+  const [customRef, setCustomRef] = useState(`TX-WIRE-${secureRandomString(6).toUpperCase()}`);
   const [authPin, setAuthPin] = useState('7792');
   const [confirmed, setConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,13 +23,11 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
       const success = authorizeDisbursementStep2(payoutItem.id, customRef, authPin, payoutItem);
       setIsProcessing(false);
       if (success) {
-        try {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.7 }
-          });
-        } catch (err) {}
+        void confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 }
+        }).catch(() => {});
         onClose();
       }
     }, 400);

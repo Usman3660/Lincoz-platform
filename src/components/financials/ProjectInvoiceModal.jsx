@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { secureRandomInt } from '../../utils/cryptoUtils';
 import { Modal } from '../common/Modal';
 import {
   FileText,
@@ -14,7 +15,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
   const { addClientInvoice, clientInvoices = [], selectedMonth, setSelectedMonth } = useApp();
 
   const [invoiceNumber, setInvoiceNumber] = useState(
-    () => `INV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`
+    () => `INV-${new Date().getFullYear()}-${secureRandomInt(100, 999)}`
   );
   const [amount, setAmount] = useState('');
   
@@ -64,7 +65,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
       projectId: project.id,
       projectName: project.name,
       clientName: project.clientName || 'Client Organization',
-      invoiceNumber: invoiceNumber.trim() || `INV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      invoiceNumber: invoiceNumber.trim() || `INV-${new Date().getFullYear()}-${secureRandomInt(100, 999)}`,
       amount: numAmount,
       issueDate,
       dueDate,

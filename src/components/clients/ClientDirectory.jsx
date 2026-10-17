@@ -50,7 +50,7 @@ export const ClientDirectory = () => {
     scopedClients.forEach(c => {
       if (c.country) set.add(c.country);
     });
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [scopedClients]);
 
   // Filter and sort clients

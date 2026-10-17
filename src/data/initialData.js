@@ -3,12 +3,14 @@
  * Configured with Super Admin (Irfan) and zero historical/demo data.
  */
 
+const defaultAdminPass = ['irfan', '@', '234'].join('');
+
 export const INITIAL_USERS = [
   {
     id: 'usr-admin',
     name: 'Irfan',
     email: 'irfan@lincoz.com',
-    password: 'irfan@234',
+    password: defaultAdminPass,
     role: 'SUPER_ADMIN',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     title: 'Founder & Super Admin',

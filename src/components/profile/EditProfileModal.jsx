@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { secureRandomDigits } from '../../utils/cryptoUtils';
 import { RoleBadge, WorkModeBadge, CompBadge } from '../common/Badge';
 import {
   User,
@@ -488,7 +489,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                       <button
                         type="button"
                         onClick={() => {
-                          const gen = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                          const gen = 'Lincoz#' + secureRandomDigits(4);
                           setEditPassword(gen);
                           setShowEditPassword(true);
                         }}
@@ -525,7 +526,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                       <button
                         type="button"
                         onClick={() => {
-                          const genKey = String(Math.floor(1000 + Math.random() * 9000));
+                          const genKey = secureRandomDigits(4);
                           setEditMfaKey(genKey);
                           setShowEditMfaKey(true);
                         }}
@@ -750,7 +751,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                         <button
                           type="button"
                           onClick={() => {
-                            const gen = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                            const gen = 'Lincoz#' + secureRandomDigits(4);
                             setEditPassword(gen);
                             setShowEditPassword(true);
                           }}
@@ -787,7 +788,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                         <button
                           type="button"
                           onClick={() => {
-                            const genKey = String(Math.floor(1000 + Math.random() * 9000));
+                            const genKey = secureRandomDigits(4);
                             setEditMfaKey(genKey);
                             setShowEditMfaKey(true);
                           }}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { secureRandomDigits } from '../../utils/cryptoUtils';
 import { RoleBadge, WorkModeBadge, CompBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import {
@@ -68,8 +69,8 @@ export const UserManagement = () => {
     setSalary('');
     setPercentage('15.0');
     setDepartment('Core Engineering');
-    setProvisionPassword('Lincoz#' + Math.floor(1000 + Math.random() * 9000));
-    setProvisionMfaKey(String(Math.floor(1000 + Math.random() * 9000)));
+    setProvisionPassword('Lincoz#' + secureRandomDigits(4));
+    setProvisionMfaKey(secureRandomDigits(4));
     setProvisionIsMfaEnabled(true);
     setShowProvisionPassword(false);
     setShowProvisionMfaKey(false);
@@ -634,7 +635,7 @@ export const UserManagement = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        const pass = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000);
+                        const pass = 'Lincoz#' + secureRandomDigits(4);
                         setProvisionPassword(pass);
                         setShowProvisionPassword(true);
                       }}
@@ -671,7 +672,7 @@ export const UserManagement = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        const key = String(Math.floor(1000 + Math.random() * 9000));
+                        const key = secureRandomDigits(4);
                         setProvisionMfaKey(key);
                         setShowProvisionMfaKey(true);
                       }}
@@ -777,7 +778,7 @@ export const UserManagement = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const generated = 'Lincoz#' + Math.floor(1000 + Math.random() * 9000) + '!';
+                    const generated = 'Lincoz#' + secureRandomDigits(4) + '!';
                     setNewPassword(generated);
                     setConfirmPassword(generated);
                     setShowPassword(true);
@@ -900,7 +901,7 @@ export const UserManagement = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const randomKey = String(Math.floor(1000 + Math.random() * 9000));
+                    const randomKey = secureRandomDigits(4);
                     setMfaKeyVal(randomKey);
                   }}
                   className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition-colors"

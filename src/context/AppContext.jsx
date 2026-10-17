@@ -15,6 +15,7 @@ import {
   INITIAL_ATTENDANCE
 } from '../data/initialData';
 import { api } from '../services/apiClient';
+import { secureRandomId, secureRandomDigits, secureRandomString, secureRandomInt } from '../utils/cryptoUtils';
 
 const AppContext = createContext();
 
@@ -378,7 +379,7 @@ export const AppProvider = ({ children }) => {
       }
     }
 
-    syncFromDatabase();
+    void syncFromDatabase();
     return () => { isMounted = false; };
   }, []);
 
@@ -422,7 +423,7 @@ export const AppProvider = ({ children }) => {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
-    const sorted = Array.from(monthSet).sort().reverse();
+    const sorted = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
     const list = [
       { id: 'ALL', value: 'ALL', label: 'All Time (Full Ledger History)' }
     ];
@@ -554,7 +555,7 @@ export const AppProvider = ({ children }) => {
 
   const pushNotification = (title, message, type = 'info', meta = {}) => {
     const newNotif = {
-      id: 'notif-' + Date.now() + Math.random().toString(36).substring(2, 5),
+      id: 'notif-' + Date.now() + secureRandomString(4),
       title,
       message,
       type,
@@ -568,10 +569,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return secureRandomId('');
   };
 
   const recordAuditLog = ({
@@ -600,7 +598,7 @@ export const AppProvider = ({ children }) => {
       itemText,
       previousState: previousState ? JSON.parse(JSON.stringify(previousState)) : null,
       newState: newState ? JSON.parse(JSON.stringify(newState)) : null,
-      clientIp: '192.168.1.' + (100 + Math.floor(Math.random() * 80)),
+      clientIp: '192.168.1.' + secureRandomInt(100, 180),
       userAgent: window.navigator.userAgent,
       timestamp: new Date().toISOString()
     };
@@ -717,7 +715,7 @@ export const AppProvider = ({ children }) => {
 
   const createTask = (taskData) => {
     const newTask = {
-      id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      id: 'task-' + Date.now() + '-' + secureRandomInt(0, 999),
       createdById: currentUser?.id || 'usr-pm',
       status: taskData.status || 'BACKLOG',
       repeatFrequency: taskData.repeatFrequency || 'NONE',
@@ -769,13 +767,13 @@ export const AppProvider = ({ children }) => {
 
     // Reset checklist verification criteria for the new task
     const resetChecklists = (completedTask.checklists || []).map((chk, idx) => ({
-      id: `chk-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+      id: `chk-${Date.now()}-${idx}-${secureRandomInt(0, 999)}`,
       text: chk.text,
       isCompleted: false,
     }));
 
     const newTask = {
-      id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      id: 'task-' + Date.now() + '-' + secureRandomInt(0, 999),
       createdById: currentUser?.id || 'usr-pm',
       projectId: completedTask.projectId,
       title: completedTask.title,
@@ -1349,7 +1347,7 @@ export const AppProvider = ({ children }) => {
       return false;
     }
 
-    const txRef = customRef || `TX-AUTH-${Math.random().toString(36).substring(2, 9).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    const txRef = customRef || `TX-AUTH-${secureRandomString(7).toUpperCase()}-${Date.now().toString().slice(-4)}`;
     let updatedItem = null;
 
     setPayoutLedger(prev => {
@@ -1457,7 +1455,7 @@ export const AppProvider = ({ children }) => {
       projectId: invoiceData.projectId,
       projectName: invoiceData.projectName || project?.name || 'Client Project',
       clientName: invoiceData.clientName || project?.clientName || 'Client Organization',
-      invoiceNumber: invoiceData.invoiceNumber || `INV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      invoiceNumber: invoiceData.invoiceNumber || `INV-${new Date().getFullYear()}-${secureRandomInt(100, 999)}`,
       amount,
       issueDate: invoiceData.issueDate || new Date().toISOString().split('T')[0],
       dueDate: invoiceData.dueDate || '2026-11-30',
@@ -1507,7 +1505,7 @@ export const AppProvider = ({ children }) => {
       amount,
       paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
       paymentMethod: paymentData.paymentMethod || 'Bank Wire Transfer',
-      referenceNumber: paymentData.referenceNumber || `TX-IN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      referenceNumber: paymentData.referenceNumber || `TX-IN-${secureRandomString(6).toUpperCase()}`,
       notes: paymentData.notes || 'Received client payment towards project delivery.'
     };
 
@@ -1653,7 +1651,7 @@ export const AppProvider = ({ children }) => {
       date: expDate,
       projectName: expenseData.projectName || 'General Operations',
       projectId: expenseData.projectId || 'GENERAL',
-      receiptRef: expenseData.receiptRef || `REC-${Math.floor(1000 + Math.random() * 9000)}`,
+      receiptRef: expenseData.receiptRef || `REC-${secureRandomInt(1000, 9999)}`,
       status: expenseData.status || 'PAID',
       notes: expenseData.notes || 'Monthly operational infrastructure expense.'
     };
@@ -1718,10 +1716,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const createUser = (userData) => {
-    const defaultMfaKey = userData.mfaKey || String(Math.floor(1000 + Math.random() * 9000));
+    const defaultMfaKey = userData.mfaKey || secureRandomDigits(4);
     const newUser = {
       id: 'usr-' + Date.now(),
-      avatar: `https://images.unsplash.com/photo-${1530000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
+      avatar: `https://images.unsplash.com/photo-${1530000000000 + secureRandomInt(0, 900000)}?w=150&auto=format&fit=crop&q=80`,
       isMfaEnabled: userData.isMfaEnabled !== undefined ? userData.isMfaEnabled : (userData.role === 'SUPER_ADMIN'),
       mfaKey: defaultMfaKey,
       workMode: userData.workMode || 'ONSITE',
@@ -2437,7 +2435,7 @@ export const AppProvider = ({ children }) => {
   const addPersonalTodo = useCallback((text, priority = 'Medium', dueDate = '') => {
     if (!text || !text.trim() || !currentUser?.id) return null;
     const newTodo = {
-      id: `todo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `todo-${Date.now()}-${secureRandomString(4)}`,
       userId: currentUser.id,
       text: text.trim(),
       isCompleted: false,
@@ -2499,7 +2497,7 @@ export const AppProvider = ({ children }) => {
         return updated;
       } else {
         const recordSaved = {
-          id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          id: 'att-' + Date.now() + '-' + secureRandomInt(0, 999),
           status: 'PRESENT',
           workMode: employee?.workMode || 'ON_SITE',
           checkIn: '09:00 AM',
@@ -2653,7 +2651,7 @@ export const AppProvider = ({ children }) => {
         if (!existingMap.has(uid)) {
           const emp = users.find(u => u.id === uid);
           newEntries.push({
-            id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000) + '-' + uid,
+            id: 'att-' + Date.now() + '-' + secureRandomInt(0, 999) + '-' + uid,
             userId: uid,
             date,
             status,
@@ -2737,7 +2735,7 @@ export const AppProvider = ({ children }) => {
           const emp = users.find(u => u.id === item.userId);
           const st = item.status || 'PRESENT';
           newEntries.push({
-            id: 'att-' + Date.now() + '-' + Math.floor(Math.random() * 1000) + '-' + item.userId,
+            id: 'att-' + Date.now() + '-' + secureRandomInt(0, 999) + '-' + item.userId,
             userId: item.userId,
             date,
             status: st,
