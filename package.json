@@ -4,14 +4,15 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm run server:dev\" \"npm run dev:client\"",
     "dev:client": "vite",
     "server:dev": "node --watch server/src/index.js",
     "build": "prisma generate --schema=./server/prisma/schema.prisma && vite build",
     "vercel-build": "prisma generate --schema=./server/prisma/schema.prisma && vite build",
     "prisma:generate": "prisma generate --schema=./server/prisma/schema.prisma",
     "preview": "vite preview",
-    "audit": "npm audit --audit-level=high"
+    "audit": "npm audit --audit-level=high",
+    "dev:server": "node --watch server/src/index.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -41,6 +42,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.6.1",
+    "concurrently": "^10.0.6",
     "postcss": "^8.5.28",
     "prisma": "^5.22.0",
     "tailwindcss": "^4.3.3",

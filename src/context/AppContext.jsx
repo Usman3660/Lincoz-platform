@@ -21,7 +21,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Automatic clean state migration check (Wipes legacy demo data from client localStorage)
-  const SCHEMA_VERSION = 'lincoz_v3_irfan_clean';
+  const SCHEMA_VERSION = 'lincoz_v5_exp_categories_fix';
   try {
     const currentVersion = localStorage.getItem('lincoz_schema_version');
     if (currentVersion !== SCHEMA_VERSION) {
@@ -84,15 +84,19 @@ export const AppProvider = ({ children }) => {
         const existingIds = new Set(parsed.map(u => u.id));
         const missingUsers = INITIAL_USERS.filter(u => !existingIds.has(u.id));
         const merged = [...parsed, ...missingUsers].map(u => {
+          const initUser = INITIAL_USERS.find(iu => iu.id === u.id);
           const isPercentage = u.compensationType === 'PERCENTAGE' || u.role === 'PARTNER';
           const defaultSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
           return {
             ...u,
+            email: u.email || initUser?.email,
+            password: u.password || initUser?.password || 'password123',
+            mfaKey: u.mfaKey || initUser?.mfaKey || '9988',
+            isMfaEnabled: (u.id === 'usr-admin' && initUser?.isMfaEnabled !== undefined) ? initUser.isMfaEnabled : (u.isMfaEnabled ?? true),
             workMode: u.workMode || (u.role === 'ONSITE_MEMBER' ? 'ONSITE' : 'REMOTE'),
             compensationType: isPercentage ? 'PERCENTAGE' : 'SALARIED',
             salary: !isPercentage ? (u.salary || defaultSalary) : undefined,
-            percentage: isPercentage ? (u.percentage || 15.0) : undefined,
-            password: u.password || 'password123'
+            percentage: isPercentage ? (u.percentage || 15.0) : undefined
           };
         });
         return merged;
@@ -218,7 +222,25 @@ export const AppProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('lincoz_expense_categories');
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EXPENSE_CATEGORIES;
+      const rawList = Array.isArray(parsed) ? parsed : INITIAL_EXPENSE_CATEGORIES;
+      return rawList
+        .map((item, idx) => {
+          if (typeof item === 'string') {
+            return {
+              id: `exp-cat-${idx + 1}-${item.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+              name: item,
+              description: '',
+              createdAt: new Date().toISOString()
+            };
+          }
+          return {
+            id: item.id || `exp-cat-${idx + 1}`,
+            name: item.name || '',
+            description: item.description || '',
+            createdAt: item.createdAt || new Date().toISOString()
+          };
+        })
+        .filter(c => c && typeof c.name === 'string' && c.name.trim().length > 0);
     } catch (e) {
       return INITIAL_EXPENSE_CATEGORIES;
     }
@@ -317,16 +339,8 @@ export const AppProvider = ({ children }) => {
       try {
         let token = localStorage.getItem('lincoz_auth_token');
         if (!token) {
-          const authRes = await fetch('http://localhost:5000/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'alexander@lincoz.internal', password: 'password123' })
-          });
-          if (authRes.ok) {
-            const data = await authRes.json();
-            token = data.token;
-            api.setToken(token);
-          }
+          // If no active session token exists, skip live sync until user signs in
+          return;
         }
 
         if (token && isMounted) {
@@ -1764,6 +1778,9 @@ export const AppProvider = ({ children }) => {
       delete updates.mfaKey;
     }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+    api.patch(`/users/${userId}`, updates).catch(err => {
+      console.warn('[DB User Sync] Live database update fallback:', err.message);
+    });
     pushNotification('User Updated', 'User profile details were updated.', 'info', {
       targetRoles: ['SUPER_ADMIN'],
       targetUserId: userId
@@ -1802,6 +1819,9 @@ export const AppProvider = ({ children }) => {
       }
       return u;
     }));
+    api.patch(`/users/${userId}/password`, { password: cleanPass }).catch(err => {
+      console.warn('[DB User Sync] Live database password update fallback:', err.message);
+    });
 
     if (targetUser) {
       recordAuditLog({
@@ -1857,6 +1877,9 @@ export const AppProvider = ({ children }) => {
       }
       return u;
     }));
+    api.patch(`/users/${userId}/mfa-key`, { mfaKey: cleanKey, isMfaEnabled }).catch(err => {
+      console.warn('[DB User Sync] Live database 2FA update fallback:', err.message);
+    });
 
     if (targetUser) {
       recordAuditLog({
@@ -2029,9 +2052,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteExpenseCategory = (id) => {
-    const target = expenseCategories.find(c => c.id === id);
+    const target = expenseCategories.find(c => c.id === id || c.name === id);
+    setExpenseCategories(prev => prev.filter(c => c.id !== id && c.name !== id && c.id !== target?.id));
     if (!target) return;
-    setExpenseCategories(prev => prev.filter(c => c.id !== id));
     recordAuditLog({
       actionType: 'DELETED',
       itemText: `Deleted Expense Category "${target.name}"`,

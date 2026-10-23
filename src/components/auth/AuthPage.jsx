@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { api } from '../../services/apiClient';
 import {
   Layers,
   ShieldCheck,
@@ -26,7 +27,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
   const matchedUser = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
   const requiresMfa = matchedUser?.isMfaEnabled || matchedUser?.role === 'SUPER_ADMIN';
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
 
@@ -36,14 +37,49 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
       return;
     }
 
+    try {
+      // 1. Primary: Secure server-side authentication verifying bcrypt hash in PostgreSQL
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          password: password,
+          mfaCode: (mfaCode || '').trim()
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.token) {
+        api.setToken(data.token);
+        const loggedUser = users.find(u => u.id === data.user.id || u.email.toLowerCase() === targetEmail) || data.user;
+        setCurrentUserId(data.user.id);
+        pushNotification(
+          'Authenticated Successfully',
+          `Signed in as ${data.user.name || loggedUser.name}.`,
+          'success'
+        );
+        onLoginSuccess(loggedUser);
+        return;
+      }
+
+      if (!res.ok) {
+        setAuthError(data.error || 'Invalid email, password, or 2FA credentials.');
+        return;
+      }
+    } catch (networkErr) {
+      console.warn('[Auth] Server login endpoint offline, fallback to local session:', networkErr.message);
+    }
+
+    // Offline dev fallback (only reached if server / network is completely unreachable)
     const targetUser = users.find(u => u.email.toLowerCase() === targetEmail);
-    
     if (!targetUser) {
       setAuthError('Invalid credentials. Contact your Project Manager or Super Admin if your account is not yet provisioned.');
       return;
     }
 
-    const expectedPassword = targetUser.password || 'password123';
+    const expectedPassword = targetUser.password || 'Pass#123';
     if (!password || password !== expectedPassword) {
       setAuthError('Incorrect password. Please enter the valid credentials set by Super Admin.');
       return;
@@ -51,7 +87,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
 
     if (requiresMfa) {
       const cleanCode = (mfaCode || '').trim();
-      const expectedKey = (targetUser.mfaKey || '8892').trim();
+      const expectedKey = (targetUser.mfaKey || '9988').trim();
       if (!cleanCode) {
         setAuthError('Two-factor authentication key is required.');
         return;

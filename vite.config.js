@@ -2,21 +2,37 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+function expressDevPlugin() {
+  return {
+    name: 'express-dev-plugin',
+    async configureServer(server) {
+      try {
+        const { createServer } = await import('./server/src/server.js');
+        const app = createServer();
+        server.middlewares.use((req, res, next) => {
+          if (req.url && req.url.startsWith('/api')) {
+            return app(req, res, next);
+          }
+          next();
+        });
+        console.log('[Vite Express Plugin] Live PostgreSQL API endpoints active on /api');
+      } catch (err) {
+        console.warn('[Vite Express Plugin] Could not mount Express server:', err.message);
+      }
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    expressDevPlugin(),
     react(),
     tailwindcss(),
   ],
   server: {
     port: 3000,
     open: false,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-    },
   },
   build: {
     target: 'esnext',

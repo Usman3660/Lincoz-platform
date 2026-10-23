@@ -6,7 +6,7 @@
  * - Rule 4: Automatically attaches Bearer token & handles 401 refresh via httpOnly cookies
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 class ApiClient {
   constructor() {
@@ -32,6 +32,7 @@ class ApiClient {
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
+
 
     try {
       const response = await fetch(url, {
