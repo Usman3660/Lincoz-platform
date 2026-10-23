@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -69,12 +70,21 @@ export const AddClientModal = ({ isOpen, onClose, initialCategory = 'CLIENT' }) 
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto custom-scrollbar">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-fadeIn" onClick={onClose} />
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-5 overflow-y-auto custom-scrollbar animate-fadeIn">
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
-      <div className="min-h-full flex items-start justify-center p-3 sm:p-5 pt-8 sm:pt-12 md:pt-14 pb-12">
-        <div className="relative w-full max-w-xl max-h-[85vh] flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp">
+      <div className="relative w-full max-w-xl max-h-[90vh] my-auto flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp modal-container">
         
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#182234]/50">
@@ -278,9 +288,8 @@ export const AddClientModal = ({ isOpen, onClose, initialCategory = 'CLIENT' }) 
           </div>
         </form>
         </div>
-
       </div>
-    </div>
-  </div>
+    </div>,
+    document.body
   );
 };

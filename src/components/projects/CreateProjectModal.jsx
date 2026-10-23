@@ -5,7 +5,9 @@ import { AddClientModal } from '../clients/AddClientModal';
 import { DollarSign, UploadCloud, FileText, X, Lock, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 
 export const CreateProjectModal = ({ isOpen, onClose }) => {
-  const { createProject, users, clients = [] } = useApp();
+  const { createProject, users = [], clients = [] } = useApp();
+  const safeUsers = Array.isArray(users) ? users : [];
+  const safeClients = Array.isArray(clients) ? clients : [];
 
   const [name, setName] = useState('');
   const [clientName, setClientName] = useState('');
@@ -127,7 +129,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Project Name *
               </label>
               <input
@@ -135,13 +137,13 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Apex Core Cloud Mesh"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Client / Organization / Source *
               </label>
               <select
@@ -151,26 +153,26 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                     setIsAddClientOpen(true);
                   } else {
                     setClientName(e.target.value);
-                    const selected = clients.find(c => c.name === e.target.value);
+                    const selected = safeClients.find(c => c.name === e.target.value);
                     if (selected) setClientContact(`${selected.email} | ${selected.contactNumber}`);
                   }
                 }}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 required
               >
                 <option value="">Select a Client or Source</option>
-                {clients.filter(c => c.category === 'CLIENT').length > 0 && (
+                {safeClients.filter(c => c.category === 'CLIENT').length > 0 && (
                   <optgroup label="Corporate Clients">
-                    {clients.filter(c => c.category === 'CLIENT').map(c => (
+                    {safeClients.filter(c => c.category === 'CLIENT').map(c => (
                       <option key={c.id} value={c.name}>
                         {c.name} ({c.country})
                       </option>
                     ))}
                   </optgroup>
                 )}
-                {clients.filter(c => c.category === 'FREELANCER').length > 0 && (
+                {safeClients.filter(c => c.category === 'FREELANCER').length > 0 && (
                   <optgroup label="Sources">
-                    {clients.filter(c => c.category === 'FREELANCER').map(c => (
+                    {safeClients.filter(c => c.category === 'FREELANCER').map(c => (
                       <option key={c.id} value={c.name}>
                         {c.name} ({c.percentage}% share • {c.country})
                       </option>
@@ -184,28 +186,28 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Total Contract Value (USD) *
               </label>
               <input
                 type="number"
                 value={totalContractValue}
                 onChange={(e) => setTotalContractValue(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Project Manager
               </label>
               <select
                 value={projectManagerId}
                 onChange={(e) => setProjectManagerId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               >
-                {users.filter(u => u.role === 'PROJECT_MANAGER' || u.role === 'SUPER_ADMIN').map((u) => (
+                {safeUsers.filter(u => u.role === 'PROJECT_MANAGER' || u.role === 'SUPER_ADMIN').map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name} ({u.role})
                   </option>
@@ -216,13 +218,13 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               >
                 <option value="Urgent">Urgent</option>
                 <option value="High">High</option>
@@ -232,20 +234,20 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
                 Target Delivery Date
               </label>
               <input
                 type="date"
                 value={targetDeliveryDate}
                 onChange={(e) => setTargetDeliveryDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
               Project Scope & Objective
             </label>
             <textarea
@@ -253,7 +255,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="High-level engineering deliverable goals and requirements..."
-              className="w-full px-3.5 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full px-3.5 py-2 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
             />
           </div>
 
@@ -314,7 +316,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                 <div className="w-9 h-9 rounded-xl bg-indigo-500/10 group-hover:bg-indigo-500/20 flex items-center justify-center mb-2 transition-colors">
                   <UploadCloud className="w-5 h-5 text-indigo-400" />
                 </div>
-                <p className="text-xs font-semibold text-slate-300 group-hover:text-white">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-white">
                   Click to attach Requirement Document
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
@@ -330,7 +332,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                   value={docUrlInput}
                   onChange={(e) => setDocUrlInput(e.target.value)}
                   placeholder="Or external URL (e.g. Google Docs / Notion PRD)"
-                  className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -339,7 +341,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                   value={docNotesInput}
                   onChange={(e) => setDocNotesInput(e.target.value)}
                   placeholder="Optional document notes or version tag"
-                  className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#0e1420] border border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -349,7 +351,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={handleModalClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
             >
               Cancel
             </button>

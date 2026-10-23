@@ -775,3 +775,114 @@ html.light .kanban-card button.bg-slate-800:hover {
   }
 }
 
+
+
+/* --------------------------------------------------------------------------
+   ENTERPRISE MODAL & FORM LIGHT MODE CONTRAST ENHANCEMENTS
+   -------------------------------------------------------------------------- */
+html.light .modal-container,
+html.light div[class*="rounded-3xl"].bg-\[\#111827\],
+html.light div[class*="rounded-3xl"].bg-\[\#0f172a\] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+}
+
+html.light .modal-header,
+html.light .modal-container > div:first-child {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .modal-title,
+html.light .modal-container h2,
+html.light .modal-container h3 {
+  color: #0f172a !important;
+}
+
+html.light .modal-subtitle,
+html.light .modal-container p {
+  color: #475569 !important;
+}
+
+html.light .modal-close-btn,
+html.light .modal-container button[title="Close"] {
+  color: #64748b !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.light .modal-close-btn:hover,
+html.light .modal-container button[title="Close"]:hover {
+  color: #0f172a !important;
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .modal-container label,
+html.light .modal-body label,
+html.light form label {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.light .modal-container input,
+html.light .modal-container select,
+html.light .modal-container textarea,
+html.light form input,
+html.light form select,
+html.light form textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .modal-container input::placeholder,
+html.light .modal-container textarea::placeholder,
+html.light form input::placeholder,
+html.light form textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light .modal-container input:focus,
+html.light .modal-container select:focus,
+html.light .modal-container textarea:focus,
+html.light form input:focus,
+html.light form select:focus,
+html.light form textarea:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+html.light .modal-container select option,
+html.light form select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light .modal-container select optgroup,
+html.light form select optgroup {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+/* File upload dropzone & card in Light Mode */
+html.light .modal-container .border-dashed {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .modal-container .border-dashed:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #6366f1 !important;
+}
+
+html.light .modal-container .border-dashed p {
+  color: #334155 !important;
+}
+
+html.light .modal-container .border-dashed:hover p {
+  color: #4f46e5 !important;
+}

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { PriorityBadge, StatusBadge, RoleBadge } from '../common/Badge';
 import { CreateProjectModal } from './CreateProjectModal';
@@ -424,12 +425,21 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
   const remainingCap = Math.max(0, tcv - grossInvoiced);
   const percentInvoiced = tcv > 0 ? Math.round((grossInvoiced / tcv) * 100) : 0;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto custom-scrollbar">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-fadeIn" onClick={onClose} />
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isOpen]);
 
-      <div className="min-h-full flex items-start justify-center p-3 sm:p-5 pt-8 sm:pt-12 md:pt-14 pb-12">
-        <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp text-slate-200">
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 overflow-y-auto custom-scrollbar animate-fadeIn">
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+      <div className="relative w-full max-w-4xl max-h-[90vh] my-auto flex flex-col bg-[#111827] border border-slate-700/80 rounded-3xl shadow-2xl z-10 overflow-hidden animate-scaleUp text-slate-200 modal-container">
 
           {/* Header with Client Info and Project Title */}
           <div className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-800 p-6 sm:p-7 bg-[#182234]/50">
@@ -1075,7 +1085,6 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
 
           </div>
         </div>
-      </div>
 
       {/* Direct Invoicing Modal for Project */}
       {isDetailInvoiceOpen && (
@@ -1085,6 +1094,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
           project={project}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
