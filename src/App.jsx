@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Component, Suspense, lazy } from 'react';
 import { useApp } from './context/AppContext';
+import { api } from './services/apiClient';
 import { LandingPage } from './components/auth/LandingPage';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -100,9 +101,29 @@ export const MainApp = () => {
     profileModalUser
   } = useApp();
 
-  // Navigation route: 'landing' | 'login' | 'signup' | 'app'
-  const [currentRoute, setCurrentRoute] = useState('landing');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Navigation route: 'landing' | 'login' | 'signup' | 'app' (persisted across reloads)
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    try {
+      const savedRoute = localStorage.getItem('lincoz_current_route');
+      const token = localStorage.getItem('lincoz_auth_token');
+      // If user has an active session/token or was active in the workspace, restore workspace
+      if (savedRoute === 'app' || token) {
+        return 'app';
+      }
+      return savedRoute || 'landing';
+    } catch (e) {
+      return 'landing';
+    }
+  });
+
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const savedTab = localStorage.getItem('lincoz_active_tab');
+      return savedTab || 'dashboard';
+    } catch (e) {
+      return 'dashboard';
+    }
+  });
   
   // Cross-component modal states
   const [selectedDisbursementItem, setSelectedDisbursementItem] = useState(null);
@@ -110,37 +131,85 @@ export const MainApp = () => {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [taskForDeliverableSubmission, setTaskForDeliverableSubmission] = useState(null);
 
+  // Persist current route across page reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_current_route', currentRoute);
+    } catch (e) {}
+  }, [currentRoute]);
+
+  // Persist active tab across page reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem('lincoz_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
+
+  // Validate active session with backend when in workspace
+  useEffect(() => {
+    if (currentRoute === 'app') {
+      const token = localStorage.getItem('lincoz_auth_token');
+      if (token) {
+        api.get('/auth/me').then(res => {
+          if (res?.user?.id) {
+            setCurrentUserId(res.user.id);
+          }
+        }).catch(err => {
+          console.warn('[Session] Token verification note:', err.message);
+        });
+      }
+    }
+  }, [currentRoute, setCurrentUserId]);
+
   // Automatically route onsite employees directly to 'tasks' (My Assigned Tasks)
   useEffect(() => {
     if (isOnsiteMember() && activeTab === 'dashboard') {
       setActiveTab('tasks');
     }
-  }, [currentUser?.id, currentUser?.role, activeTab]);
+  }, [currentUser?.id, currentUser?.role, activeTab, isOnsiteMember]);
 
   // Handle direct quick login from Landing Page
   const handleQuickLoginFromLanding = (userId) => {
     setCurrentUserId(userId);
+    try {
+      localStorage.setItem('lincoz_current_user_id', userId);
+      localStorage.setItem('lincoz_current_route', 'app');
+    } catch (e) {}
     setCurrentRoute('app');
     const targetUser = users.find(u => u.id === userId);
     if (targetUser?.role === 'ONSITE_MEMBER') {
       setActiveTab('tasks');
     } else {
-      setActiveTab('dashboard');
+      const savedTab = localStorage.getItem('lincoz_active_tab');
+      setActiveTab(savedTab && savedTab !== 'dashboard' ? savedTab : 'dashboard');
     }
   };
 
   // Handle successful login or registration
   const handleLoginSuccess = (user) => {
+    try {
+      localStorage.setItem('lincoz_current_route', 'app');
+      if (user?.id) {
+        localStorage.setItem('lincoz_current_user_id', user.id);
+      }
+    } catch (e) {}
     setCurrentRoute('app');
     if (user?.role === 'ONSITE_MEMBER') {
       setActiveTab('tasks');
     } else {
-      setActiveTab('dashboard');
+      const savedTab = localStorage.getItem('lincoz_active_tab');
+      setActiveTab(savedTab && savedTab !== 'dashboard' ? savedTab : 'dashboard');
     }
   };
 
   // Handle Logout
   const handleLogout = () => {
+    try {
+      api.setToken(null);
+      localStorage.removeItem('lincoz_auth_token');
+      localStorage.setItem('lincoz_current_route', 'landing');
+      api.post('/auth/logout').catch(() => {});
+    } catch (e) {}
     setCurrentRoute('landing');
     pushNotification('Logged Out', 'Returned to platform landing page.', 'info');
   };

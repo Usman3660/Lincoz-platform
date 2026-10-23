@@ -224,7 +224,9 @@ export const ExpenseCategoryManagement = () => {
           <div className="py-16 text-center text-slate-500">
             <Receipt className="w-10 h-10 mx-auto mb-3 opacity-30 text-rose-400" />
             <p className="text-sm font-semibold text-slate-300">No expense categories found</p>
-            <p className="text-xs text-slate-500 mt-1">Try a different search or create a new expense category.</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {searchQuery ? 'Try a different search query or clear your filter.' : 'Your database expense directory is empty. Click "+ Add Expense" above to create your first category.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">

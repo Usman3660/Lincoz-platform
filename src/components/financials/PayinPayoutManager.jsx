@@ -161,7 +161,7 @@ export const PayinPayoutManager = () => {
   const [isCustomSource, setIsCustomSource] = useState(false);
   const [contractorId, setContractorId] = useState('');
   const [deliverableTitle, setDeliverableTitle] = useState('');
-  const [expenseCategory, setExpenseCategory] = useState('Cloud Infrastructure & Security');
+  const [expenseCategory, setExpenseCategory] = useState('');
   const [vendor, setVendor] = useState('');
   const [status, setStatus] = useState('PAID');
   const [notes, setNotes] = useState('');
@@ -289,7 +289,7 @@ export const PayinPayoutManager = () => {
           refNo: doc.receiptRef || 'REC-EXPENSE-OFFICIAL',
           date: doc.expenseDate || doc.date || new Date().toISOString().split('T')[0],
           partyLabel: 'Expense Category',
-          partyName: doc.category || 'Cloud Infrastructure & Security',
+          partyName: doc.category || 'Operational Expense',
           vendor: doc.vendor || 'Operational Vendor',
           project: `Expense Month: ${monthLabel}`,
           amount: Number(doc.amount || 0),
@@ -396,7 +396,7 @@ export const PayinPayoutManager = () => {
     setDueDate(`${defaultMonth}-30`);
     setPaymentDate(defaultDate);
     setPaymentMethod('Bank Wire Transfer');
-    setExpenseCategory(expenseCategories[0]?.name || 'Cloud Infrastructure & Security');
+    setExpenseCategory(expenseCategories[0]?.name || '');
     setVendor('');
     setStatus(type === 'INVOICE' ? 'PENDING' : 'PAID');
     setIsAddingNewCategory(false);
@@ -2293,6 +2293,11 @@ export const PayinPayoutManager = () => {
                     }}
                     className="w-full px-3 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-white focus:outline-none focus:border-rose-500 font-semibold"
                   >
+                    {expenseCategories.length === 0 && (
+                      <option value="" disabled className="bg-[#182234] text-slate-400">
+                        -- No categories created yet --
+                      </option>
+                    )}
                     {expenseCategories.map((cat) => (
                       <option key={cat.id} value={cat.name} className="bg-[#182234]">
                         {cat.name}

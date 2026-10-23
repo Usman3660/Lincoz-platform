@@ -242,3 +242,302 @@ financialsRouter.post(
     }
   }
 );
+
+/**
+ * GET /api/financials/expenses
+ * Reads all direct expenses from PostgreSQL
+ */
+financialsRouter.get('/expenses', authenticate, async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    const expenses = await prisma.directExpense.findMany({
+      where: { organizationId: tenantId },
+      include: {
+        project: { select: { name: true } },
+      },
+      orderBy: { expenseDate: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      data: expenses.map((e) => ({
+        id: e.id,
+        organizationId: e.organizationId,
+        projectId: e.projectId,
+        projectName: e.project?.name || 'General Operations',
+        category: e.category,
+        amount: Number(e.amount),
+        description: e.description,
+        vendor: e.description,
+        receiptRef: e.receiptUrl || '',
+        expenseDate: e.expenseDate ? e.expenseDate.toISOString().split('T')[0] : '',
+        date: e.expenseDate ? e.expenseDate.toISOString().split('T')[0] : '',
+        month: e.expenseDate ? e.expenseDate.toISOString().slice(0, 7) : '',
+        createdAt: e.createdAt,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/financials/expenses
+ * Creates direct expense record in PostgreSQL
+ */
+financialsRouter.post(
+  '/expenses',
+  authenticate,
+  authorizeRoles('SUPER_ADMIN', 'PROJECT_MANAGER'),
+  async (req, res, next) => {
+    try {
+      const { projectId, category, amount, description, vendor, expenseDate, receiptRef, receiptUrl } = req.body;
+      const numAmount = Number(amount);
+      if (!category || !category.trim()) {
+        return res.status(400).json({ success: false, error: 'Category is required' });
+      }
+      if (!numAmount || numAmount <= 0) {
+        return res.status(400).json({ success: false, error: 'Valid positive amount is required' });
+      }
+
+      const effectiveDate = expenseDate ? new Date(expenseDate) : new Date();
+
+      const created = await prisma.directExpense.create({
+        data: {
+          organizationId: req.tenantId,
+          projectId: (projectId && projectId !== 'GENERAL') ? projectId : null,
+          category: category.trim(),
+          amount: numAmount,
+          description: description || vendor || 'Direct Operational Expense',
+          receiptUrl: receiptUrl || receiptRef || null,
+          expenseDate: effectiveDate,
+        },
+        include: {
+          project: { select: { name: true } },
+        },
+      });
+
+      // Double-entry financial ledger
+      await prisma.financialLedger.create({
+        data: {
+          organizationId: req.tenantId,
+          projectId: created.projectId,
+          entryType: 'EXPENSE_DIRECT',
+          amount: created.amount,
+          referenceId: created.id,
+          notes: `Direct Expense: ${created.category} (${created.description})`,
+        },
+      }).catch(err => logger.warn('Ledger entry error:', err));
+
+      // Audit log
+      await prisma.auditLog.create({
+        data: {
+          organizationId: req.tenantId,
+          actorId: req.user.id,
+          action: 'EXPENSE_CREATED',
+          resourceType: 'DIRECT_EXPENSE',
+          resourceId: created.id,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'] || '',
+          metadata: {
+            category: created.category,
+            amount: Number(created.amount),
+          },
+        },
+      }).catch(err => logger.warn('Audit log error:', err));
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id: created.id,
+          organizationId: created.organizationId,
+          projectId: created.projectId,
+          projectName: created.project?.name || 'General Operations',
+          category: created.category,
+          amount: Number(created.amount),
+          description: created.description,
+          vendor: vendor || created.description,
+          receiptRef: created.receiptUrl || '',
+          expenseDate: created.expenseDate ? created.expenseDate.toISOString().split('T')[0] : '',
+          date: created.expenseDate ? created.expenseDate.toISOString().split('T')[0] : '',
+          month: created.expenseDate ? created.expenseDate.toISOString().slice(0, 7) : '',
+          createdAt: created.createdAt,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/financials/expenses/:id
+ * Deletes direct expense from PostgreSQL
+ */
+financialsRouter.delete(
+  '/expenses/:id',
+  authenticate,
+  authorizeRoles('SUPER_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const expense = await prisma.directExpense.findFirst({
+        where: { id, organizationId: req.tenantId },
+      });
+      if (!expense) {
+        return res.status(404).json({ success: false, error: 'Expense record not found' });
+      }
+
+      await prisma.directExpense.delete({ where: { id } });
+
+      await prisma.auditLog.create({
+        data: {
+          organizationId: req.tenantId,
+          actorId: req.user.id,
+          action: 'EXPENSE_DELETED',
+          resourceType: 'DIRECT_EXPENSE',
+          resourceId: id,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'] || '',
+        },
+      }).catch(err => logger.warn('Audit log error:', err));
+
+      res.json({ success: true, message: 'Expense deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+
+/**
+ * GET /api/financials/expense-categories
+ * Reads all expense categories from PostgreSQL
+ */
+financialsRouter.get('/expense-categories', authenticate, async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    const categories = await prisma.$queryRaw`
+      SELECT id, "organizationId", name, description, "createdAt", "updatedAt"
+      FROM "expense_categories"
+      WHERE "organizationId" = ${tenantId}
+      ORDER BY "createdAt" ASC;
+    `;
+
+    res.json({
+      success: true,
+      data: (categories || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || '',
+        createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString()
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/financials/expense-categories
+ * Creates an expense category in PostgreSQL
+ */
+financialsRouter.post(
+  '/expense-categories',
+  authenticate,
+  authorizeRoles('SUPER_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const { name, description } = req.body;
+      if (!name || !name.trim()) {
+        return res.status(400).json({ success: false, error: 'Category name is required' });
+      }
+
+      const tenantId = req.tenantId;
+      const cleanName = name.trim();
+      const cleanDesc = description ? description.trim() : '';
+      const id = 'exp-cat-' + Date.now();
+
+      await prisma.$executeRaw`
+        INSERT INTO "expense_categories" ("id", "organizationId", "name", "description", "createdAt", "updatedAt")
+        VALUES (${id}, ${tenantId}, ${cleanName}, ${cleanDesc}, NOW(), NOW())
+        ON CONFLICT ("organizationId", "name") DO UPDATE
+        SET "description" = EXCLUDED."description", "updatedAt" = NOW();
+      `;
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id,
+          name: cleanName,
+          description: cleanDesc,
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PUT /api/financials/expense-categories/:id
+ * Updates an expense category in PostgreSQL
+ */
+financialsRouter.put(
+  '/expense-categories/:id',
+  authenticate,
+  authorizeRoles('SUPER_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { name, description } = req.body;
+      const tenantId = req.tenantId;
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({ success: false, error: 'Category name is required' });
+      }
+
+      await prisma.$executeRaw`
+        UPDATE "expense_categories"
+        SET "name" = ${name.trim()}, "description" = ${description ? description.trim() : ''}, "updatedAt" = NOW()
+        WHERE ("id" = ${id} OR "name" = ${id}) AND "organizationId" = ${tenantId};
+      `;
+
+      res.json({
+        success: true,
+        message: 'Expense category updated successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/financials/expense-categories/:id
+ * Deletes an expense category from PostgreSQL
+ */
+financialsRouter.delete(
+  '/expense-categories/:id',
+  authenticate,
+  authorizeRoles('SUPER_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const tenantId = req.tenantId;
+
+      await prisma.$executeRaw`
+        DELETE FROM "expense_categories"
+        WHERE ("id" = ${id} OR "name" = ${id}) AND "organizationId" = ${tenantId};
+      `;
+
+      res.json({
+        success: true,
+        message: 'Expense category deleted successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);

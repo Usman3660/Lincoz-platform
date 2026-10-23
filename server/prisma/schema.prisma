@@ -31,6 +31,7 @@ model Organization {
   invoices           ClientInvoice[]
   payouts            Payout[]
   expenses           DirectExpense[]
+  expenseCategories  ExpenseCategory[]
   ledgerEntries      FinancialLedger[]
   attendanceRecords  AttendanceRecord[]
   auditLogs          AuditLog[]
@@ -244,6 +245,24 @@ model DirectExpense {
 // ------------------------------------------------------------------------------
 // FINANCIALS: DOUBLE-ENTRY AUDIT LEDGER
 // ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
+// FINANCIALS: EXPENSE CATEGORIES
+// ------------------------------------------------------------------------------
+model ExpenseCategory {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?      @default("")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@map("expense_categories")
+}
+
 model FinancialLedger {
   id             String       @id @default(uuid())
   organizationId String

@@ -37,56 +37,7 @@ export const INITIAL_CLIENT_PAYMENTS = [];
 
 export const INITIAL_SOURCE_PAYOUTS = [];
 
-export const INITIAL_EXPENSE_CATEGORIES = [
-  {
-    id: 'exp-cat-1',
-    name: 'Software Subscriptions',
-    description: 'SaaS licenses, developer tools, and productivity applications.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-2',
-    name: 'Hardware & Infrastructure',
-    description: 'Workstations, hardware procurement, networking gear, and lab equipment.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-3',
-    name: 'Cloud Hosting',
-    description: 'AWS, GCP, Supabase PostgreSQL, and cloud compute nodes.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-4',
-    name: 'Legal & Professional',
-    description: 'Corporate filings, compliance audits, and legal counsel fees.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-5',
-    name: 'Office & Utilities',
-    description: 'Physical workspace rent, broadband fiber, and power utilities.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-6',
-    name: 'Marketing & Sales',
-    description: 'Digital advertising, client presentations, and brand materials.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-7',
-    name: 'Travel & Entertainment',
-    description: 'Client on-site travel, team dinners, and conference attendance.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  },
-  {
-    id: 'exp-cat-8',
-    name: 'Miscellaneous',
-    description: 'General uncategorized operational expenditures.',
-    createdAt: '2026-08-01T08:00:00.000Z'
-  }
-];
+export const INITIAL_EXPENSE_CATEGORIES = [];
 
 export const INITIAL_DIRECT_EXPENSES = [];
 

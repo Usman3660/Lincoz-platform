@@ -21,7 +21,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Automatic clean state migration check (Wipes legacy demo data from client localStorage)
-  const SCHEMA_VERSION = 'lincoz_v5_exp_categories_fix';
+  const SCHEMA_VERSION = 'lincoz_v12_live_db_expenses_categories';
   try {
     const currentVersion = localStorage.getItem('lincoz_schema_version');
     if (currentVersion !== SCHEMA_VERSION) {
@@ -34,6 +34,7 @@ export const AppProvider = ({ children }) => {
       localStorage.removeItem('lincoz_payout_ledger');
       localStorage.removeItem('lincoz_attendance');
       localStorage.removeItem('lincoz_direct_expenses');
+      localStorage.removeItem('lincoz_expense_categories');
       localStorage.removeItem('lincoz_client_invoices');
       localStorage.removeItem('lincoz_audit_logs');
       localStorage.setItem('lincoz_current_user_id', 'usr-admin');
@@ -212,37 +213,41 @@ export const AppProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('lincoz_direct_expenses');
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_DIRECT_EXPENSES;
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      return INITIAL_DIRECT_EXPENSES;
+      return [];
     }
   });
 
   const [expenseCategories, setExpenseCategories] = useState(() => {
     try {
       const saved = localStorage.getItem('lincoz_expense_categories');
-      const parsed = saved ? JSON.parse(saved) : null;
-      const rawList = Array.isArray(parsed) ? parsed : INITIAL_EXPENSE_CATEGORIES;
-      return rawList
-        .map((item, idx) => {
-          if (typeof item === 'string') {
-            return {
-              id: `exp-cat-${idx + 1}-${item.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-              name: item,
-              description: '',
-              createdAt: new Date().toISOString()
-            };
-          }
-          return {
-            id: item.id || `exp-cat-${idx + 1}`,
-            name: item.name || '',
-            description: item.description || '',
-            createdAt: item.createdAt || new Date().toISOString()
-          };
-        })
-        .filter(c => c && typeof c.name === 'string' && c.name.trim().length > 0);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed
+            .map((item, idx) => {
+              if (typeof item === 'string') {
+                return {
+                  id: `exp-cat-${idx + 1}-${item.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+                  name: item,
+                  description: '',
+                  createdAt: new Date().toISOString()
+                };
+              }
+              return {
+                id: item.id || `exp-cat-${idx + 1}`,
+                name: item.name || '',
+                description: item.description || '',
+                createdAt: item.createdAt || new Date().toISOString()
+              };
+            })
+            .filter(c => c && typeof c.name === 'string' && c.name.trim().length > 0);
+        }
+      }
+      return [];
     } catch (e) {
-      return INITIAL_EXPENSE_CATEGORIES;
+      return [];
     }
   });
 
@@ -386,6 +391,20 @@ export const AppProvider = ({ children }) => {
               const localRemainder = prev.filter(p => !dbIds.has(p.id));
               return [...dbPayouts, ...localRemainder];
             });
+          }
+
+          // 5. Fetch live direct expenses from PostgreSQL
+          const expRes = await api.get('/financials/expenses').catch(() => null);
+          if (expRes?.success && Array.isArray(expRes.data) && isMounted) {
+            setDirectExpensesList(expRes.data);
+            localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expRes.data));
+          }
+
+          // 6. Fetch live expense categories from PostgreSQL
+          const catRes = await api.get('/financials/expense-categories').catch(() => null);
+          if (catRes?.success && Array.isArray(catRes.data) && isMounted) {
+            setExpenseCategories(catRes.data);
+            localStorage.setItem('lincoz_expense_categories', JSON.stringify(catRes.data));
           }
         }
       } catch (err) {
@@ -1672,6 +1691,23 @@ export const AppProvider = ({ children }) => {
 
     setDirectExpensesList(prev => [newExpense, ...prev]);
 
+    // Persist to PostgreSQL backend
+    api.post('/financials/expenses', {
+      projectId: newExpense.projectId,
+      category: newExpense.category,
+      amount: newExpense.amount,
+      description: newExpense.notes || newExpense.vendor,
+      vendor: newExpense.vendor,
+      expenseDate: newExpense.expenseDate,
+      receiptRef: newExpense.receiptRef
+    }).then(res => {
+      if (res?.data?.id) {
+        setDirectExpensesList(prev => prev.map(e => e.id === newExpense.id ? { ...e, id: res.data.id } : e));
+      }
+    }).catch(err => {
+      console.warn('[PostgreSQL DirectExpense] Stored locally:', err.message);
+    });
+
     recordAuditLog({
       actionType: 'DIRECT_EXPENSE_LOGGED',
       itemText: `Recorded Monthly Expense of $${amount.toLocaleString()} (${newExpense.category} - ${newExpense.vendor}) for ${newExpense.month}`,
@@ -1723,6 +1759,7 @@ export const AppProvider = ({ children }) => {
       const expToDelete = directExpensesList.find(e => e.id === id);
       if (expToDelete) {
         setDirectExpensesList(prev => prev.filter(e => e.id !== id));
+        api.delete(`/financials/expenses/${id}`).catch(() => {});
       }
     } else if (type === 'PERCENTAGE' || type === 'PERCENTAGE_PAYOUT' || type === 'EMPLOYEE' || type === 'SALARIED' || type === 'SALARIED_PAYOUT') {
       setPayoutLedger(prev => prev.filter(p => p.id !== id));
@@ -2011,6 +2048,19 @@ export const AppProvider = ({ children }) => {
       createdAt: new Date().toISOString()
     };
     setExpenseCategories(prev => [newCat, ...prev]);
+
+    // Persist to PostgreSQL backend
+    api.post('/financials/expense-categories', {
+      name: newCat.name,
+      description: newCat.description
+    }).then(res => {
+      if (res?.data?.id) {
+        setExpenseCategories(prev => prev.map(c => c.id === newCat.id ? { ...c, id: res.data.id } : c));
+      }
+    }).catch(err => {
+      console.warn('[PostgreSQL ExpenseCategory] Stored locally:', err.message);
+    });
+
     recordAuditLog({
       actionType: 'CREATED',
       itemText: `Created Expense Category "${newCat.name}"`,
@@ -2037,6 +2087,10 @@ export const AppProvider = ({ children }) => {
       return c;
     }));
     if (updated) {
+      api.put(`/financials/expense-categories/${id}`, updates).catch(err => {
+        console.warn('[PostgreSQL ExpenseCategory] Update error:', err.message);
+      });
+
       recordAuditLog({
         actionType: 'MODIFIED',
         itemText: `Updated Expense Category "${updated.name}"`,
@@ -2055,6 +2109,11 @@ export const AppProvider = ({ children }) => {
     const target = expenseCategories.find(c => c.id === id || c.name === id);
     setExpenseCategories(prev => prev.filter(c => c.id !== id && c.name !== id && c.id !== target?.id));
     if (!target) return;
+
+    api.delete(`/financials/expense-categories/${id}`).catch(err => {
+      console.warn('[PostgreSQL ExpenseCategory] Delete error:', err.message);
+    });
+
     recordAuditLog({
       actionType: 'DELETED',
       itemText: `Deleted Expense Category "${target.name}"`,
