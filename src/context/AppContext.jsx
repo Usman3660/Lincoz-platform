@@ -37,7 +37,7 @@ export const AppProvider = ({ children }) => {
       localStorage.removeItem('lincoz_expense_categories');
       localStorage.removeItem('lincoz_client_invoices');
       localStorage.removeItem('lincoz_audit_logs');
-      localStorage.setItem('lincoz_current_user_id', 'usr-admin');
+      localStorage.removeItem('lincoz_current_user_id');
     }
   } catch (e) {}
 
@@ -91,7 +91,6 @@ export const AppProvider = ({ children }) => {
           return {
             ...u,
             email: u.email || initUser?.email,
-            password: u.password || initUser?.password || 'password123',
             isMfaEnabled: false,
             workMode: u.workMode || (u.role === 'ONSITE_MEMBER' ? 'ONSITE' : 'REMOTE'),
             compensationType: isPercentage ? 'PERCENTAGE' : 'SALARIED',
@@ -101,18 +100,18 @@ export const AppProvider = ({ children }) => {
         });
         return merged;
       }
-      return INITIAL_USERS.map(u => ({ ...u, password: u.password || 'password123' }));
+      return INITIAL_USERS;
     } catch (e) {
-      return INITIAL_USERS.map(u => ({ ...u, password: u.password || 'password123' }));
+      return INITIAL_USERS;
     }
   });
 
   const [currentUserId, setCurrentUserId] = useState(() => {
     try {
       const saved = localStorage.getItem('lincoz_current_user_id');
-      return saved || 'usr-admin';
+      return saved || '';
     } catch (e) {
-      return 'usr-admin';
+      return '';
     }
   });
 
@@ -655,13 +654,7 @@ export const AppProvider = ({ children }) => {
     } catch (e) {}
   }, [expenseCategories]);
 
-  const currentUser = users.find(u => u.id === currentUserId) || users[0] || {
-    id: 'usr-admin',
-    name: 'Alexander Wright',
-    role: 'SUPER_ADMIN',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    title: 'Founder & Managing Director'
-  };
+  const currentUser = users.find(u => u.id === currentUserId) || null;
 
   const pushNotification = (title, message, type = 'info', meta = {}) => {
     const newNotif = {
@@ -2310,12 +2303,13 @@ export const AppProvider = ({ children }) => {
     pushNotification('System Reset', 'All data restored to default initial state.', 'info', { isGlobal: true });
   };
 
-  const isSuperAdmin = () => currentUser.role === 'SUPER_ADMIN';
-  const isPM = () => currentUser.role === 'PROJECT_MANAGER';
-  const isOnsiteMember = () => currentUser.role === 'ONSITE_MEMBER';
-  const isPartner = () => currentUser.role === 'PARTNER';
+  const isSuperAdmin = () => currentUser?.role === 'SUPER_ADMIN';
+  const isPM = () => currentUser?.role === 'PROJECT_MANAGER';
+  const isOnsiteMember = () => currentUser?.role === 'ONSITE_MEMBER';
+  const isPartner = () => currentUser?.role === 'PARTNER';
 
   const getScopedProjects = () => {
+    if (!currentUser) return [];
     if (isSuperAdmin()) return projects || [];
     if (isPM()) {
       return (projects || [])

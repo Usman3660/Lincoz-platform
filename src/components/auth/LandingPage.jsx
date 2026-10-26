@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { RoleBadge } from '../common/Badge';
 
-export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
+export const LandingPage = ({ onNavigateToAuth }) => {
   const { theme, toggleTheme } = useApp();
 
   const roles = [

@@ -104,13 +104,16 @@ export const MainApp = () => {
   // Navigation route: 'landing' | 'login' | 'signup' | 'app' (persisted across reloads)
   const [currentRoute, setCurrentRoute] = useState(() => {
     try {
-      const savedRoute = localStorage.getItem('lincoz_current_route');
       const token = localStorage.getItem('lincoz_auth_token');
-      // If user has an active session/token or was active in the workspace, restore workspace
-      if (savedRoute === 'app' || token) {
+      const savedRoute = localStorage.getItem('lincoz_current_route');
+      // Only allow 'app' route if an authenticated token exists
+      if (token && savedRoute === 'app') {
         return 'app';
       }
-      return savedRoute || 'landing';
+      if (savedRoute === 'login') {
+        return 'login';
+      }
+      return 'landing';
     } catch (e) {
       return 'landing';
     }
@@ -145,21 +148,28 @@ export const MainApp = () => {
     } catch (e) {}
   }, [activeTab]);
 
-  // Validate active session with backend when in workspace
+  // Strictly validate active session with PostgreSQL backend
   useEffect(() => {
+    const token = localStorage.getItem('lincoz_auth_token');
     if (currentRoute === 'app') {
-      const token = localStorage.getItem('lincoz_auth_token');
-      if (token) {
-        api.get('/auth/me').then(res => {
+      if (!token) {
+        handleLogout();
+        return;
+      }
+      api.get('/auth/me')
+        .then(res => {
           if (res?.user?.id) {
             setCurrentUserId(res.user.id);
+          } else {
+            handleLogout();
           }
-        }).catch(err => {
-          console.warn('[Session] Token verification note:', err.message);
+        })
+        .catch(err => {
+          console.warn('[Session] Session verification failed, redirecting to landing:', err.message);
+          handleLogout();
         });
-      }
     }
-  }, [currentRoute, setCurrentUserId]);
+  }, [currentRoute]);
 
   // Automatically route onsite employees directly to 'tasks' (My Assigned Tasks)
   useEffect(() => {
@@ -168,24 +178,7 @@ export const MainApp = () => {
     }
   }, [currentUser?.id, currentUser?.role, activeTab, isOnsiteMember]);
 
-  // Handle direct quick login from Landing Page
-  const handleQuickLoginFromLanding = (userId) => {
-    setCurrentUserId(userId);
-    try {
-      localStorage.setItem('lincoz_current_user_id', userId);
-      localStorage.setItem('lincoz_current_route', 'app');
-    } catch (e) {}
-    setCurrentRoute('app');
-    const targetUser = users.find(u => u.id === userId);
-    if (targetUser?.role === 'ONSITE_MEMBER') {
-      setActiveTab('tasks');
-    } else {
-      const savedTab = localStorage.getItem('lincoz_active_tab');
-      setActiveTab(savedTab && savedTab !== 'dashboard' ? savedTab : 'dashboard');
-    }
-  };
-
-  // Handle successful login or registration
+  // Handle successful login from database
   const handleLoginSuccess = (user) => {
     try {
       localStorage.setItem('lincoz_current_route', 'app');
@@ -207,6 +200,7 @@ export const MainApp = () => {
     try {
       api.setToken(null);
       localStorage.removeItem('lincoz_auth_token');
+      localStorage.removeItem('lincoz_current_user_id');
       localStorage.setItem('lincoz_current_route', 'landing');
       api.post('/auth/logout').catch(() => {});
     } catch (e) {}
@@ -219,7 +213,6 @@ export const MainApp = () => {
     return (
       <LandingPage
         onNavigateToAuth={(mode) => setCurrentRoute(mode)}
-        onQuickLogin={handleQuickLoginFromLanding}
       />
     );
   }
@@ -237,6 +230,10 @@ export const MainApp = () => {
   }
 
   // 3. Platform Workspace View
+  if (!currentUser) {
+    return <ComponentLoader />;
+  }
+
   const renderDashboard = () => {
     if (isSuperAdmin()) {
       return (

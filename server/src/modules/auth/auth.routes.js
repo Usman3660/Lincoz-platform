@@ -15,23 +15,10 @@ import { authenticate } from '../../middleware/authenticate.js';
 
 export const authRouter = Router();
 
-// High-speed in-memory caches for sub-10ms authentication
+// High-speed in-memory user cache
 export const userCache = new Map();
-const verifiedPasswordCache = new Map();
 
-// Pre-seed default Super Admin so startup / dev login is instantaneous (< 10ms)
-const DEFAULT_SUPER_ADMIN = {
-  id: 'usr-admin',
-  name: 'Irfan',
-  email: 'lincoztech@gmail.com',
-  role: 'SUPER_ADMIN',
-  title: 'Founder & Super Admin',
-  organizationId: 'org_lincoz_primary',
-  passwordHash: '$2a$10$vI8aWBnW3fID.ZQ4/ZO1G.qH0vE91KsqO0gO7t6xV9K7LwH3v8o2i',
-};
-userCache.set('lincoztech@gmail.com', DEFAULT_SUPER_ADMIN);
-
-// Asynchronously sync and warm up the user cache in the background without blocking requests
+// Asynchronously sync and warm up the user cache in the background
 (async function warmupUserCache() {
   try {
     const dbUsers = await prisma.user.findMany();
@@ -54,7 +41,7 @@ const loginSchema = z.object({
 
 /**
  * POST /api/auth/login
- * Validates credentials using high-speed in-memory cache + PostgreSQL
+ * Validates credentials strictly against PostgreSQL database using bcrypt
  */
 authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, res, next) => {
   try {
@@ -75,42 +62,28 @@ authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, re
       }
     }
 
-    // 1. In-memory fast path lookup (< 0.1ms)
-    let user = userCache.get(email);
-
-    // If not in cache, query PostgreSQL and populate cache
-    if (!user) {
-      try {
-        user = await prisma.user.findUnique({
-          where: { email },
-        });
-        if (user) {
-          userCache.set(email, user);
-        }
-      } catch (dbErr) {
-        // Fallback for default admin
-        if (email === 'lincoztech@gmail.com') {
-          user = DEFAULT_SUPER_ADMIN;
-        }
+    // 1. Fetch user directly from PostgreSQL database
+    let user = null;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+      if (user) {
+        userCache.set(email, user);
       }
+    } catch (dbErr) {
+      console.error('[Auth] Database connection error during login:', dbErr.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication database service temporarily unavailable.',
+        statusCode: 500,
+      });
     }
 
-    // 2. High-speed password verification
+    // 2. Strict password verification via bcrypt against database passwordHash
     let isPasswordValid = false;
-    const cacheKey = `${email}:${password}`;
-
-    if (user) {
-      if (verifiedPasswordCache.has(cacheKey)) {
-        isPasswordValid = true;
-      } else if (password === 'Pass#123' && (email === 'lincoztech@gmail.com' || !user.passwordHash)) {
-        isPasswordValid = true;
-        verifiedPasswordCache.set(cacheKey, true);
-      } else if (user.passwordHash) {
-        isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-        if (isPasswordValid) {
-          verifiedPasswordCache.set(cacheKey, true);
-        }
-      }
+    if (user && user.passwordHash && user.isActive !== false) {
+      isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     }
 
     if (!user || !isPasswordValid) {

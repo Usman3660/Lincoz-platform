@@ -274,13 +274,17 @@ usersRouter.post('/', authenticate, authorizeRoles('SUPER_ADMIN', 'PROJECT_MANAG
       return res.status(400).json({ success: false, error: 'Name and email are required.' });
     }
 
+    if (!password || String(password).trim().length < 6) {
+      return res.status(400).json({ success: false, error: 'A password with at least 6 characters is required.' });
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (existing) {
       return res.status(409).json({ success: false, error: 'A user with this email address already exists.' });
     }
 
-    const rawPass = password && String(password).trim().length >= 6 ? String(password).trim() : 'Pass#123';
+    const rawPass = String(password).trim();
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(rawPass, salt);
 

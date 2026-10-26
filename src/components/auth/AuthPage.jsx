@@ -63,29 +63,9 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
         return;
       }
     } catch (networkErr) {
-      console.warn('[Auth] Server login endpoint offline, fallback to local session:', networkErr.message);
+      console.error('[Auth] Login API request failed:', networkErr.message);
+      setAuthError('Unable to connect to the authentication service. Please check your network or try again.');
     }
-
-    // Offline dev fallback (only reached if server / network is completely unreachable)
-    const targetUser = users.find(u => u.email.toLowerCase() === targetEmail);
-    if (!targetUser) {
-      setAuthError('Invalid credentials. Contact your Project Manager or Super Admin if your account is not yet provisioned.');
-      return;
-    }
-
-    const expectedPassword = targetUser.password || 'Pass#123';
-    if (!password || password !== expectedPassword) {
-      setAuthError('Incorrect password. Please enter the valid credentials set by Super Admin.');
-      return;
-    }
-
-    setCurrentUserId(targetUser.id);
-    pushNotification(
-      'Authenticated Successfully',
-      `Signed in as ${targetUser.name}.`,
-      'success'
-    );
-    onLoginSuccess(targetUser);
   };
 
   return (
