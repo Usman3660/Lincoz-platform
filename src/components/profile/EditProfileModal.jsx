@@ -15,7 +15,7 @@ import {
   X,
   Sparkles,
   Building,
-  DollarSign,
+  Banknote,
   Percent,
   Laptop,
   Lock,
@@ -47,12 +47,9 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
   const [salary, setSalary] = useState('');
   const [percentage, setPercentage] = useState('');
 
-  // Super Admin Security Controls (Password & 2FA Key)
+  // Super Admin Security Controls (Password)
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
-  const [editMfaKey, setEditMfaKey] = useState('');
-  const [showEditMfaKey, setShowEditMfaKey] = useState(false);
-  const [editIsMfaEnabled, setEditIsMfaEnabled] = useState(false);
 
   // Personal Info (Self-managed only)
   const [name, setName] = useState('');
@@ -83,10 +80,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
       // Super Admin credentials
       setEditPassword(targetUser.password || 'password123');
-      setEditMfaKey(targetUser.mfaKey || '8892');
-      setEditIsMfaEnabled(targetUser.isMfaEnabled !== false);
       setShowEditPassword(false);
-      setShowEditMfaKey(false);
     }
   }, [targetUser, isOpen]);
 
@@ -155,7 +149,9 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         location: location.trim(),
         workMode,
         compensationType,
-        salary: compensationType === 'SALARIED' && salary ? Number(salary) : undefined,
+        salary: compensationType === 'SALARIED'
+          ? (salary !== '' && salary !== null && !isNaN(Number(salary)) ? Number(salary) : 0)
+          : undefined,
         percentage: compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined,
       };
     } else {
@@ -181,18 +177,27 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         avatar: avatar || targetUser.avatar,
         skills: parsedSkills
       };
+
+      // Super Admin self-governance: allow updating title, department, workMode, and compensation
+      if (isSuperAdmin()) {
+        if (title.trim()) updatedData.title = title.trim();
+        if (department.trim()) updatedData.department = department.trim();
+        if (location.trim()) updatedData.location = location.trim();
+        updatedData.workMode = workMode;
+        updatedData.compensationType = compensationType;
+        updatedData.salary = compensationType === 'SALARIED'
+          ? (salary !== '' && salary !== null && !isNaN(Number(salary)) ? Number(salary) : 0)
+          : undefined;
+        updatedData.percentage = compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined;
+      }
     }
 
-    // Super Admin credential & 2FA overrides
+    // Super Admin credential overrides
     if (isSuperAdmin()) {
       if (editPassword && editPassword.trim()) {
         updatedData.password = editPassword.trim();
         updatedData.passwordUpdatedAt = new Date().toISOString();
       }
-      if (editMfaKey && editMfaKey.trim()) {
-        updatedData.mfaKey = editMfaKey.trim();
-      }
-      updatedData.isMfaEnabled = editIsMfaEnabled;
     }
 
     try {
@@ -204,7 +209,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         recordAuditLog({
           actionType: 'USER_PROVISIONED',
           itemText: isEditingOther
-            ? `Super Admin updated organizational profile for ${targetUser.name} (${department.trim()} • ${title.trim()}).`
+            ? `Super Admin updated organizational profile for ${targetUser.name} (Rs {department.trim()} • ${title.trim()}).`
             : `User ${targetUser.name} updated their personal profile information.`,
           previousState: null,
           newState: updatedData
@@ -242,7 +247,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                {isEditingOther ? `Edit Employee Record: ${targetUser.name}` : 'My Profile Settings'}
+                {isEditingOther ? `Edit Employee Record: Rs {targetUser.name}` : 'My Profile Settings'}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-300">
                 {isEditingOther
@@ -369,7 +374,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
               {/* Workplace Mode & Compensation Governance */}
               <div className="p-4 rounded-2xl bg-[#182234] border border-indigo-500/30 space-y-3.5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                  <DollarSign className="w-4 h-4 text-indigo-400" /> Workplace & Compensation Governance
+                  <Banknote className="w-4 h-4 text-indigo-400" /> Workplace & Compensation Governance
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -417,7 +422,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                             : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600'
                         }`}
                       >
-                        <DollarSign className="w-3.5 h-3.5" /> Salaried
+                        <Banknote className="w-3.5 h-3.5" /> Salaried
                       </button>
                       <button
                         type="button"
@@ -437,7 +442,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                 {compensationType === 'SALARIED' ? (
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1">
-                      <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Annual Salary (USD)
+                      <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Annual Salary (Rs)
                     </label>
                     <input
                       type="number"
@@ -472,102 +477,49 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
               <div className="p-4 rounded-2xl bg-[#182234] border border-amber-500/30 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                    <Lock className="w-4 h-4 text-amber-400" /> Security & 2FA Governance
+                    <Lock className="w-4 h-4 text-amber-400" /> Security Governance
                   </h4>
                   <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
                     Super Admin Exclusive
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Password */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-300">
-                        Account Password *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const gen = 'Lincoz#' + secureRandomDigits(4);
-                          setEditPassword(gen);
-                          setShowEditPassword(true);
-                        }}
-                        className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
-                      >
-                        <Sparkles className="w-3 h-3" /> Auto-Gen
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showEditPassword ? 'text' : 'password'}
-                        value={editPassword}
-                        onChange={(e) => setEditPassword(e.target.value)}
-                        placeholder="Min 6 characters"
-                        required
-                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowEditPassword(!showEditPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                      >
-                        {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
+                {/* Password */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-300">
+                      Account Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const gen = 'Lincoz#' + secureRandomDigits(4);
+                        setEditPassword(gen);
+                        setShowEditPassword(true);
+                      }}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                    >
+                      <Sparkles className="w-3 h-3" /> Auto-Gen
+                    </button>
                   </div>
-
-                  {/* Fixed 2FA Key */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-300">
-                        Fixed 2FA Key *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const genKey = secureRandomDigits(4);
-                          setEditMfaKey(genKey);
-                          setShowEditMfaKey(true);
-                        }}
-                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5"
-                      >
-                        <Sparkles className="w-3 h-3" /> Auto-Gen
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showEditMfaKey ? 'text' : 'password'}
-                        value={editMfaKey}
-                        onChange={(e) => setEditMfaKey(e.target.value)}
-                        placeholder="e.g. 8892"
-                        required
-                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowEditMfaKey(!showEditMfaKey)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                      >
-                        {showEditMfaKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      placeholder="Min 6 characters"
+                      required
+                      className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
-
-                {/* Toggle 2FA */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs">
-                  <div>
-                    <span className="font-bold text-white block">Enforce 2FA Authentication</span>
-                    <span className="text-[10px] text-slate-400">Employee must enter this exact fixed key at login</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={editIsMfaEnabled}
-                    onChange={(e) => setEditIsMfaEnabled(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-950 border-slate-700"
-                  />
-                </label>
               </div>
             </>
           ) : (
@@ -729,107 +681,207 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
                 />
               </div>
 
+              {/* Super Admin Executive Compensation & Role Governance */}
+              {isSuperAdmin() && (
+                <div className="p-4 rounded-2xl bg-[#182234] border border-indigo-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                      <Banknote className="w-4 h-4 text-indigo-400" /> Executive Compensation & Salary Governance
+                    </h4>
+                    <span className="text-[10px] text-indigo-400 font-semibold px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                      Super Admin Self-Governance
+                    </span>
+                  </div>
+
+                  {/* Title & Department */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-300">
+                        Job Title
+                      </label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="e.g. Founder & Super Admin"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-300">
+                        Department
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={department}
+                          onChange={(e) => setDepartment(e.target.value)}
+                          placeholder="e.g. Executive Governance"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Work Location & Compensation Model */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Work Location
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWorkMode('ONSITE')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                            workMode === 'ONSITE'
+                              ? 'bg-teal-500/20 text-teal-300 border-teal-500/50 shadow-sm'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <Building className="w-3.5 h-3.5" /> On-Site
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWorkMode('REMOTE')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                            workMode === 'REMOTE'
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-sm'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <Laptop className="w-3.5 h-3.5" /> Remote
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Compensation Model
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCompensationType('SALARIED')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                            compensationType === 'SALARIED'
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <Banknote className="w-3.5 h-3.5" /> Salaried
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCompensationType('PERCENTAGE')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                            compensationType === 'PERCENTAGE'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <Percent className="w-3.5 h-3.5" /> % Share
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {compensationType === 'SALARIED' ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                          <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Annual Salary (Rs)
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {salary !== '' && Number(salary) > 0 ? `Rs ${Math.round(Number(salary) / 12).toLocaleString()}/mo payroll` : 'Rs 0/mo (No payroll deduction)'}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={salary}
+                        onChange={(e) => setSalary(e.target.value)}
+                        placeholder="e.g. 180000 (Enter 0 for Rs 0/mo payroll)"
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Enter 0 if you want Rs 0 monthly payroll deduction in Financial Logs.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1">
+                        <Percent className="w-3.5 h-3.5 text-amber-400" /> Project Share Percentage (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={percentage}
+                        onChange={(e) => setPercentage(e.target.value)}
+                        placeholder="e.g. 15.0"
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Super Admin Self-Security Credentials */}
               {isSuperAdmin() && (
                 <div className="p-4 rounded-2xl bg-[#182234] border border-amber-500/30 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                      <Lock className="w-4 h-4 text-amber-400" /> Security & 2FA Governance
+                      <Lock className="w-4 h-4 text-amber-400" /> Security Governance
                     </h4>
                     <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
                       Super Admin Credentials
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Password */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-slate-300">
-                          Super Admin Password *
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const gen = 'Lincoz#' + secureRandomDigits(4);
-                            setEditPassword(gen);
-                            setShowEditPassword(true);
-                          }}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
-                        >
-                          <Sparkles className="w-3 h-3" /> Auto-Gen
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showEditPassword ? 'text' : 'password'}
-                          value={editPassword}
-                          onChange={(e) => setEditPassword(e.target.value)}
-                          placeholder="Min 6 characters"
-                          required
-                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowEditPassword(!showEditPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                        >
-                          {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
+                  {/* Password */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        Super Admin Password *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const gen = 'Lincoz#' + secureRandomDigits(4);
+                          setEditPassword(gen);
+                          setShowEditPassword(true);
+                        }}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                      >
+                        <Sparkles className="w-3 h-3" /> Auto-Gen
+                      </button>
                     </div>
-
-                    {/* Fixed 2FA Key */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-slate-300">
-                          Fixed 2FA Key *
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const genKey = secureRandomDigits(4);
-                            setEditMfaKey(genKey);
-                            setShowEditMfaKey(true);
-                          }}
-                          className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5"
-                        >
-                          <Sparkles className="w-3 h-3" /> Auto-Gen
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showEditMfaKey ? 'text' : 'password'}
-                          value={editMfaKey}
-                          onChange={(e) => setEditMfaKey(e.target.value)}
-                          placeholder="e.g. 8892"
-                          required
-                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowEditMfaKey(!showEditMfaKey)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                        >
-                          {showEditMfaKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
+                    <div className="relative">
+                      <input
+                        type={showEditPassword ? 'text' : 'password'}
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="Min 6 characters"
+                        required
+                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Toggle 2FA */}
-                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs">
-                    <div>
-                      <span className="font-bold text-white block">Enforce 2FA Authentication</span>
-                      <span className="text-[10px] text-slate-400">Require fixed 2FA key at sign-in</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={editIsMfaEnabled}
-                      onChange={(e) => setEditIsMfaEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-950 border-slate-700"
-                    />
-                  </label>
                 </div>
               )}
             </>

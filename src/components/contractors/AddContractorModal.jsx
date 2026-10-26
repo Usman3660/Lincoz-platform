@@ -54,7 +54,7 @@ export const AddContractorModal = ({ isOpen, onClose }) => {
 
     const contractorLegalName = legalName.trim() || `${name.trim()} Solutions LLC`;
     const contractorTaxId = taxId.trim() || `US-EIN-${Math.floor(100000 + Math.random() * 900000)}`;
-    const contractorPayoutDetails = payoutDetails.trim() || `${email.trim()} (Wise USD Wire)`;
+    const contractorPayoutDetails = payoutDetails.trim() || `${email.trim()} (Wise Bank Wire)`;
 
     // 1. Create User account with role 'PARTNER'
     const newUser = createUser({
@@ -109,7 +109,7 @@ export const AddContractorModal = ({ isOpen, onClose }) => {
 
     recordAuditLog({
       actionType: 'CONTRACTOR_ONBOARDED',
-      itemText: `Super Admin provisioned and configured contractor partner "${name.trim()}" (${contractorLegalName}) with ${sharePercentage}% agreement.`,
+      itemText: `Super Admin provisioned and configured contractor partner "${name.trim()}" (Rs {contractorLegalName}) with ${sharePercentage}% agreement.`,
       previousState: null,
       newState: newContractorRecord
     });

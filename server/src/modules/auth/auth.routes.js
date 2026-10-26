@@ -67,20 +67,6 @@ authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, re
       });
     }
 
-    // Verify Fixed 2FA Security Key
-    const requiresMfa = user.isMfaEnabled || user.role === 'SUPER_ADMIN';
-    if (requiresMfa) {
-      const expectedKey = user.mfaKey || '8892';
-      const providedCode = req.body.mfaCode ? String(req.body.mfaCode).trim() : '';
-      if (!providedCode || providedCode !== expectedKey.trim()) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid Two-Factor Authentication key. This key is fixed and can only be set or modified by the Super Admin.',
-          statusCode: 401,
-        });
-      }
-    }
-
     // Reset failed counter
     failedLoginTracker.delete(email);
 

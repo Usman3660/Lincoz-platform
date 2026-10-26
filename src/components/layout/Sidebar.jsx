@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
   FolderKanban,
-  DollarSign,
+  Banknote,
   ArrowLeftRight,
   Receipt,
   Users,
@@ -48,7 +48,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: 'attendance', label: 'Attendance', icon: CalendarCheck2 },
         { id: 'payin_payout', label: 'Pay-In & Pay-Out', icon: ArrowLeftRight },
         { id: 'expenses', label: 'Expenses', icon: Receipt },
-        { id: 'financials', label: 'Finance & Analytics', icon: DollarSign },
+        { id: 'financials', label: 'Finance & Analytics', icon: Banknote },
         { id: 'audit', label: 'Audit Trail & Logs', icon: History },
         { id: 'users', label: 'Team & Staff Provisioning', icon: KeyRound },
       ];

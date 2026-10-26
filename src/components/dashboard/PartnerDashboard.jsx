@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { StatsCard } from '../common/StatsCard';
 import { StatusBadge, PriorityBadge } from '../common/Badge';
 import {
-  DollarSign,
+  Banknote,
   Lock,
   ExternalLink,
   Send,
@@ -58,7 +58,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
           <div className="flex flex-wrap items-center gap-3">
             {/* Global Month Selector */}
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#182234] border border-amber-500/40 shadow-inner">
-              <DollarSign className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <Banknote className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Month:</span>
               <select
                 value={selectedMonth}
@@ -88,7 +88,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-amber-400" />
+            <Banknote className="w-4 h-4 text-amber-400" />
             <h2 className="text-base font-bold text-white uppercase tracking-wider">
               Project Commissions Ledger • {selectedMonthObj.label}
             </h2>
@@ -101,14 +101,14 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Earned Share"
-            value={`$${(financials.totalEarned || 0).toLocaleString()}`}
+            value={`Rs ${(financials.totalEarned || 0).toLocaleString()}`}
             subtitle={`Earned in ${selectedMonthObj.label}`}
-            icon={DollarSign}
+            icon={Banknote}
             colorScheme="amber"
           />
           <StatsCard
             title="Funds Disbursed"
-            value={`$${(financials.totalDisbursed || 0).toLocaleString()}`}
+            value={`Rs ${(financials.totalDisbursed || 0).toLocaleString()}`}
             subtitle={`Settled in ${selectedMonthObj.label}`}
             icon={CheckCircle2}
             colorScheme="emerald"
@@ -116,7 +116,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
           />
           <StatsCard
             title="Approved for Payout"
-            value={`$${financials.pendingDisbursement.toLocaleString()}`}
+            value={`Rs ${financials.pendingDisbursement.toLocaleString()}`}
             subtitle="Step-1 verified, ready for release"
             icon={Clock}
             colorScheme="indigo"
@@ -124,7 +124,7 @@ export const PartnerDashboard = ({ setActiveTab, onSelectTask, onOpenSubmitDeliv
           />
           <StatsCard
             title="Accruing & Invoiced (WIP)"
-            value={`$${financials.unbilledAccruing.toLocaleString()}`}
+            value={`Rs ${financials.unbilledAccruing.toLocaleString()}`}
             subtitle="Active project deliverables"
             icon={Sparkles}
             colorScheme="cyan"

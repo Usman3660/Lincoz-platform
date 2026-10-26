@@ -9,7 +9,7 @@ import {
   Edit2,
   Trash2,
   Layers,
-  DollarSign,
+  Banknote,
   AlertCircle
 } from 'lucide-react';
 
@@ -183,9 +183,9 @@ export const ExpenseCategoryManagement = () => {
         />
         <StatsCard
           title={`Direct Expenses (${selectedMonthObj.label})`}
-          value={`$${totalDirectExpenseSum.toLocaleString()}`}
+          value={`Rs ${totalDirectExpenseSum.toLocaleString()}`}
           subtitle={`${totalLoggedCount} transaction(s) in ${selectedMonthObj.label}`}
-          icon={DollarSign}
+          icon={Banknote}
           colorScheme="indigo"
         />
         <StatsCard
@@ -271,8 +271,7 @@ export const ExpenseCategoryManagement = () => {
                         </span>
                       </td>
                       <td className="p-4 text-right whitespace-nowrap font-mono">
-                        <span className="text-sm font-bold text-rose-400">
-                          ${totalSpentInCategory.toLocaleString()}
+                        <span className="text-sm font-bold text-rose-400"> Rs {totalSpentInCategory.toLocaleString()}
                         </span>
                       </td>
                       {isSuperAdmin() && (

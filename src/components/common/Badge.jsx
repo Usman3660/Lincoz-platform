@@ -51,7 +51,7 @@ export const CompBadge = ({ type, salary, percentage }) => {
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-      {salary ? `$${Number(salary).toLocaleString()}/yr` : 'Salaried'}
+      {salary ? `Rs ${Number(salary).toLocaleString()}/yr` : 'Salaried'}
     </span>
   );
 };

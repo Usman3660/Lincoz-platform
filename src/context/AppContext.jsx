@@ -92,11 +92,10 @@ export const AppProvider = ({ children }) => {
             ...u,
             email: u.email || initUser?.email,
             password: u.password || initUser?.password || 'password123',
-            mfaKey: u.mfaKey || initUser?.mfaKey || '9988',
-            isMfaEnabled: (u.id === 'usr-admin' && initUser?.isMfaEnabled !== undefined) ? initUser.isMfaEnabled : (u.isMfaEnabled ?? true),
+            isMfaEnabled: false,
             workMode: u.workMode || (u.role === 'ONSITE_MEMBER' ? 'ONSITE' : 'REMOTE'),
             compensationType: isPercentage ? 'PERCENTAGE' : 'SALARIED',
-            salary: !isPercentage ? (u.salary || defaultSalary) : undefined,
+            salary: !isPercentage ? ((u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : defaultSalary) : undefined,
             percentage: isPercentage ? (u.percentage || 15.0) : undefined
           };
         });
@@ -265,7 +264,7 @@ export const AppProvider = ({ children }) => {
     {
       id: 'notif-1',
       title: 'Disbursement Authorization Pending',
-      message: 'Deliverable payout for David Vance ($6,000.00) requires Super Admin Step-2 signature.',
+      message: 'Deliverable payout for David Vance (Rs 6,000.00) requires Super Admin Step-2 signature.',
       type: 'warning',
       timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       read: false,
@@ -1167,7 +1166,7 @@ export const AppProvider = ({ children }) => {
       projectId: newProject.id,
       projectName: newProject.name,
       actionType: 'PROJECT_CREATED',
-      itemText: `Created new project "${newProject.name}" (TCV: $${(newProject.totalContractValue || 0).toLocaleString()})`,
+      itemText: `Created new project "${newProject.name}" (TCV: Rs ${(newProject.totalContractValue || 0).toLocaleString()})`,
       previousState: null,
       newState: newProject
     });
@@ -1205,7 +1204,7 @@ export const AppProvider = ({ children }) => {
       if (newTcv < currentGross) {
         pushNotification(
           'Invalid Contract Value',
-          `Total contract value ($${newTcv.toLocaleString()}) cannot be less than already invoiced amount ($${currentGross.toLocaleString()}).`,
+          `Total contract value (Rs ${newTcv.toLocaleString()}) cannot be less than already invoiced amount (Rs ${currentGross.toLocaleString()}).`,
           'error'
         );
         return false;
@@ -1356,14 +1355,14 @@ export const AppProvider = ({ children }) => {
         projectId: updatedItem.projectId,
         projectName: updatedItem.projectName,
         actionType: 'PAYOUT_VERIFIED',
-        itemText: `Step 1 Verification passed for ${updatedItem.contractorName} ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()})`,
+        itemText: `Step 1 Verification passed for ${updatedItem.contractorName} (Rs ${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()})`,
         previousState: { status: 'INVOICED' },
         newState: { status: 'APPROVED', step1ApprovedBy: currentUser.name }
       });
 
       pushNotification(
         'Step 1 Verification Complete',
-        `Payout for ${updatedItem.contractorName} ($${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) is now APPROVED and awaiting Super Admin Step-2 sign-off.`,
+        `Payout for ${updatedItem.contractorName} (Rs ${(updatedItem.calculatedPayoutAmount || 0).toLocaleString()}) is now APPROVED and awaiting Super Admin Step-2 sign-off.`,
         'info',
         {
           projectId: updatedItem.projectId,
@@ -1433,14 +1432,14 @@ export const AppProvider = ({ children }) => {
       projectId: payoutItemMeta?.projectId || null,
       projectName: payoutItemMeta?.projectName || 'Company Financial Settlement',
       actionType: 'PAYOUT_DISBURSED',
-      itemText: `Super Admin logged payment settlement for ${payeeName} ($${Number(amount).toLocaleString()}) [Ref: ${txRef}]`,
+      itemText: `Super Admin logged payment settlement for ${payeeName} (Rs ${Number(amount).toLocaleString()}) [Ref: ${txRef}]`,
       previousState: { status: 'APPROVED' },
       newState: { status: 'DISBURSED', disbursementRef: txRef, authorizedBy: currentUser.name }
     });
 
     pushNotification(
       'Payment Settlement Logged',
-      `Payment ($${Number(amount).toLocaleString()}) logged for ${payeeName} via ${channel}. Reference: ${txRef}`,
+      `Payment (Rs ${Number(amount).toLocaleString()}) logged for ${payeeName} via ${channel}. Reference: ${txRef}`,
       'success',
       {
         targetRoles: ['SUPER_ADMIN', 'PROJECT_MANAGER'],
@@ -1472,12 +1471,12 @@ export const AppProvider = ({ children }) => {
       const remainingAllowed = Math.max(0, totalContractValue - currentTotalInvoiced);
       pushNotification(
         'Invoice Cap Exceeded',
-        `Invoice for $${amount.toLocaleString()} rejected. Total invoiced would reach $${projectedTotal.toLocaleString()}, exceeding the project contract value of $${totalContractValue.toLocaleString()}. Remaining allowance: $${remainingAllowed.toLocaleString()}.`,
+        `Invoice for Rs ${amount.toLocaleString()} rejected. Total invoiced would reach Rs ${projectedTotal.toLocaleString()}, exceeding the project contract value of Rs ${totalContractValue.toLocaleString()}. Remaining allowance: Rs ${remainingAllowed.toLocaleString()}.`,
         'error'
       );
       return {
         success: false,
-        error: `Total invoice amount ($${projectedTotal.toLocaleString()}) would exceed the project's total value ($${totalContractValue.toLocaleString()}). Maximum remaining allowed: $${remainingAllowed.toLocaleString()}.`
+        error: `Total invoice amount (Rs ${projectedTotal.toLocaleString()}) would exceed the project's total value (Rs ${totalContractValue.toLocaleString()}). Maximum remaining allowed: Rs ${remainingAllowed.toLocaleString()}.`
       };
     }
 
@@ -1511,14 +1510,14 @@ export const AppProvider = ({ children }) => {
       projectId: newInvoice.projectId,
       projectName: newInvoice.projectName,
       actionType: 'INVOICE_GENERATED',
-      itemText: `Logged Client Invoice ${newInvoice.invoiceNumber} for $${amount.toLocaleString()} on ${newInvoice.projectName}`,
+      itemText: `Logged Client Invoice ${newInvoice.invoiceNumber} for Rs ${amount.toLocaleString()} on ${newInvoice.projectName}`,
       previousState: null,
       newState: newInvoice
     });
 
     pushNotification(
       'Client Invoice Recorded',
-      `Invoice ${newInvoice.invoiceNumber} ($${amount.toLocaleString()}) recorded for ${newInvoice.projectName}.`,
+      `Invoice ${newInvoice.invoiceNumber} (Rs ${amount.toLocaleString()}) recorded for ${newInvoice.projectName}.`,
       'success'
     );
 
@@ -1556,14 +1555,14 @@ export const AppProvider = ({ children }) => {
       projectId: newPayment.projectId,
       projectName: newPayment.projectName,
       actionType: 'PAYMENT_RECEIVED',
-      itemText: `Received Client Payment (Pay-In) of $${amount.toLocaleString()} for ${newPayment.projectName} [Ref: ${newPayment.referenceNumber}]`,
+      itemText: `Received Client Payment (Pay-In) of Rs ${amount.toLocaleString()} for ${newPayment.projectName} [Ref: ${newPayment.referenceNumber}]`,
       previousState: null,
       newState: newPayment
     });
 
     pushNotification(
       'Client Payment Received (Pay-In)',
-      `Pay-In of $${amount.toLocaleString()} received from ${newPayment.clientName} for ${newPayment.projectName}.`,
+      `Pay-In of Rs ${amount.toLocaleString()} received from ${newPayment.clientName} for ${newPayment.projectName}.`,
       'success'
     );
   };
@@ -1594,14 +1593,14 @@ export const AppProvider = ({ children }) => {
       projectId: newPayout.projectId,
       projectName: newPayout.projectName,
       actionType: 'SOURCE_PAYOUT_LOGGED',
-      itemText: `Disbursed $${amount.toLocaleString()} Source Referral Fee to ${newPayout.sourceName} on ${newPayout.projectName}`,
+      itemText: `Disbursed Rs ${amount.toLocaleString()} Source Referral Fee to ${newPayout.sourceName} on ${newPayout.projectName}`,
       previousState: null,
       newState: newPayout
     });
 
     pushNotification(
       'Source Payout Logged',
-      `Source fee of $${amount.toLocaleString()} disbursed to ${newPayout.sourceName}.`,
+      `Source fee of Rs ${amount.toLocaleString()} disbursed to ${newPayout.sourceName}.`,
       'success'
     );
   };
@@ -1654,15 +1653,15 @@ export const AppProvider = ({ children }) => {
       projectName: newRecord.projectName,
       actionType: 'PAYOUT_DISBURSED',
       itemText: isSalaried
-        ? `Disbursed Monthly Salary Payout of $${amount.toLocaleString()} to ${newRecord.contractorName}`
-        : `Disbursed Project Share Payout of $${amount.toLocaleString()} to ${newRecord.contractorName} for ${newRecord.projectName}`,
+        ? `Disbursed Monthly Salary Payout of Rs ${amount.toLocaleString()} to ${newRecord.contractorName}`
+        : `Disbursed Project Share Payout of Rs ${amount.toLocaleString()} to ${newRecord.contractorName} for ${newRecord.projectName}`,
       previousState: null,
       newState: newRecord
     });
 
     pushNotification(
       isSalaried ? 'Monthly Salary Logged' : 'Percentage Share Payout Logged',
-      `Disbursed $${amount.toLocaleString()} to ${newRecord.contractorName} (${isSalaried ? 'Fixed Salary' : newRecord.projectName}).`,
+      `Disbursed Rs ${amount.toLocaleString()} to ${newRecord.contractorName} (${isSalaried ? 'Fixed Salary' : newRecord.projectName}).`,
       'success'
     );
   };
@@ -1710,14 +1709,14 @@ export const AppProvider = ({ children }) => {
 
     recordAuditLog({
       actionType: 'DIRECT_EXPENSE_LOGGED',
-      itemText: `Recorded Monthly Expense of $${amount.toLocaleString()} (${newExpense.category} - ${newExpense.vendor}) for ${newExpense.month}`,
+      itemText: `Recorded Monthly Expense of Rs ${amount.toLocaleString()} (${newExpense.category} - ${newExpense.vendor}) for ${newExpense.month}`,
       previousState: null,
       newState: newExpense
     });
 
     pushNotification(
       'Monthly Expense Recorded',
-      `Expense of $${amount.toLocaleString()} recorded for ${newExpense.month} (${newExpense.category}).`,
+      `Expense of Rs ${amount.toLocaleString()} recorded for ${newExpense.month} (${newExpense.category}).`,
       'success'
     );
   };
@@ -1767,12 +1766,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const createUser = (userData) => {
-    const defaultMfaKey = userData.mfaKey || secureRandomDigits(4);
     const newUser = {
       id: 'usr-' + Date.now(),
       avatar: `https://images.unsplash.com/photo-${1530000000000 + secureRandomInt(0, 900000)}?w=150&auto=format&fit=crop&q=80`,
-      isMfaEnabled: userData.isMfaEnabled !== undefined ? userData.isMfaEnabled : (userData.role === 'SUPER_ADMIN'),
-      mfaKey: defaultMfaKey,
+      isMfaEnabled: false,
       workMode: userData.workMode || 'ONSITE',
       compensationType: userData.compensationType || 'SALARIED',
       ...userData
@@ -1782,7 +1779,7 @@ export const AppProvider = ({ children }) => {
 
     const compSummary = newUser.compensationType === 'PERCENTAGE'
       ? `${newUser.percentage || 15}% Share`
-      : newUser.salary ? `$${Number(newUser.salary).toLocaleString()}/yr` : 'Salaried';
+      : newUser.salary ? `Rs ${Number(newUser.salary).toLocaleString()}/yr` : 'Salaried';
 
     recordAuditLog({
       actionType: 'USER_PROVISIONED',
@@ -1804,15 +1801,14 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUser = (userId, updates) => {
-    // If password or mfaKey is being updated, verify Super Admin
-    if ((updates.password || updates.mfaKey !== undefined) && !isSuperAdmin()) {
+    // If password is being updated, verify Super Admin
+    if (updates.password && !isSuperAdmin()) {
       pushNotification(
         'Action Restricted',
-        'Only Super Admins can change employee passwords or 2FA keys.',
+        'Only Super Admins can change employee passwords.',
         'warning'
       );
       delete updates.password;
-      delete updates.mfaKey;
     }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
     api.patch(`/users/${userId}`, updates).catch(err => {
@@ -1882,58 +1878,8 @@ export const AppProvider = ({ children }) => {
     return false;
   };
 
-  const updateUserMfaKey = (userId, newMfaKey, isMfaEnabled = true) => {
-    if (!isSuperAdmin()) {
-      pushNotification(
-        'Action Restricted',
-        'Security Policy: Only the Super Admin has authorization to set or modify 2FA security keys.',
-        'error'
-      );
-      return false;
-    }
-
-    const cleanKey = (newMfaKey || '').trim();
-    if (!cleanKey) {
-      pushNotification(
-        'Invalid Key',
-        '2FA Security Key cannot be empty.',
-        'error'
-      );
-      return false;
-    }
-
-    let targetUser = null;
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        targetUser = u;
-        return {
-          ...u,
-          mfaKey: cleanKey,
-          isMfaEnabled: isMfaEnabled !== undefined ? isMfaEnabled : u.isMfaEnabled,
-        };
-      }
-      return u;
-    }));
-    api.patch(`/users/${userId}/mfa-key`, { mfaKey: cleanKey, isMfaEnabled }).catch(err => {
-      console.warn('[DB User Sync] Live database 2FA update fallback:', err.message);
-    });
-
-    if (targetUser) {
-      recordAuditLog({
-        actionType: 'SECURITY_2FA_UPDATED',
-        itemText: `Super Admin ${currentUser.name} updated fixed 2FA security key for ${targetUser.name} (${targetUser.email}).`,
-        previousState: { mfaKey: targetUser.mfaKey, isMfaEnabled: targetUser.isMfaEnabled },
-        newState: { mfaKey: cleanKey, isMfaEnabled }
-      });
-
-      pushNotification(
-        '2FA Security Key Updated',
-        `Fixed 2FA key updated successfully for ${targetUser.name}.`,
-        'success'
-      );
-      return true;
-    }
-    return false;
+  const updateUserMfaKey = () => {
+    return true;
   };
 
   const createClient = (clientData) => {
@@ -2252,8 +2198,8 @@ export const AppProvider = ({ children }) => {
       // Monthly Salaried commitments
       const salariedStaff = (users || []).filter(u => u.compensationType !== 'PERCENTAGE' && u.role !== 'PARTNER');
       const totalMonthlySalaries = salariedStaff.reduce((sum, u) => {
-        const defaultSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-        return sum + Math.round((u.salary || defaultSalary) / 12);
+        const annualSalary = (u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : defaultSalary;
+        return sum + Math.round(annualSalary / 12);
       }, 0);
 
       const totalOutflows = directExpenses + totalSourcePayouts + totalPercentagePayouts;

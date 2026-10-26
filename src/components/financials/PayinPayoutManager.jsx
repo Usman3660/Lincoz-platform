@@ -9,7 +9,7 @@ import {
   ArrowLeftRight,
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  Banknote,
   Plus,
   Filter,
   Search,
@@ -291,7 +291,7 @@ export const PayinPayoutManager = () => {
           partyLabel: 'Expense Category',
           partyName: doc.category || 'Operational Expense',
           vendor: doc.vendor || 'Operational Vendor',
-          project: `Expense Month: ${monthLabel}`,
+          project: `Expense Month: Rs {monthLabel}`,
           amount: Number(doc.amount || 0),
           status: doc.status || 'PAID',
           badgeColor: 'rose',
@@ -325,9 +325,10 @@ export const PayinPayoutManager = () => {
         setContractorId(sUser.id);
         const mObj = availableMonths.find(m => (m.id || m.value) === payrollMonth);
         const mLabel = mObj?.label || payrollMonth;
-        setDeliverableTitle(`Monthly Payroll (${mLabel})`);
+        setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
         const defSalary = sUser.role === 'SUPER_ADMIN' ? 180000 : sUser.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-        const moSal = Math.round((sUser.salary || defSalary) / 12);
+        const annSal = (sUser.salary !== undefined && sUser.salary !== null && !isNaN(Number(sUser.salary))) ? Number(sUser.salary) : defSalary;
+        const moSal = Math.round(annSal / 12);
         setAmount(String(moSal));
         setPaymentMethod('Direct Deposit / Bank ACH');
       }
@@ -340,7 +341,8 @@ export const PayinPayoutManager = () => {
       const u = users.find(usr => usr.id === userId);
       if (u) {
         const defSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-        const moSal = Math.round((u.salary || defSalary) / 12);
+        const annSal = (u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : defSalary;
+        const moSal = Math.round(annSal / 12);
         setAmount(String(moSal));
       }
     } else {
@@ -429,9 +431,10 @@ export const PayinPayoutManager = () => {
         setContractorId(firstSal?.id || '');
         const mObj = availableMonths.find(m => (m.id || m.value) === defaultMonth);
         const mLabel = mObj?.label || defaultMonth;
-        setDeliverableTitle(`Monthly Payroll (${mLabel})`);
+        setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
         const defSalary = firstSal?.role === 'SUPER_ADMIN' ? 180000 : firstSal?.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-        const moSal = Math.round((firstSal?.salary || defSalary) / 12);
+        const annSal = (firstSal?.salary !== undefined && firstSal?.salary !== null && !isNaN(Number(firstSal.salary))) ? Number(firstSal.salary) : defSalary;
+        const moSal = Math.round(annSal / 12);
         setAmount(String(moSal));
         setPaymentMethod('Direct Deposit / Bank ACH');
         setPaymentDate(`${defaultMonth}-28`);
@@ -505,11 +508,11 @@ export const PayinPayoutManager = () => {
 
       if (totalContractVal > 0 && Number(amount) > remainingInvoicable) {
         alert(
-          `Cannot create invoice for $${Number(amount).toLocaleString()}!\n\n` +
-          `Project: ${projName}\n` +
-          `Total Project Contract Value: $${totalContractVal.toLocaleString()}\n` +
-          `Already Invoiced: $${alreadyInvoiced.toLocaleString()}\n` +
-          `Remaining Invoicable Cap: $${remainingInvoicable.toLocaleString()}\n\n` +
+          `Cannot create invoice for Rs ${Number(amount).toLocaleString()}!\n\n` +
+          `Project: Rs {projName}\n` +
+          `Total Project Contract Value: Rs ${totalContractVal.toLocaleString()}\n` +
+          `Already Invoiced: Rs ${alreadyInvoiced.toLocaleString()}\n` +
+          `Remaining Invoicable Cap: Rs ${remainingInvoicable.toLocaleString()}\n\n` +
           `The total invoice of the project cannot exceed the total value of the project.`
         );
         return;
@@ -590,7 +593,7 @@ export const PayinPayoutManager = () => {
           contractorName: contractorUser?.name || 'Salaried Employee',
           employeeId: targetContractorId,
           employeeName: contractorUser?.name,
-          deliverableTitle: `Monthly Payroll (${pMonthLabel})`,
+          deliverableTitle: `Monthly Payroll (Rs {pMonthLabel})`,
           agreementModel: 'FIXED_SALARY',
           agreementPercentage: 0,
           projectTotalValue: 0,
@@ -909,8 +912,8 @@ export const PayinPayoutManager = () => {
         flowType: 'PAYMENT_IN',
         direction: 'INWARD',
         date: p.paymentDate || p.date,
-        title: `Client Pay-In: ${p.clientName}`,
-        subtitle: `Ref: ${p.referenceNumber} (${p.paymentMethod})`,
+        title: `Client Pay-In: Rs {p.clientName}`,
+        subtitle: `Ref: Rs {p.referenceNumber} (Rs {p.paymentMethod})`,
         badgeText: 'Pay-In Received',
         badgeColor: 'emerald'
       })),
@@ -919,8 +922,8 @@ export const PayinPayoutManager = () => {
         flowType: 'SOURCE_PAYOUT',
         direction: 'OUTWARD',
         date: s.payoutDate || s.date,
-        title: `Source Referral Fee: ${s.sourceName}`,
-        subtitle: `Ref: ${s.referenceNumber || 'Wire'}`,
+        title: `Source Referral Fee: Rs {s.sourceName}`,
+        subtitle: `Ref: Rs {s.referenceNumber || 'Wire'}`,
         badgeText: 'Source Fee',
         badgeColor: 'amber'
       })),
@@ -932,7 +935,7 @@ export const PayinPayoutManager = () => {
           direction: 'OUTWARD',
           date: pl.payoutDate || pl.date || (pl.step2AuthorizedAt ? pl.step2AuthorizedAt.split('T')[0] : (pl.createdAt ? pl.createdAt.split('T')[0] : '2026-10-01')),
           amount: pl.calculatedPayoutAmount || pl.amount,
-          title: isSal ? `Salary Payout: ${pl.contractorName || pl.employeeName}` : `% Share Payout: ${pl.contractorName}`,
+          title: isSal ? `Salary Payout: Rs {pl.contractorName || pl.employeeName}` : `% Share Payout: Rs {pl.contractorName}`,
           subtitle: pl.deliverableTitle || (isSal ? 'Monthly Payroll Settlement' : 'Project Share'),
           badgeText: isSal ? 'Salary Payroll' : '% Staff Share',
           badgeColor: isSal ? 'emerald' : 'purple'
@@ -944,8 +947,8 @@ export const PayinPayoutManager = () => {
         direction: 'OUTWARD',
         date: e.expenseDate || e.date || (e.month ? `${e.month}-15` : '2026-10-15'),
         projectName: e.projectName || 'General Operations',
-        title: `Monthly Expense: ${e.vendor || e.category}`,
-        subtitle: `${e.category} (${e.receiptRef || 'Direct'})`,
+        title: `Monthly Expense: Rs {e.vendor || e.category}`,
+        subtitle: `${e.category} (Rs {e.receiptRef || 'Direct'})`,
         badgeText: 'Monthly Expense',
         badgeColor: 'rose'
       }))
@@ -1150,7 +1153,7 @@ export const PayinPayoutManager = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
           title={selectedMonth === 'ALL' ? "Total Invoiced" : "Monthly Invoiced"}
-          value={`$${totalInvoiced.toLocaleString()}`}
+          value={`Rs ${totalInvoiced.toLocaleString()}`}
           subtitle={selectedMonth === 'ALL' ? "Billed across all projects" : `Billed in ${currentSelectedMonthLabel}`}
           icon={FileText}
           colorScheme="indigo"
@@ -1158,7 +1161,7 @@ export const PayinPayoutManager = () => {
         />
         <StatsCard
           title={selectedMonth === 'ALL' ? "Total Pay-In Received" : "Monthly Pay-In Received"}
-          value={`$${totalCollected.toLocaleString()}`}
+          value={`Rs ${totalCollected.toLocaleString()}`}
           subtitle={selectedMonth === 'ALL' ? "Inward cash collected" : `Collected in ${currentSelectedMonthLabel}`}
           icon={ArrowDownLeft}
           colorScheme="emerald"
@@ -1166,7 +1169,7 @@ export const PayinPayoutManager = () => {
         />
         <StatsCard
           title={selectedMonth === 'ALL' ? "Accounts Receivable" : "Month Pending AR"}
-          value={`$${accountsReceivable.toLocaleString()}`}
+          value={`Rs ${accountsReceivable.toLocaleString()}`}
           subtitle={selectedMonth === 'ALL' ? "Pending from clients" : `Pending for ${currentSelectedMonthLabel}`}
           icon={Clock}
           colorScheme="amber"
@@ -1174,7 +1177,7 @@ export const PayinPayoutManager = () => {
         />
         <StatsCard
           title={selectedMonth === 'ALL' ? "Total Pay-Out Disbursed" : "Monthly Pay-Outs"}
-          value={`$${totalOutflows.toLocaleString()}`}
+          value={`Rs ${totalOutflows.toLocaleString()}`}
           subtitle={selectedMonth === 'ALL' ? "Direct expenses, sources, & % shares" : `Outflows in ${currentSelectedMonthLabel}`}
           icon={ArrowUpRight}
           colorScheme="rose"
@@ -1182,7 +1185,7 @@ export const PayinPayoutManager = () => {
         />
         <StatsCard
           title={selectedMonth === 'ALL' ? "Net Cash Balance" : "Monthly Net Cash"}
-          value={`$${netLiquidCash.toLocaleString()}`}
+          value={`Rs ${netLiquidCash.toLocaleString()}`}
           subtitle={selectedMonth === 'ALL' ? "Collected minus all outflows" : `Cashflow for ${currentSelectedMonthLabel}`}
           icon={Wallet}
           colorScheme={netLiquidCash >= 0 ? 'cyan' : 'rose'}
@@ -1249,7 +1252,7 @@ export const PayinPayoutManager = () => {
                       </td>
                       <td className="p-3.5 text-right font-mono font-bold text-sm whitespace-nowrap">
                         <span className={tx.direction === 'INWARD' ? 'text-emerald-400' : tx.direction === 'OUTWARD' ? 'text-rose-400' : 'text-indigo-300'}>
-                          {tx.direction === 'INWARD' ? '+' : tx.direction === 'OUTWARD' ? '-' : ''}${Number(tx.amount || 0).toLocaleString()}
+                          {tx.direction === 'INWARD' ? '+' : tx.direction === 'OUTWARD' ? '-' : ''}Rs {Number(tx.amount || 0).toLocaleString()}
                         </span>
                       </td>
                       <td className="p-3.5 text-right">
@@ -1330,8 +1333,7 @@ export const PayinPayoutManager = () => {
                     <td className="p-3.5">
                       <StatusBadge status={inv.status} />
                     </td>
-                    <td className="p-3.5 text-right font-mono font-bold text-sm text-indigo-300">
-                      ${(inv.amount || 0).toLocaleString()}
+                    <td className="p-3.5 text-right font-mono font-bold text-sm text-indigo-300"> Rs {(inv.amount || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -1813,7 +1815,7 @@ export const PayinPayoutManager = () => {
 
                     return (
                       <option key={p.id} value={p.id}>
-                        📁 {p.name} {modalType === 'INVOICE' && pTcv > 0 ? `(Cap Rem: $${pRem.toLocaleString()} / $${pTcv.toLocaleString()})` : `(Client: ${p.clientName})`}
+                        📁 {p.name} {modalType === 'INVOICE' && pTcv > 0 ? `(Cap Rem: Rs ${pRem.toLocaleString()} / Rs ${pTcv.toLocaleString()})` : `(Client: Rs {p.clientName})`}
                       </option>
                     );
                   })}
@@ -1846,8 +1848,7 @@ export const PayinPayoutManager = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 block">
                           Total Value (TCV)
                         </span>
-                        <span className="font-mono text-sm font-extrabold text-slate-900 dark:text-indigo-300">
-                          ${invoiceProjTcv.toLocaleString()}
+                        <span className="font-mono text-sm font-extrabold text-slate-900 dark:text-indigo-300"> Rs {invoiceProjTcv.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -1860,7 +1861,7 @@ export const PayinPayoutManager = () => {
                         </span>
                         <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                           {invoiceRemainingCap > 0 ? (
-                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">${invoiceRemainingCap.toLocaleString()} left</span>
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold"> Rs {invoiceRemainingCap.toLocaleString()} left</span>
                           ) : (
                             <span className="text-amber-700 dark:text-amber-400 font-bold">Cap reached</span>
                           )}
@@ -1889,8 +1890,7 @@ export const PayinPayoutManager = () => {
                             Already Invoiced
                           </span>
                         </div>
-                        <div className="text-base font-extrabold font-mono text-slate-900 dark:text-white">
-                          ${invoiceProjAlreadyInvoiced.toLocaleString()}
+                        <div className="text-base font-extrabold font-mono text-slate-900 dark:text-white"> Rs {invoiceProjAlreadyInvoiced.toLocaleString()}
                         </div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-sans">
                           {invoicedPercent}% of contract
@@ -1908,8 +1908,7 @@ export const PayinPayoutManager = () => {
                             Remaining Cap
                           </span>
                         </div>
-                        <div className={`text-base font-extrabold font-mono ${invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                          ${invoiceRemainingCap.toLocaleString()}
+                        <div className={`text-base font-extrabold font-mono ${invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}> Rs {invoiceRemainingCap.toLocaleString()}
                         </div>
                         <div className={`text-[10px] mt-0.5 font-sans ${invoiceRemainingCap > 0 ? 'text-emerald-700/80 dark:text-emerald-400/80' : 'text-amber-700/80 dark:text-amber-400/80'}`}>
                           {invoiceRemainingCap > 0 ? 'Available allowance' : 'Limit reached'}
@@ -1923,7 +1922,7 @@ export const PayinPayoutManager = () => {
                         <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-300 text-xs">
                           <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
                           <span className="font-semibold text-[11px] leading-tight">
-                            Project 100% Invoiced: Full contract value (${invoiceProjTcv.toLocaleString()}) has been reached. No further invoices can be issued.
+                            Project 100% Invoiced: Full contract value (Rs {invoiceProjTcv.toLocaleString()}) has been reached. No further invoices can be issued.
                           </span>
                         </div>
                       ) : (
@@ -2096,7 +2095,7 @@ export const PayinPayoutManager = () => {
                       {projTcv > 0 && (
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 block uppercase font-mono">Suggested Fee</span>
-                          <span className="font-mono font-bold text-white">${estFee.toLocaleString()}</span>
+                          <span className="font-mono font-bold text-white"> Rs {estFee.toLocaleString()}</span>
                           <span className="text-[10px] text-slate-400 block font-mono">({rate}% of ${projTcv.toLocaleString()})</span>
                         </div>
                       )}
@@ -2144,7 +2143,7 @@ export const PayinPayoutManager = () => {
                           </div>
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 block uppercase font-mono">Total Project Share</span>
-                            <span className="font-mono font-bold text-white">${totalShare.toLocaleString()}</span>
+                            <span className="font-mono font-bold text-white"> Rs {totalShare.toLocaleString()}</span>
                           </div>
                         </div>
                       );
@@ -2188,7 +2187,7 @@ export const PayinPayoutManager = () => {
                     {(() => {
                       const selUser = users.find(u => u.id === contractorId) || salariedUsers[0];
                       const defSal = selUser?.role === 'SUPER_ADMIN' ? 180000 : selUser?.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-                      const annSal = selUser?.salary || defSal;
+                      const annSal = (selUser?.salary !== undefined && selUser?.salary !== null && !isNaN(Number(selUser.salary))) ? Number(selUser.salary) : defSal;
                       const moSal = Math.round(annSal / 12);
 
                       return (
@@ -2201,7 +2200,7 @@ export const PayinPayoutManager = () => {
                           </div>
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 block uppercase font-mono">Monthly Base Salary</span>
-                            <span className="font-mono font-bold text-white">${moSal.toLocaleString()}/mo</span>
+                            <span className="font-mono font-bold text-white"> Rs {moSal.toLocaleString()}/mo</span>
                             <span className="text-[10px] text-slate-400 block font-mono">(${annSal.toLocaleString()}/yr)</span>
                           </div>
                         </div>
@@ -2225,7 +2224,7 @@ export const PayinPayoutManager = () => {
                             setPayrollMonth(val);
                             const mObj = availableMonths.find(m => (m.id || m.value) === val);
                             const mLabel = mObj?.label || val;
-                            setDeliverableTitle(`Monthly Payroll (${mLabel})`);
+                            setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
                             setPaymentDate(`${val}-28`);
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-emerald-300 font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
@@ -2255,7 +2254,7 @@ export const PayinPayoutManager = () => {
                                   type="button"
                                   onClick={() => {
                                     setPayrollMonth(mVal);
-                                    setDeliverableTitle(`Monthly Payroll (${m.label})`);
+                                    setDeliverableTitle(`Monthly Payroll (Rs {m.label})`);
                                     setPaymentDate(`${mVal}-28`);
                                   }}
                                   className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${isSelected
@@ -2415,10 +2414,10 @@ export const PayinPayoutManager = () => {
             {/* Amount Field */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Transaction Amount (USD) *
+                Transaction Amount (Rs) *
               </label>
               <div className="relative">
-                <DollarSign className="w-4 h-4 text-emerald-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-400 select-none">Rs</span>
                 <input
                   type="number"
                   min="0.01"
@@ -2426,7 +2425,7 @@ export const PayinPayoutManager = () => {
                   max={modalType === 'INVOICE' && invoiceRemainingCap > 0 ? invoiceRemainingCap : undefined}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={modalType === 'INVOICE' && invoiceRemainingCap > 0 ? `Max $${invoiceRemainingCap.toLocaleString()}` : "e.g. 12001"}
+                  placeholder={modalType === 'INVOICE' && invoiceRemainingCap > 0 ? `Max Rs ${invoiceRemainingCap.toLocaleString()}` : "e.g. 12001"}
                   className={`w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#182234] border text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none transition-colors ${isInvoiceExceedingCap
                     ? 'border-rose-500 text-rose-600 dark:text-rose-300 focus:border-rose-500'
                     : 'border-slate-700 focus:border-emerald-500'
@@ -2444,7 +2443,7 @@ export const PayinPayoutManager = () => {
                       Invoice Amount Exceeds Project Contract Cap!
                     </p>
                     <p className="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed">
-                      Entering <span className="font-mono font-bold text-rose-950 dark:text-white">${invoiceAmountNum.toLocaleString()}</span> exceeds the remaining invoicable cap of <span className="font-mono font-bold text-rose-950 dark:text-white">${invoiceRemainingCap.toLocaleString()}</span> by <span className="font-mono font-extrabold text-rose-600 dark:text-rose-400">${(invoiceAmountNum - invoiceRemainingCap).toLocaleString()}</span>. Total project contract value is <span className="font-mono font-bold text-rose-950 dark:text-white">${invoiceProjTcv.toLocaleString()}</span>.
+                      Entering <span className="font-mono font-bold text-rose-950 dark:text-white"> Rs {invoiceAmountNum.toLocaleString()}</span> exceeds the remaining invoicable cap of <span className="font-mono font-bold text-rose-950 dark:text-white"> Rs {invoiceRemainingCap.toLocaleString()}</span> by <span className="font-mono font-extrabold text-rose-600 dark:text-rose-400"> Rs {(invoiceAmountNum - invoiceRemainingCap).toLocaleString()}</span>. Total project contract value is <span className="font-mono font-bold text-rose-950 dark:text-white"> Rs {invoiceProjTcv.toLocaleString()}</span>.
                     </p>
                   </div>
                 </div>
@@ -2453,8 +2452,7 @@ export const PayinPayoutManager = () => {
               {modalType === 'INVOICE' && invoiceAmountNum > 0 && !isInvoiceExceedingCap && !isFullyInvoiced && (
                 <div className="mt-2 flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded-lg bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300">
                   <span className="font-medium">Projected cumulative total after invoice:</span>
-                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                    ${(invoiceProjAlreadyInvoiced + invoiceAmountNum).toLocaleString()} / ${invoiceProjTcv.toLocaleString()} ({invoiceProjTcv > 0 ? Math.round(((invoiceProjAlreadyInvoiced + invoiceAmountNum) / invoiceProjTcv) * 100) : 0}%)
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400"> Rs {(invoiceProjAlreadyInvoiced + invoiceAmountNum).toLocaleString()} / ${invoiceProjTcv.toLocaleString()} ({invoiceProjTcv > 0 ? Math.round(((invoiceProjAlreadyInvoiced + invoiceAmountNum) / invoiceProjTcv) * 100) : 0}%)
                   </span>
                 </div>
               )}
@@ -2463,7 +2461,8 @@ export const PayinPayoutManager = () => {
               {modalType === 'PERCENTAGE' && employeePayoutType === 'SALARIED' && (() => {
                 const selUser = users.find(u => u.id === contractorId) || salariedUsers[0];
                 const defSal = selUser?.role === 'SUPER_ADMIN' ? 180000 : selUser?.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-                const moSal = Math.round((selUser?.salary || defSal) / 12);
+                const annSal = (selUser?.salary !== undefined && selUser?.salary !== null && !isNaN(Number(selUser.salary))) ? Number(selUser.salary) : defSal;
+                const moSal = Math.round(annSal / 12);
                 return (
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="text-[11px] text-slate-400">Monthly Base:</span>
@@ -2494,7 +2493,7 @@ export const PayinPayoutManager = () => {
                         onClick={() => setAmount(String(halfShare))}
                         className="px-2 py-0.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[11px] font-mono font-bold transition-colors cursor-pointer"
                       >
-                        50% Milestone (${halfShare.toLocaleString()})
+                        50% Milestone (Rs {halfShare.toLocaleString()})
                       </button>
                     )}
                     {totalShare > 0 && (
@@ -2503,7 +2502,7 @@ export const PayinPayoutManager = () => {
                         onClick={() => setAmount(String(totalShare))}
                         className="px-2 py-0.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[11px] font-mono font-bold transition-colors cursor-pointer"
                       >
-                        Full Share (${totalShare.toLocaleString()})
+                        Full Share (Rs {totalShare.toLocaleString()})
                       </button>
                     )}
                   </div>
@@ -2695,7 +2694,7 @@ export const PayinPayoutManager = () => {
                       <thead className="bg-slate-50 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
                         <tr>
                           <th className="p-3">Description / Line Item Scope</th>
-                          <th className="p-3 text-right">Settlement Amount (USD)</th>
+                          <th className="p-3 text-right">Settlement Amount (Rs)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -2719,16 +2718,14 @@ export const PayinPayoutManager = () => {
                               </p>
                             )}
                           </td>
-                          <td className="p-3 text-right font-mono font-bold text-base text-slate-900 whitespace-nowrap align-top">
-                            ${meta.amount.toLocaleString()}
+                          <td className="p-3 text-right font-mono font-bold text-base text-slate-900 whitespace-nowrap align-top"> Rs {meta.amount.toLocaleString()}
                           </td>
                         </tr>
                       </tbody>
                       <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-300">
                         <tr>
                           <td className="p-3 text-right uppercase text-[10px] tracking-wider text-slate-600">Total Transaction Amount:</td>
-                          <td className="p-3 text-right font-mono text-lg text-slate-900">
-                            ${meta.amount.toLocaleString()} USD
+                          <td className="p-3 text-right font-mono text-lg text-slate-900"> Rs {meta.amount.toLocaleString()}
                           </td>
                         </tr>
                       </tfoot>

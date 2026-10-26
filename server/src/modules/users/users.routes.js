@@ -149,6 +149,7 @@ usersRouter.patch('/:id', authenticate, async (req, res, next) => {
     if (updates.avatar) dataToUpdate.avatarUrl = updates.avatar;
     if (updates.avatarUrl) dataToUpdate.avatarUrl = updates.avatarUrl;
     if (updates.workMode) dataToUpdate.workMode = updates.workMode;
+    if (updates.compensationType) dataToUpdate.compensationType = updates.compensationType;
     if (updates.salary !== undefined) dataToUpdate.salary = Number(updates.salary);
     if (updates.percentage !== undefined) dataToUpdate.sharePercentage = Number(updates.percentage);
     if (isSuperAdmin && updates.role) dataToUpdate.role = updates.role;

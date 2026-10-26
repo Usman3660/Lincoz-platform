@@ -21,7 +21,7 @@ const verifyPayoutSchema = z.object({
 
 const disbursePayoutSchema = z.object({
   payoutId: z.string().min(1),
-  mfaCode: z.string().min(4, 'MFA code is required for financial disbursement'),
+  mfaCode: z.string().optional(),
 });
 
 const createExpenseSchema = z.object({
@@ -174,11 +174,7 @@ financialsRouter.post(
   validate(disbursePayoutSchema),
   async (req, res, next) => {
     try {
-      const { payoutId, mfaCode } = req.body;
-
-      if (!mfaCode || mfaCode.length < 4) {
-        return res.status(400).json({ success: false, error: 'Valid MFA code is required for disbursement.' });
-      }
+      const { payoutId } = req.body;
 
       const result = await prisma.$transaction(async (tx) => {
         const payout = await tx.payout.findFirst({

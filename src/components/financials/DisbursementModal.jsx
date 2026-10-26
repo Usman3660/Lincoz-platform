@@ -54,8 +54,7 @@ export const DisbursementModal = ({ isOpen, onClose, payoutItem }) => {
             </div>
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Settlement Amount</span>
-              <span className="text-xl font-extrabold text-emerald-400 font-mono">
-                ${payoutItem.calculatedPayoutAmount.toLocaleString()}
+              <span className="text-xl font-extrabold text-emerald-400 font-mono"> Rs {payoutItem.calculatedPayoutAmount.toLocaleString()}
               </span>
             </div>
           </div>

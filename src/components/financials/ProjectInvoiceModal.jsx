@@ -4,7 +4,6 @@ import { secureRandomInt } from '../../utils/cryptoUtils';
 import { Modal } from '../common/Modal';
 import {
   FileText,
-  DollarSign,
   Calendar,
   ShieldCheck,
   AlertTriangle,
@@ -56,7 +55,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
 
     if (tcv > 0 && numAmount > remainingCap) {
       setErrorMsg(
-        `Total invoice of $${numAmount.toLocaleString()} exceeds the remaining project cap of $${remainingCap.toLocaleString()}. Total project contract value is $${tcv.toLocaleString()}.`
+        `Total invoice of Rs ${numAmount.toLocaleString()} exceeds the remaining project cap of Rs ${remainingCap.toLocaleString()}. Total project contract value is Rs ${tcv.toLocaleString()}.`
       );
       return;
     }
@@ -94,8 +93,8 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Issue Invoice: ${project.name}`}
-      subtitle={`Client: ${project.clientName || 'Client Organization'} • Contract Governance & Billing`}
+      title={`Issue Invoice: Rs {project.name}`}
+      subtitle={`Client: Rs {project.clientName || 'Client Organization'} • Contract Governance & Billing`}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,8 +118,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">TCV Cap</span>
-              <span className="font-mono text-sm font-extrabold text-indigo-300">
-                ${tcv.toLocaleString()}
+              <span className="font-mono text-sm font-extrabold text-indigo-300"> Rs {tcv.toLocaleString()}
               </span>
             </div>
           </div>
@@ -133,7 +131,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
               </span>
               <span className="font-mono text-[11px]">
                 {remainingCap > 0 ? (
-                  <span className="text-emerald-400 font-bold">${remainingCap.toLocaleString()} remaining allowance</span>
+                  <span className="text-emerald-400 font-bold"> Rs {remainingCap.toLocaleString()} remaining allowance</span>
                 ) : (
                   <span className="text-amber-400 font-bold">100% Contract Cap Reached</span>
                 )}
@@ -157,8 +155,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             <div className="p-3 rounded-xl bg-[#182234] border border-slate-700/80">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Already Invoiced</span>
-              <div className="text-sm font-extrabold font-mono text-white mt-0.5">
-                ${alreadyInvoiced.toLocaleString()}
+              <div className="text-sm font-extrabold font-mono text-white mt-0.5"> Rs {alreadyInvoiced.toLocaleString()}
               </div>
             </div>
             <div className={`p-3 rounded-xl border ${
@@ -171,8 +168,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
               </span>
               <div className={`text-sm font-extrabold font-mono mt-0.5 ${
                 remainingCap > 0 ? 'text-emerald-400' : 'text-amber-400'
-              }`}>
-                ${remainingCap.toLocaleString()}
+              }`}> Rs {remainingCap.toLocaleString()}
               </div>
             </div>
           </div>
@@ -216,10 +212,10 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
         {/* Invoice Amount */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Invoice Amount (USD) *
+            Invoice Amount (Rs) *
           </label>
           <div className="relative">
-            <DollarSign className="w-4 h-4 text-emerald-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-400 select-none">Rs</span>
             <input
               type="number"
               min="0.01"
@@ -230,7 +226,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
                 setAmount(e.target.value);
                 if (errorMsg) setErrorMsg('');
               }}
-              placeholder={remainingCap > 0 ? `e.g. 12001 (Max: $${remainingCap.toLocaleString()})` : "Cap reached"}
+              placeholder={remainingCap > 0 ? `e.g. 12001 (Max: Rs ${remainingCap.toLocaleString()})` : "Cap reached"}
               disabled={isFullyInvoiced}
               className={`w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#182234] border text-sm text-white font-mono font-bold focus:outline-none transition-colors ${
                 isExceedingCap
@@ -246,7 +242,7 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
             <div className="mt-2 p-2.5 rounded-xl bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2 animate-fadeIn">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>
-                Amount exceeds remaining cap by <strong>${(numAmount - remainingCap).toLocaleString()}</strong>. Max allowed: <strong>${remainingCap.toLocaleString()}</strong>.
+                Amount exceeds remaining cap by <strong> Rs {(numAmount - remainingCap).toLocaleString()}</strong>. Max allowed: <strong> Rs {remainingCap.toLocaleString()}</strong>.
               </span>
             </div>
           )}

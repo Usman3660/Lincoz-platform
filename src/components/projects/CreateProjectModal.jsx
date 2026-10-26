@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import { AddClientModal } from '../clients/AddClientModal';
-import { DollarSign, UploadCloud, FileText, X, Lock, CheckCircle2, Link as LinkIcon } from 'lucide-react';
+import { UploadCloud, FileText, X, Lock, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 
 export const CreateProjectModal = ({ isOpen, onClose }) => {
   const { createProject, users = [], clients = [] } = useApp();
@@ -154,7 +154,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                   } else {
                     setClientName(e.target.value);
                     const selected = safeClients.find(c => c.name === e.target.value);
-                    if (selected) setClientContact(`${selected.email} | ${selected.contactNumber}`);
+                    if (selected) setClientContact(`${selected.email} | Rs {selected.contactNumber}`);
                   }
                 }}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
@@ -187,7 +187,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 font-bold mb-1">
-                Total Contract Value (USD) *
+                Total Contract Value (Rs) *
               </label>
               <input
                 type="number"

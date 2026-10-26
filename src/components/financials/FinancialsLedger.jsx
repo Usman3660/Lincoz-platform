@@ -5,7 +5,7 @@ import { StatusBadge, RoleBadge, WorkModeBadge, CompBadge } from '../common/Badg
 import { DisbursementModal } from './DisbursementModal';
 import { ProjectInvoiceModal } from './ProjectInvoiceModal';
 import {
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertCircle,
   CheckCircle2,
@@ -213,9 +213,9 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
   const formatCurrency = (val, prefixPlus = false) => {
     const num = Number(val || 0);
     if (num < 0) {
-      return `-$${Math.abs(num).toLocaleString()}`;
+      return `-Rs ${Math.abs(num).toLocaleString()}`;
     }
-    return `${prefixPlus && num > 0 ? '+' : ''}$${num.toLocaleString()}`;
+    return `${prefixPlus && num > 0 ? '+' : ''}Rs ${num.toLocaleString()}`;
   };
 
   // Selected Month label helper
@@ -234,7 +234,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
   const salariedPayrollRecords = salariedEmployees.map((u) => {
     const defaultSalary = u.role === 'SUPER_ADMIN' ? 180000 : u.role === 'PROJECT_MANAGER' ? 135000 : 120000;
-    const annualSalary = u.salary || defaultSalary;
+    const annualSalary = (u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : defaultSalary;
     const monthlyAmount = Math.round(annualSalary / 12);
 
     // Find all matching disbursed salary payouts for this employee in selected period
@@ -274,7 +274,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
       role: u.role,
       title: u.title || (u.role === 'PROJECT_MANAGER' ? 'Project Manager' : 'Staff Engineer'),
       department: u.department || (u.role === 'PROJECT_MANAGER' ? 'Operations' : 'Engineering'),
-      period: `Monthly Payroll (${currentMonthName})`,
+      period: `Monthly Payroll (Rs {currentMonthName})`,
       annualSalary,
       monthlyAmount,
       totalDue: monthlyAmount,
@@ -443,7 +443,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-            <DollarSign className="w-6 h-6 text-emerald-400" />
+            <Banknote className="w-6 h-6 text-emerald-400" />
             {isPartner() || currentUser.compensationType === 'PERCENTAGE' ? 'My Project Earnings Ledger' : 'Financial Logs'}
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -508,14 +508,14 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Monthly Earnings"
-            value={`$${(financials.totalEarned || 0).toLocaleString()}`}
+            value={`Rs ${(financials.totalEarned || 0).toLocaleString()}`}
             subtitle={`In ${currentMonthName}`}
-            icon={DollarSign}
+            icon={Banknote}
             colorScheme="amber"
           />
           <StatsCard
             title="Settled & Paid"
-            value={`$${(financials.totalDisbursed || 0).toLocaleString()}`}
+            value={`Rs ${(financials.totalDisbursed || 0).toLocaleString()}`}
             subtitle={`Logged in ${currentMonthName}`}
             icon={CheckCircle2}
             colorScheme="emerald"
@@ -523,14 +523,14 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
           />
           <StatsCard
             title="Approved (Pending Release)"
-            value={`$${(financials.pendingDisbursement || 0).toLocaleString()}`}
+            value={`Rs ${(financials.pendingDisbursement || 0).toLocaleString()}`}
             subtitle="Step-1 verified by PM"
             icon={FileCheck2}
             colorScheme="indigo"
           />
           <StatsCard
             title="Accruing (WIP)"
-            value={`$${(financials.unbilledAccruing || 0).toLocaleString()}`}
+            value={`Rs ${(financials.unbilledAccruing || 0).toLocaleString()}`}
             subtitle="Active project delivery"
             icon={Sparkles}
             colorScheme="cyan"
@@ -540,30 +540,30 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Monthly Payroll"
-            value={`$${totalMonthlySalaries.toLocaleString()}/mo`}
-            subtitle={`Paid: $${totalSalariesPaid.toLocaleString()} • Rem: $${totalSalariesRemaining.toLocaleString()}`}
+            value={`Rs ${totalMonthlySalaries.toLocaleString()}/mo`}
+            subtitle={`Paid: Rs ${totalSalariesPaid.toLocaleString()} • Rem: Rs ${totalSalariesRemaining.toLocaleString()}`}
             icon={Users}
             colorScheme="emerald"
           />
           <StatsCard
             title="Monthly Invoiced"
-            value={`$${(financials.grossInvoiced || 0).toLocaleString()}`}
-            subtitle={`AR: $${(financials.accountsReceivable || 0).toLocaleString()} in ${currentMonthName}`}
+            value={`Rs ${(financials.grossInvoiced || 0).toLocaleString()}`}
+            subtitle={`AR: Rs ${(financials.accountsReceivable || 0).toLocaleString()} in ${currentMonthName}`}
             icon={TrendingUp}
             colorScheme="cyan"
           />
           <StatsCard
             title="Monthly Direct Expenses"
-            value={`$${(financials.directExpenses || 0).toLocaleString()}`}
+            value={`Rs ${(financials.directExpenses || 0).toLocaleString()}`}
             subtitle={`Logged in ${currentMonthName}`}
             icon={AlertCircle}
             colorScheme="rose"
           />
           <StatsCard
             title="Monthly Net Cashflow"
-            value={`$${(financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0))).toLocaleString()}`}
+            value={`Rs ${(financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0))).toLocaleString()}`}
             subtitle={`Net margin after outflows (${currentMonthName})`}
-            icon={DollarSign}
+            icon={Banknote}
             colorScheme={((financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0))) >= 0) ? "emerald" : "rose"}
           />
         </div>
@@ -633,8 +633,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
             <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Compensation Due</p>
-                <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono">
-                  ${employeeCompensationSummary.totalDue.toLocaleString()}
+                <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono"> Rs {employeeCompensationSummary.totalDue.toLocaleString()}
                 </p>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
                   Fixed salaries + % project shares
@@ -648,8 +647,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
             <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Paid (Disbursed)</p>
-                <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono">
-                  ${employeeCompensationSummary.totalPaid.toLocaleString()}
+                <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono"> Rs {employeeCompensationSummary.totalPaid.toLocaleString()}
                 </p>
                 <span className="text-[10px] text-emerald-400/80 mt-0.5 block font-mono">
                   {Math.round((employeeCompensationSummary.totalPaid / (employeeCompensationSummary.totalDue || 1)) * 100)}% Cleared
@@ -663,8 +661,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
             <div className="p-4 rounded-2xl bg-[#111827] border border-amber-500/30 bg-amber-500/5 shadow-sm flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Remaining To Be Paid</p>
-                <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono">
-                  ${employeeCompensationSummary.totalRemaining.toLocaleString()}
+                <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono"> Rs {employeeCompensationSummary.totalRemaining.toLocaleString()}
                 </p>
                 <span className="text-[10px] text-amber-400/80 mt-0.5 block">
                   Outstanding employee balance
@@ -841,8 +838,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                   Fixed Monthly Salary
                                 </span>
-                                <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                                  ${item.annualSalary.toLocaleString()}/yr Base
+                                <span className="text-[10px] text-slate-400 block mt-0.5 font-mono"> Rs {item.annualSalary.toLocaleString()}/yr Base
                                 </span>
                               </div>
                             ) : (
@@ -851,7 +847,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   {item.agreementPercentage}% Project Share
                                 </span>
                                 <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                                  TCV: ${item.projectTotalValue.toLocaleString()}
+                                  TCV: Rs {item.projectTotalValue.toLocaleString()}
                                 </span>
                               </div>
                             )}
@@ -869,8 +865,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
                           {/* Total Due Amount */}
                           <td className="py-4 px-4 text-right whitespace-nowrap font-mono">
-                            <span className="text-sm font-bold text-white block">
-                              ${item.totalDue.toLocaleString()}
+                            <span className="text-sm font-bold text-white block"> Rs {item.totalDue.toLocaleString()}
                             </span>
                             <span className="text-[10px] text-slate-400 block">
                               {isSalaried ? '/ month' : 'Total Project Share'}
@@ -879,8 +874,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
                           {/* Paid Amount */}
                           <td className="py-4 px-4 text-right whitespace-nowrap font-mono">
-                            <span className={`text-sm font-bold block ${item.paidAmount > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                              ${item.paidAmount.toLocaleString()}
+                            <span className={`text-sm font-bold block ${item.paidAmount > 0 ? 'text-emerald-400' : 'text-slate-500'}`}> Rs {item.paidAmount.toLocaleString()}
                             </span>
                             <span className="text-[10px] text-slate-400 block">
                               {item.paidAmount >= item.totalDue && item.totalDue > 0
@@ -893,8 +887,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
                           {/* Remaining Amount */}
                           <td className="py-4 px-4 text-right whitespace-nowrap font-mono">
-                            <span className={`text-sm font-black block ${item.remainingAmount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                              ${item.remainingAmount.toLocaleString()}
+                            <span className={`text-sm font-black block ${item.remainingAmount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}> Rs {item.remainingAmount.toLocaleString()}
                             </span>
                             <span className={`text-[10px] block font-sans ${item.remainingAmount === 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400/80 font-medium'}`}>
                               {item.remainingAmount === 0 ? 'Fully Cleared' : 'To Be Paid'}
@@ -932,13 +925,13 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 transition-all ${
                                     isSuperAdmin() ? 'hover:bg-amber-500/25 hover:border-amber-400 cursor-pointer shadow-xs' : 'cursor-default'
                                   }`}
-                                  title={isSuperAdmin() ? `Click to pay remaining balance ($${item.remainingAmount.toLocaleString()})` : 'Partially paid'}
+                                  title={isSuperAdmin() ? `Click to pay remaining balance (Rs ${item.remainingAmount.toLocaleString()})` : 'Partially paid'}
                                 >
                                   <Clock className="w-3.5 h-3.5 text-amber-400" />
                                   Partially Paid
                                 </button>
                                 <span className="text-[10px] text-amber-400/90 font-mono mt-0.5">
-                                  Rem: ${item.remainingAmount.toLocaleString()}
+                                  Rem: Rs {item.remainingAmount.toLocaleString()}
                                 </span>
                               </div>
                             )}
@@ -958,13 +951,13 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 transition-all ${
                                     isSuperAdmin() ? 'hover:bg-rose-500/25 hover:border-rose-400 cursor-pointer shadow-xs' : 'cursor-default'
                                   }`}
-                                  title={isSuperAdmin() ? `Click to record payment ($${(item.remainingAmount || item.totalDue).toLocaleString()})` : 'Unpaid'}
+                                  title={isSuperAdmin() ? `Click to record payment (Rs ${(item.remainingAmount || item.totalDue).toLocaleString()})` : 'Unpaid'}
                                 >
                                   <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
                                   Unpaid
                                 </button>
                                 <span className="text-[10px] text-rose-400/90 font-mono mt-0.5">
-                                  Due: ${item.totalDue.toLocaleString()}
+                                  Due: Rs {item.totalDue.toLocaleString()}
                                 </span>
                               </div>
                             )}
@@ -1007,13 +1000,12 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Client Portfolio TCV</p>
-                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono">
-                      ${clientSourceSummary.totalClientsTcv.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono"> Rs {clientSourceSummary.totalClientsTcv.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-0.5 block">Total contractual project value</span>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700">
-                    <DollarSign className="w-5 h-5" />
+                    <Banknote className="w-5 h-5" />
                   </div>
                 </div>
 
@@ -1035,8 +1027,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Contract Value</p>
-                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono">
-                      ${clientSourceSummary.avgClientTcv.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono"> Rs {clientSourceSummary.avgClientTcv.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-0.5 block">Average value per client account</span>
                   </div>
@@ -1050,8 +1041,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Commission Due</p>
-                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono">
-                      ${clientSourceSummary.totalSourcesCommissionDue.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono"> Rs {clientSourceSummary.totalSourcesCommissionDue.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-0.5 block font-medium">
                       Across {clientSourceSummary.sourceCount} referral sources
@@ -1065,8 +1055,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paid To Sources</p>
-                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono">
-                      ${clientSourceSummary.totalSourcesPaid.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono"> Rs {clientSourceSummary.totalSourcesPaid.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-emerald-400/80 mt-0.5 block font-mono">
                       {Math.round((clientSourceSummary.totalSourcesPaid / (clientSourceSummary.totalSourcesCommissionDue || 1)) * 100)}% Cleared
@@ -1080,8 +1069,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-amber-500/30 bg-amber-500/5 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Remaining To Be Paid</p>
-                    <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono">
-                      ${clientSourceSummary.totalSourcesRemaining.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono"> Rs {clientSourceSummary.totalSourcesRemaining.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-amber-400/80 mt-0.5 block">
                       Outstanding referral partner balance
@@ -1132,21 +1120,19 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Combined TCV Volume</p>
-                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono">
-                      ${clientSourceSummary.totalClientsTcv.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-white mt-0.5 font-mono"> Rs {clientSourceSummary.totalClientsTcv.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-0.5 block">Total contractual project volume</span>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700">
-                    <DollarSign className="w-5 h-5" />
+                    <Banknote className="w-5 h-5" />
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#111827] border border-slate-800 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Source Commission Paid</p>
-                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono">
-                      ${clientSourceSummary.totalSourcesPaid.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 font-mono"> Rs {clientSourceSummary.totalSourcesPaid.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-emerald-400/80 mt-0.5 block font-mono">
                       Disbursed to origination partners
@@ -1160,8 +1146,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <div className="p-4 rounded-2xl bg-[#111827] border border-amber-500/30 bg-amber-500/5 shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Source Remaining Due</p>
-                    <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono">
-                      ${clientSourceSummary.totalSourcesRemaining.toLocaleString()}
+                    <p className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5 font-mono"> Rs {clientSourceSummary.totalSourcesRemaining.toLocaleString()}
                     </p>
                     <span className="text-[10px] text-amber-400/80 mt-0.5 block">
                       Outstanding partner origination fees
@@ -1319,18 +1304,14 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                               <td className="py-4 px-4 whitespace-nowrap font-mono text-amber-400 font-bold">
                                 {c.commissionRate}% of TCV
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-slate-300">
-                                ${Number(c.totalTcv || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-slate-300"> Rs {Number(c.totalTcv || 0).toLocaleString()}
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold">
-                                ${Number(c.totalDue || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold"> Rs {Number(c.totalDue || 0).toLocaleString()}
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-emerald-400 font-bold">
-                                ${Number(c.paidAmount || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-emerald-400 font-bold"> Rs {Number(c.paidAmount || 0).toLocaleString()}
                               </td>
                               <td className="py-4 px-4 whitespace-nowrap font-mono font-extrabold text-sm">
-                                <span className={c.remainingAmount > 0 ? 'text-amber-400' : 'text-slate-400'}>
-                                  ${Number(c.remainingAmount || 0).toLocaleString()}
+                                <span className={c.remainingAmount > 0 ? 'text-amber-400' : 'text-slate-400'}> Rs {Number(c.remainingAmount || 0).toLocaleString()}
                                 </span>
                               </td>
                             </>
@@ -1342,8 +1323,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                               <td className="py-4 px-4 whitespace-nowrap font-medium text-slate-300">
                                 Direct Enterprise Engagement
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold">
-                                ${Number(c.totalTcv || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold"> Rs {Number(c.totalTcv || 0).toLocaleString()}
                               </td>
                             </>
                           )}
@@ -1358,15 +1338,12 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   <span className="text-slate-300 font-medium">Direct Agreement</span>
                                 )}
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold">
-                                ${Number(c.totalDue || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-white font-bold"> Rs {Number(c.totalDue || 0).toLocaleString()}
                               </td>
-                              <td className="py-4 px-4 whitespace-nowrap font-mono text-emerald-400 font-bold">
-                                ${Number(c.paidAmount || 0).toLocaleString()}
+                              <td className="py-4 px-4 whitespace-nowrap font-mono text-emerald-400 font-bold"> Rs {Number(c.paidAmount || 0).toLocaleString()}
                               </td>
                               <td className="py-4 px-4 whitespace-nowrap font-mono font-extrabold text-sm">
-                                <span className={c.remainingAmount > 0 ? 'text-amber-400' : 'text-slate-400'}>
-                                  ${Number(c.remainingAmount || 0).toLocaleString()}
+                                <span className={c.remainingAmount > 0 ? 'text-amber-400' : 'text-slate-400'}> Rs {Number(c.remainingAmount || 0).toLocaleString()}
                                 </span>
                               </td>
                             </>
@@ -1430,8 +1407,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                 <span className="net-margin-label text-[11px] uppercase font-bold block tracking-wider mb-0.5 text-slate-400">
                   Monthly Total Invoiced ({currentMonthName})
                 </span>
-                <span className="net-margin-value text-2xl sm:text-3xl font-mono font-black block text-cyan-400">
-                  ${Number(financials.grossInvoiced || 0).toLocaleString()}
+                <span className="net-margin-value text-2xl sm:text-3xl font-mono font-black block text-cyan-400"> Rs {Number(financials.grossInvoiced || 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-amber-400 font-semibold block mt-0.5 font-sans">
                   (${Number(financials.accountsReceivable || 0).toLocaleString()} Pending AR)
@@ -1474,18 +1450,15 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                         </td>
 
                         {/* TCV */}
-                        <td className="py-4 px-4 whitespace-nowrap text-slate-200 font-bold">
-                          ${(proj.totalContractValue || 0).toLocaleString()}
+                        <td className="py-4 px-4 whitespace-nowrap text-slate-200 font-bold"> Rs {(proj.totalContractValue || 0).toLocaleString()}
                         </td>
 
                         {/* Gross Invoiced */}
-                        <td className="py-4 px-4 whitespace-nowrap text-emerald-400 font-bold">
-                          ${projGrossInvoiced.toLocaleString()}
+                        <td className="py-4 px-4 whitespace-nowrap text-emerald-400 font-bold"> Rs {projGrossInvoiced.toLocaleString()}
                         </td>
 
                         {/* Accounts Receivable */}
-                        <td className="py-4 px-4 whitespace-nowrap text-amber-400 font-medium">
-                          ${projAR.toLocaleString()}
+                        <td className="py-4 px-4 whitespace-nowrap text-amber-400 font-medium"> Rs {projAR.toLocaleString()}
                         </td>
 
                         {/* Action: Direct Invoicing */}
@@ -1552,7 +1525,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                   Total Profit ({currentMonthName})
                 </span>
                 <span className={`net-margin-value text-2xl sm:text-3xl font-mono font-black block ${(financials.totalMonthlyProfit || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {(financials.totalMonthlyProfit || 0) >= 0 ? '+' : ''}${Number(financials.totalMonthlyProfit || 0).toLocaleString()}
+                  {(financials.totalMonthlyProfit || 0) >= 0 ? '+' : ''}Rs {Number(financials.totalMonthlyProfit || 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-400 font-semibold block mt-0.5 font-sans">
                   ({financials.totalProfitMarginPercent || 0}% Net Operating Margin)
@@ -1695,7 +1668,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
               <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#182234]/40 transition-colors bg-[#182234]/20">
                 <div className="flex items-start sm:items-center gap-3.5">
                   <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${(financials.netCashFlow || 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
-                    <DollarSign className="w-5 h-5" />
+                    <Banknote className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -1779,7 +1752,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                   <tr className="border-b border-slate-800 bg-[#182234]/60 text-slate-400 font-mono text-[10px] uppercase">
                     <th className="p-3.5">Financial Component</th>
                     <th className="p-3.5">Accounting Classification</th>
-                    <th className="p-3.5 text-right">Amount ($)</th>
+                    <th className="p-3.5 text-right">Amount (Rs)</th>
                     <th className="p-3.5">Reconciliation Details</th>
                   </tr>
                 </thead>
@@ -1806,11 +1779,10 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                       Monthly Invoiced
                     </td>
                     <td className="p-3.5 text-cyan-300 font-sans text-[11px]">Accrued Revenue Billings</td>
-                    <td className="p-3.5 text-right text-cyan-400 font-bold text-sm">
-                      ${Number(financials.monthlyInvoiced || financials.grossInvoiced || 0).toLocaleString()}
+                    <td className="p-3.5 text-right text-cyan-400 font-bold text-sm"> Rs {Number(financials.monthlyInvoiced || financials.grossInvoiced || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
-                      Total milestone invoices billed (Outstanding Accounts Receivable: ${Number(financials.accountsReceivable || 0).toLocaleString()}).
+                      Total milestone invoices billed (Outstanding Accounts Receivable: Rs {Number(financials.accountsReceivable || 0).toLocaleString()}).
                     </td>
                   </tr>
 
@@ -1877,12 +1849,12 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                   {/* Monthly Net Cash Flow */}
                   <tr className="bg-[#182234]/60 font-bold">
                     <td className="p-3.5 font-sans text-white text-xs flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-emerald-400" />
+                      <Banknote className="w-4 h-4 text-emerald-400" />
                       Monthly Net Cash Flow
                     </td>
                     <td className="p-3.5 text-slate-300 font-sans text-[11px]">Net Liquid Treasury Position</td>
                     <td className={`p-3.5 text-right font-black text-sm ${(financials.netCashFlow || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {(financials.netCashFlow || 0) >= 0 ? '+' : ''}${Number(financials.netCashFlow !== undefined ? financials.netCashFlow : financials.netMonthlyCashflow || 0).toLocaleString()}
+                      {(financials.netCashFlow || 0) >= 0 ? '+' : ''}Rs {Number(financials.netCashFlow !== undefined ? financials.netCashFlow : financials.netMonthlyCashflow || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-300 font-sans text-xs">
                       Cleared Client Cash Inflows minus Direct Expenses, Payroll, Shares, and Source Disbursements.
@@ -1897,7 +1869,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-indigo-300 font-sans text-[11px]">Net Operating Profitability</td>
                     <td className={`p-3.5 text-right font-black text-base ${(financials.totalMonthlyProfit || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {(financials.totalMonthlyProfit || 0) >= 0 ? '+' : ''}${Number(financials.totalMonthlyProfit || 0).toLocaleString()}
+                      {(financials.totalMonthlyProfit || 0) >= 0 ? '+' : ''}Rs {Number(financials.totalMonthlyProfit || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-indigo-200 font-sans text-xs">
                       Gross Invoiced Revenue minus all Direct Expenses, Total Payroll, and Partner Fees ({financials.totalProfitMarginPercent || 0}% Operating Margin).

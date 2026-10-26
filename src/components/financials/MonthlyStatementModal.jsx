@@ -4,7 +4,7 @@ import {
   X,
   ShieldCheck,
   FileText,
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertCircle,
   Users,
@@ -183,8 +183,7 @@ export const MonthlyStatementModal = ({
               {/* Monthly Invoiced */}
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Monthly Invoiced</span>
-                <span className="text-base sm:text-lg font-black font-mono text-cyan-600 block mt-0.5">
-                  ${Number(monthlyInvoiced).toLocaleString()}
+                <span className="text-base sm:text-lg font-black font-mono text-cyan-600 block mt-0.5"> Rs {Number(monthlyInvoiced).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Accrued Milestone Billings</span>
               </div>
@@ -205,7 +204,7 @@ export const MonthlyStatementModal = ({
                   -${Number(totalPayroll).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">
-                  Salaries (${Number(fixedPayroll).toLocaleString()}) + Shares (${Number(variablePayroll).toLocaleString()})
+                  Salaries (Rs {Number(fixedPayroll).toLocaleString()}) + Shares (Rs {Number(variablePayroll).toLocaleString()})
                 </span>
               </div>
 
@@ -213,7 +212,7 @@ export const MonthlyStatementModal = ({
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Monthly Net Cash Flow</span>
                 <span className={`text-base sm:text-lg font-black font-mono block mt-0.5 ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {netCashFlow >= 0 ? '+' : ''}${Number(netCashFlow).toLocaleString()}
+                  {netCashFlow >= 0 ? '+' : ''}Rs {Number(netCashFlow).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Net Liquid Treasury Delta</span>
               </div>
@@ -222,7 +221,7 @@ export const MonthlyStatementModal = ({
               <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/70">
                 <span className="text-[10px] font-bold text-indigo-900 block uppercase font-mono">Total Profit of Month</span>
                 <span className={`text-base sm:text-lg font-black font-mono block mt-0.5 ${totalMonthlyProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                  {totalMonthlyProfit >= 0 ? '+' : ''}${Number(totalMonthlyProfit).toLocaleString()}
+                  {totalMonthlyProfit >= 0 ? '+' : ''}Rs {Number(totalMonthlyProfit).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-indigo-700 font-semibold block mt-0.5">
                   {profitMarginPercent}% Net Operating Margin
@@ -242,7 +241,7 @@ export const MonthlyStatementModal = ({
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 text-[10px] uppercase font-mono">
                   <th className="p-2.5">Financial Component</th>
                   <th className="p-2.5">Accounting Classification</th>
-                  <th className="p-2.5 text-right">Amount (USD)</th>
+                  <th className="p-2.5 text-right">Amount (Rs)</th>
                   <th className="p-2.5">Reconciliation Description</th>
                 </tr>
               </thead>
@@ -256,8 +255,8 @@ export const MonthlyStatementModal = ({
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Monthly Invoiced</td>
                   <td className="p-2.5 text-slate-600 font-sans">Accrued Revenue Billings</td>
-                  <td className="p-2.5 text-right font-bold text-cyan-600">${Number(monthlyInvoiced).toLocaleString()}</td>
-                  <td className="p-2.5 text-slate-500 font-sans text-[10px]">Milestone invoices dispatched (AR: ${Number(financials.accountsReceivable || 0).toLocaleString()})</td>
+                  <td className="p-2.5 text-right font-bold text-cyan-600"> Rs {Number(monthlyInvoiced).toLocaleString()}</td>
+                  <td className="p-2.5 text-slate-500 font-sans text-[10px]">Milestone invoices dispatched (AR: Rs {Number(financials.accountsReceivable || 0).toLocaleString()})</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Monthly Direct Expenses</td>
@@ -287,7 +286,7 @@ export const MonthlyStatementModal = ({
                   <td className="p-2.5 font-sans text-slate-900">Monthly Net Cash Flow</td>
                   <td className="p-2.5 text-slate-700 font-sans">Liquid Treasury Position</td>
                   <td className={`p-2.5 text-right font-black ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {netCashFlow >= 0 ? '+' : ''}${Number(netCashFlow).toLocaleString()}
+                    {netCashFlow >= 0 ? '+' : ''}Rs {Number(netCashFlow).toLocaleString()}
                   </td>
                   <td className="p-2.5 text-slate-600 font-sans text-[10px]">Total Income minus all operational disbursements</td>
                 </tr>
@@ -295,7 +294,7 @@ export const MonthlyStatementModal = ({
                   <td className="p-2.5 font-sans text-indigo-950">Total Profit of Month</td>
                   <td className="p-2.5 text-indigo-900 font-sans">Net Operating Profitability</td>
                   <td className={`p-2.5 text-right font-black text-sm ${totalMonthlyProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                    {totalMonthlyProfit >= 0 ? '+' : ''}${Number(totalMonthlyProfit).toLocaleString()}
+                    {totalMonthlyProfit >= 0 ? '+' : ''}Rs {Number(totalMonthlyProfit).toLocaleString()}
                   </td>
                   <td className="p-2.5 text-indigo-900 font-sans text-[10px] font-semibold">
                     {profitMarginPercent}% Operating Margin on Invoiced Volume
@@ -316,7 +315,7 @@ export const MonthlyStatementModal = ({
                 {invList.slice(0, 4).map((i, idx) => (
                   <div key={idx} className="flex justify-between border-b border-slate-200/60 pb-1">
                     <span className="text-slate-700 font-medium">{i.invoiceNumber} - {i.clientName}</span>
-                    <span className="font-mono font-bold text-cyan-700">${Number(i.amount || 0).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-cyan-700"> Rs {Number(i.amount || 0).toLocaleString()}</span>
                   </div>
                 ))}
                 {invList.length === 0 && <p className="text-slate-400 italic text-[11px]">No invoices recorded for this period.</p>}

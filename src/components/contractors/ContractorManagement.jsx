@@ -12,7 +12,6 @@ import {
   Layers,
   Sparkles,
   FileCheck2,
-  DollarSign,
   UserPlus
 } from 'lucide-react';
 import { ContractorAgreementModal } from './ContractorAgreementModal';

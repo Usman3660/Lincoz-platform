@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   FolderKanban,
-  DollarSign,
+  Banknote,
   History,
   Lock,
   ArrowRight,
@@ -217,11 +217,11 @@ export const LandingPage = ({ onNavigateToAuth, onQuickLogin }) => {
           
           <div className="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-2.5">
             <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 w-fit border border-rose-500/20">
-              <DollarSign className="w-5 h-5" />
+              <Banknote className="w-5 h-5" />
             </div>
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">2-Step Disbursement</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Step 1 verification by Project Manager &rarr; Step 2 cryptographic MFA authorization by Super Admin.
+              Step 1 verification by Project Manager &rarr; Step 2 cryptographic authorization by Super Admin.
             </p>
           </div>
 

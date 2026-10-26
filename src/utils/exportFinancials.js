@@ -41,7 +41,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
   const profitMarginPercent = financials.totalProfitMarginPercent || 0;
 
   rows.push(['=== 1. EXECUTIVE COMPANY OVERALL FINANCIALS SUMMARY ===']);
-  rows.push(['Financial Metric', 'Accounting Nature', 'Amount (USD)', 'Notes & Cashflow Description']);
+  rows.push(['Financial Metric', 'Accounting Nature', 'Amount (Rs)', 'Notes & Cashflow Description']);
   rows.push([
     'Total Income (Cleared Pay-In)',
     'Inward Liquid Cash Collections',
@@ -52,7 +52,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
     'Monthly Invoiced',
     'Accrued Revenue Billings',
     monthlyInvoiced,
-    `Gross contractual milestone billing issued (Accounts Receivable: $${Number(financials.accountsReceivable || 0).toLocaleString()})`
+    `Gross contractual milestone billing issued (Accounts Receivable: Rs ${Number(financials.accountsReceivable || 0).toLocaleString()})`
   ]);
   rows.push([
     'Monthly Direct Expenses',
@@ -106,7 +106,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 3. Detailed Client Invoices
   rows.push(['=== 2. CLIENT MILESTONE INVOICES BILLED ===']);
-  rows.push(['Invoice Number', 'Issue Date', 'Due Date', 'Client Organization', 'Project Name', 'Amount (USD)', 'Status', 'Notes']);
+  rows.push(['Invoice Number', 'Issue Date', 'Due Date', 'Client Organization', 'Project Name', 'Amount (Rs)', 'Status', 'Notes']);
   const invList = financials.invoices || [];
   if (invList.length === 0) {
     rows.push(['No milestone invoices recorded for this period', '', '', '', '', 0, '', '']);
@@ -128,7 +128,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 4. Detailed Client Pay-In Payments
   rows.push(['=== 3. CLIENT PAY-IN PAYMENTS (CLEARED INFLOWS) ===']);
-  rows.push(['Payment Reference', 'Payment Date', 'Remitting Client', 'Project Name', 'Settlement Channel', 'Amount (USD)', 'Status']);
+  rows.push(['Payment Reference', 'Payment Date', 'Remitting Client', 'Project Name', 'Settlement Channel', 'Amount (Rs)', 'Status']);
   const payList = financials.payments || [];
   if (payList.length === 0) {
     rows.push(['No cleared client pay-in payments recorded for this period', '', '', '', '', 0, '']);
@@ -149,7 +149,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 5. Detailed Direct Operational Expenses
   rows.push(['=== 4. DIRECT OPERATIONAL OVERHEAD EXPENSES ===']);
-  rows.push(['Expense Reference', 'Expense Date', 'Expense Category', 'Vendor / Description', 'Payment Channel', 'Amount (USD)', 'Status']);
+  rows.push(['Expense Reference', 'Expense Date', 'Expense Category', 'Vendor / Description', 'Payment Channel', 'Amount (Rs)', 'Status']);
   const expList = financials.directExpensesList || [];
   if (expList.length === 0) {
     rows.push(['No direct operational expenses logged for this period', '', '', '', '', 0, '']);
@@ -170,7 +170,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 6. Fixed Salaried Workforce Payroll
   rows.push(['=== 5. FIXED SALARIED WORKFORCE PAYROLL ===']);
-  rows.push(['Staff ID', 'Employee Name', 'Role Title', 'Department', 'Work Location', 'Annual Salary (USD)', 'Monthly Due (USD)', 'Paid Amount (USD)', 'Remaining Amount (USD)', 'Payment Status', 'Disbursement Channel']);
+  rows.push(['Staff ID', 'Employee Name', 'Role Title', 'Department', 'Work Location', 'Annual Salary (Rs)', 'Monthly Due (Rs)', 'Paid Amount (Rs)', 'Remaining Amount (Rs)', 'Payment Status', 'Disbursement Channel']);
   if (salariedPayrollRecords.length === 0) {
     rows.push(['No salaried staff recorded', '', '', '', '', 0, 0, 0, 0, '', '']);
   } else {
@@ -194,7 +194,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 7. Variable Contractor & Milestone Profit Shares
   rows.push(['=== 6. VARIABLE STAFF & CONTRACTOR PROFIT SHARES ===']);
-  rows.push(['Disbursement Ref', 'Staff Name', 'Project Name', 'Deliverable Scope', 'Contract Share %', 'Total Share Due (USD)', 'Paid Amount (USD)', 'Remaining Amount (USD)', 'Payment Status', 'Channel']);
+  rows.push(['Disbursement Ref', 'Staff Name', 'Project Name', 'Deliverable Scope', 'Contract Share %', 'Total Share Due (Rs)', 'Paid Amount (Rs)', 'Remaining Amount (Rs)', 'Payment Status', 'Channel']);
   if (percentageRecords.length === 0) {
     rows.push(['No contractor profit shares logged for this period', '', '', '', '', 0, 0, 0, '', '']);
   } else {
@@ -217,7 +217,7 @@ export const downloadCompanyMonthlyFinancesCSV = ({
 
   // 8. Source & Referral Commissions
   rows.push(['=== 7. SOURCE & REFERRAL PARTNER COMMISSIONS ===']);
-  rows.push(['Commission Ref', 'Payout Date', 'Referral Partner / Source', 'Associated Project', 'Payment Method', 'Amount (USD)', 'Status']);
+  rows.push(['Commission Ref', 'Payout Date', 'Referral Partner / Source', 'Associated Project', 'Payment Method', 'Amount (Rs)', 'Status']);
   const srcList = financials.sourcePayouts || [];
   if (srcList.length === 0) {
     rows.push(['No partner referral commissions recorded for this period', '', '', '', '', 0, '']);

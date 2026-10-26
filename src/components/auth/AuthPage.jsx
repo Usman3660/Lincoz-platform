@@ -20,12 +20,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
   // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mfaCode, setMfaCode] = useState('');
   const [authError, setAuthError] = useState('');
-
-  // Check if entered email requires two-factor verification
-  const matchedUser = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-  const requiresMfa = matchedUser?.isMfaEnabled || matchedUser?.role === 'SUPER_ADMIN';
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -44,8 +39,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: targetEmail,
-          password: password,
-          mfaCode: (mfaCode || '').trim()
+          password: password
         })
       });
 
@@ -65,7 +59,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
       }
 
       if (!res.ok) {
-        setAuthError(data.error || 'Invalid email, password, or 2FA credentials.');
+        setAuthError(data.error || 'Invalid email or password credentials.');
         return;
       }
     } catch (networkErr) {
@@ -83,19 +77,6 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
     if (!password || password !== expectedPassword) {
       setAuthError('Incorrect password. Please enter the valid credentials set by Super Admin.');
       return;
-    }
-
-    if (requiresMfa) {
-      const cleanCode = (mfaCode || '').trim();
-      const expectedKey = (targetUser.mfaKey || '9988').trim();
-      if (!cleanCode) {
-        setAuthError('Two-factor authentication key is required.');
-        return;
-      }
-      if (cleanCode !== expectedKey) {
-        setAuthError('Invalid 2FA Security Key. This key is fixed and can only be set or changed by the Super Admin.');
-        return;
-      }
     }
 
     setCurrentUserId(targetUser.id);
@@ -204,29 +185,6 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
                 />
               </div>
             </div>
-
-            {/* Two-Factor Verification Code (When applicable) */}
-            {requiresMfa && (
-              <div className="p-3.5 rounded-xl bg-[#182234] border border-indigo-500/30 space-y-1.5 animate-fadeIn">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-indigo-400" /> Fixed 2FA Security Key
-                  </label>
-                  <span className="text-[10px] text-amber-400 font-semibold">Super Admin Enforced</span>
-                </div>
-                <input
-                  type="password"
-                  value={mfaCode}
-                  onChange={(e) => setMfaCode(e.target.value)}
-                  placeholder="Enter assigned fixed 2FA key"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono tracking-widest placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                  required
-                />
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  This key is fixed and can only be set or changed by the Super Admin.
-                </p>
-              </div>
-            )}
 
             <button
               type="submit"

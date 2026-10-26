@@ -17,9 +17,8 @@ export const INITIAL_USERS = [
     department: 'Executive Governance',
     workMode: 'ONSITE',
     compensationType: 'SALARIED',
-    salary: 180000,
-    isMfaEnabled: true,
-    mfaKey: '9988',
+    salary: 0,
+    isMfaEnabled: false,
   },
 ];
 

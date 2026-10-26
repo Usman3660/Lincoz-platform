@@ -353,7 +353,7 @@ export const Header = ({ onLogout }) => {
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Security Status
                       </span>
                       <span className="text-emerald-400 font-mono font-bold">
-                        {currentUser.role === 'SUPER_ADMIN' ? 'MFA Protected' : 'RBAC Standard'}
+                        {currentUser.role === 'SUPER_ADMIN' ? 'Root Governance' : 'RBAC Standard'}
                       </span>
                     </div>
 

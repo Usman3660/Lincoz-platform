@@ -114,9 +114,9 @@ export const ClientDirectory = () => {
   };
 
   const categoryChips = [
-    { id: 'ALL', label: `All Directory (${stats.total})` },
-    { id: 'CLIENT', label: `Clients (${stats.clientCount})` },
-    { id: 'FREELANCER', label: `Sources (${stats.freelancerCount})` }
+    { id: 'ALL', label: `All Directory (Rs {stats.total})` },
+    { id: 'CLIENT', label: `Clients (Rs {stats.clientCount})` },
+    { id: 'FREELANCER', label: `Sources (Rs {stats.freelancerCount})` }
   ];
 
   return (
@@ -392,8 +392,7 @@ export const ClientDirectory = () => {
 
                       {/* Total Value */}
                       <td className="py-3 px-4 whitespace-nowrap font-mono">
-                        <span className="font-bold text-white text-xs">
-                          ${totalCompletedValue.toLocaleString()}
+                        <span className="font-bold text-white text-xs"> Rs {totalCompletedValue.toLocaleString()}
                         </span>
                       </td>
 

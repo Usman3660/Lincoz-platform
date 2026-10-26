@@ -7,7 +7,7 @@ import { ProjectInvoiceModal } from '../financials/ProjectInvoiceModal';
 import {
   Briefcase,
   Plus,
-  DollarSign,
+  Banknote,
   Users,
   Calendar,
   Lock,
@@ -154,10 +154,9 @@ export const ProjectList = () => {
                   <div className="p-3.5 rounded-xl bg-[#182234]/80 border border-slate-700/80 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400 flex items-center gap-1 font-medium">
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Contract Valuation
+                        <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Contract Valuation
                       </span>
-                      <span className="font-mono text-white font-extrabold">
-                        ${typeof proj.totalContractValue === 'number' ? proj.totalContractValue.toLocaleString() : 'N/A'}
+                      <span className="font-mono text-white font-extrabold"> Rs {typeof proj.totalContractValue === 'number' ? proj.totalContractValue.toLocaleString() : 'N/A'}
                       </span>
                     </div>
 
@@ -168,8 +167,8 @@ export const ProjectList = () => {
                       />
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                      <span>Invoiced: ${typeof proj.grossInvoiced === 'number' ? proj.grossInvoiced.toLocaleString() : 0}</span>
-                      <span>AR: ${typeof proj.accountsReceivable === 'number' ? proj.accountsReceivable.toLocaleString() : 0}</span>
+                      <span>Invoiced: Rs {typeof proj.grossInvoiced === 'number' ? proj.grossInvoiced.toLocaleString() : 0}</span>
+                      <span>AR: Rs {typeof proj.accountsReceivable === 'number' ? proj.accountsReceivable.toLocaleString() : 0}</span>
                     </div>
                   </div>
                 ) : (
@@ -399,7 +398,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
     const newTcv = Number(form.totalContractValue) || 0;
     const currentGross = typeof project.grossInvoiced === 'number' ? project.grossInvoiced : 0;
     if (newTcv < currentGross) {
-      alert(`Total Contract Value ($${newTcv.toLocaleString()}) cannot be less than the already invoiced amount of $${currentGross.toLocaleString()}.`);
+      alert(`Total Contract Value (Rs ${newTcv.toLocaleString()}) cannot be less than the already invoiced amount of Rs ${currentGross.toLocaleString()}.`);
       return;
     }
 
@@ -562,7 +561,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                         setForm({
                           ...form,
                           clientName: val,
-                          clientContact: selected ? `${selected.email} | ${selected.contactNumber}` : form.clientContact
+                          clientContact: selected ? `${selected.email} | Rs {selected.contactNumber}` : form.clientContact
                         });
                       }}
                       className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -606,7 +605,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">Total Contract Value ($)</label>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Total Contract Value (Rs)</label>
                     <input
                       type="number"
                       value={form.totalContractValue}
@@ -931,7 +930,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-emerald-400" /> Commercial Financial Governance (TCV)
+                    <Banknote className="w-4 h-4 text-emerald-400" /> Commercial Financial Governance (TCV)
                   </h3>
                   {remainingCap > 0 && (
                     <button
@@ -946,19 +945,19 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80">
                     <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Contract Value</span>
-                    <span className="text-base font-extrabold text-white font-mono">${tcv.toLocaleString()}</span>
+                    <span className="text-base font-extrabold text-white font-mono"> Rs {tcv.toLocaleString()}</span>
                   </div>
                   <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80">
                     <span className="text-slate-400 block text-[10px] uppercase font-bold">Gross Invoiced</span>
-                    <span className="text-base font-extrabold text-emerald-400 font-mono">${grossInvoiced.toLocaleString()}</span>
+                    <span className="text-base font-extrabold text-emerald-400 font-mono"> Rs {grossInvoiced.toLocaleString()}</span>
                   </div>
                   <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80">
                     <span className="text-slate-400 block text-[10px] uppercase font-bold">Accounts Receivable</span>
-                    <span className="text-base font-extrabold text-indigo-300 font-mono">${ar.toLocaleString()}</span>
+                    <span className="text-base font-extrabold text-indigo-300 font-mono"> Rs {ar.toLocaleString()}</span>
                   </div>
                   <div className="p-3.5 rounded-xl bg-[#182234] border border-slate-700/80">
                     <span className="text-slate-400 block text-[10px] uppercase font-bold">Remaining Cap</span>
-                    <span className="text-base font-extrabold text-cyan-400 font-mono">${remainingCap.toLocaleString()}</span>
+                    <span className="text-base font-extrabold text-cyan-400 font-mono"> Rs {remainingCap.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -1042,7 +1041,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                           <img
                             src={assignee.avatar}
                             alt={assignee.name}
-                            title={`Assignee: ${assignee.name}`}
+                            title={`Assignee: Rs {assignee.name}`}
                             className="w-7 h-7 rounded-full object-cover ring-1 ring-indigo-500/30"
                           />
                         )}
