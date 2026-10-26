@@ -17,6 +17,11 @@ clientsRouter.get('/', authenticate, async (req, res, next) => {
   try {
     const clients = await prisma.client.findMany({
       where: { organizationId: req.tenantId },
+      include: {
+        projects: {
+          select: { id: true, name: true, tcv: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -25,6 +30,8 @@ clientsRouter.get('/', authenticate, async (req, res, next) => {
       data: clients.map(c => ({
         ...c,
         totalTcv: Number(c.totalTcv),
+        associatedProjects: (c.projects || []).map(p => p.id),
+        associatedProjectsList: c.projects || [],
         percentage: 0,
       })),
       count: clients.length,

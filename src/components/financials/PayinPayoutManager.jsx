@@ -291,7 +291,7 @@ export const PayinPayoutManager = () => {
           partyLabel: 'Expense Category',
           partyName: doc.category || 'Operational Expense',
           vendor: doc.vendor || 'Operational Vendor',
-          project: `Expense Month: Rs {monthLabel}`,
+          project: `Expense Month: ${monthLabel}`,
           amount: Number(doc.amount || 0),
           status: doc.status || 'PAID',
           badgeColor: 'rose',
@@ -325,7 +325,7 @@ export const PayinPayoutManager = () => {
         setContractorId(sUser.id);
         const mObj = availableMonths.find(m => (m.id || m.value) === payrollMonth);
         const mLabel = mObj?.label || payrollMonth;
-        setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
+        setDeliverableTitle(`Monthly Payroll (${mLabel})`);
         const defSalary = sUser.role === 'SUPER_ADMIN' ? 180000 : sUser.role === 'PROJECT_MANAGER' ? 135000 : 120000;
         const annSal = (sUser.salary !== undefined && sUser.salary !== null && !isNaN(Number(sUser.salary))) ? Number(sUser.salary) : defSalary;
         const moSal = Math.round(annSal / 12);
@@ -431,7 +431,7 @@ export const PayinPayoutManager = () => {
         setContractorId(firstSal?.id || '');
         const mObj = availableMonths.find(m => (m.id || m.value) === defaultMonth);
         const mLabel = mObj?.label || defaultMonth;
-        setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
+        setDeliverableTitle(`Monthly Payroll (${mLabel})`);
         const defSalary = firstSal?.role === 'SUPER_ADMIN' ? 180000 : firstSal?.role === 'PROJECT_MANAGER' ? 135000 : 120000;
         const annSal = (firstSal?.salary !== undefined && firstSal?.salary !== null && !isNaN(Number(firstSal.salary))) ? Number(firstSal.salary) : defSalary;
         const moSal = Math.round(annSal / 12);
@@ -509,7 +509,7 @@ export const PayinPayoutManager = () => {
       if (totalContractVal > 0 && Number(amount) > remainingInvoicable) {
         alert(
           `Cannot create invoice for Rs ${Number(amount).toLocaleString()}!\n\n` +
-          `Project: Rs {projName}\n` +
+          `Project: ${projName}\n` +
           `Total Project Contract Value: Rs ${totalContractVal.toLocaleString()}\n` +
           `Already Invoiced: Rs ${alreadyInvoiced.toLocaleString()}\n` +
           `Remaining Invoicable Cap: Rs ${remainingInvoicable.toLocaleString()}\n\n` +
@@ -593,7 +593,7 @@ export const PayinPayoutManager = () => {
           contractorName: contractorUser?.name || 'Salaried Employee',
           employeeId: targetContractorId,
           employeeName: contractorUser?.name,
-          deliverableTitle: `Monthly Payroll (Rs {pMonthLabel})`,
+          deliverableTitle: `Monthly Payroll (${pMonthLabel})`,
           agreementModel: 'FIXED_SALARY',
           agreementPercentage: 0,
           projectTotalValue: 0,
@@ -912,8 +912,8 @@ export const PayinPayoutManager = () => {
         flowType: 'PAYMENT_IN',
         direction: 'INWARD',
         date: p.paymentDate || p.date,
-        title: `Client Pay-In: Rs {p.clientName}`,
-        subtitle: `Ref: Rs {p.referenceNumber} (Rs {p.paymentMethod})`,
+        title: `Client Pay-In: ${p.clientName || 'Direct Client'}`,
+        subtitle: `Ref: ${p.referenceNumber || 'TX-PAYIN'} (${p.paymentMethod || 'Wire'})`,
         badgeText: 'Pay-In Received',
         badgeColor: 'emerald'
       })),
@@ -922,8 +922,8 @@ export const PayinPayoutManager = () => {
         flowType: 'SOURCE_PAYOUT',
         direction: 'OUTWARD',
         date: s.payoutDate || s.date,
-        title: `Source Referral Fee: Rs {s.sourceName}`,
-        subtitle: `Ref: Rs {s.referenceNumber || 'Wire'}`,
+        title: `Source Referral Fee: ${s.sourceName || 'Partner'}`,
+        subtitle: `Ref: ${s.referenceNumber || 'Wire'}`,
         badgeText: 'Source Fee',
         badgeColor: 'amber'
       })),
@@ -935,7 +935,7 @@ export const PayinPayoutManager = () => {
           direction: 'OUTWARD',
           date: pl.payoutDate || pl.date || (pl.step2AuthorizedAt ? pl.step2AuthorizedAt.split('T')[0] : (pl.createdAt ? pl.createdAt.split('T')[0] : '2026-10-01')),
           amount: pl.calculatedPayoutAmount || pl.amount,
-          title: isSal ? `Salary Payout: Rs {pl.contractorName || pl.employeeName}` : `% Share Payout: Rs {pl.contractorName}`,
+          title: isSal ? `Salary Payout: ${pl.contractorName || pl.employeeName || 'Staff'}` : `% Share Payout: ${pl.contractorName || 'Partner'}`,
           subtitle: pl.deliverableTitle || (isSal ? 'Monthly Payroll Settlement' : 'Project Share'),
           badgeText: isSal ? 'Salary Payroll' : '% Staff Share',
           badgeColor: isSal ? 'emerald' : 'purple'
@@ -947,8 +947,8 @@ export const PayinPayoutManager = () => {
         direction: 'OUTWARD',
         date: e.expenseDate || e.date || (e.month ? `${e.month}-15` : '2026-10-15'),
         projectName: e.projectName || 'General Operations',
-        title: `Monthly Expense: Rs {e.vendor || e.category}`,
-        subtitle: `${e.category} (Rs {e.receiptRef || 'Direct'})`,
+        title: `Monthly Expense: ${e.vendor || e.category}`,
+        subtitle: `${e.category} (${e.receiptRef || 'Direct'})`,
         badgeText: 'Monthly Expense',
         badgeColor: 'rose'
       }))
@@ -1812,10 +1812,11 @@ export const PayinPayoutManager = () => {
                       .filter(i => i.projectId === p.id)
                       .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
                     const pRem = Math.max(0, pTcv - pInvoiced);
+                    const clientLabel = p.clientName || 'Direct Client';
 
                     return (
                       <option key={p.id} value={p.id}>
-                        📁 {p.name} {modalType === 'INVOICE' && pTcv > 0 ? `(Cap Rem: Rs ${pRem.toLocaleString()} / Rs ${pTcv.toLocaleString()})` : `(Client: Rs {p.clientName})`}
+                        📁 {p.name} (Client: {clientLabel}{pTcv > 0 ? ` • TCV: Rs ${pTcv.toLocaleString()}` : ''}{modalType === 'INVOICE' && pTcv > 0 ? ` • Rem: Rs ${pRem.toLocaleString()}` : ''})
                       </option>
                     );
                   })}
@@ -1848,7 +1849,8 @@ export const PayinPayoutManager = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 block">
                           Total Value (TCV)
                         </span>
-                        <span className="font-mono text-sm font-extrabold text-slate-900 dark:text-indigo-300"> Rs {invoiceProjTcv.toLocaleString()}
+                        <span className="font-mono text-sm font-extrabold text-slate-900 dark:text-indigo-300">
+                          {invoiceProjTcv > 0 ? `Rs ${invoiceProjTcv.toLocaleString()}` : 'Uncapped / Open'}
                         </span>
                       </div>
                     </div>
@@ -1857,10 +1859,12 @@ export const PayinPayoutManager = () => {
                     <div className="py-2.5 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-medium">
                         <span className="text-slate-600 dark:text-slate-300">
-                          Billed to date: <strong className="text-slate-900 dark:text-white font-mono">{invoicedPercent}%</strong>
+                          Billed to date: <strong className="text-slate-900 dark:text-white font-mono">{invoiceProjTcv > 0 ? `${invoicedPercent}%` : 'Flexible'}</strong>
                         </span>
                         <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                          {invoiceRemainingCap > 0 ? (
+                          {invoiceProjTcv === 0 ? (
+                            <span className="text-indigo-400 font-bold">Open Contract</span>
+                          ) : invoiceRemainingCap > 0 ? (
                             <span className="text-emerald-700 dark:text-emerald-400 font-bold"> Rs {invoiceRemainingCap.toLocaleString()} left</span>
                           ) : (
                             <span className="text-amber-700 dark:text-amber-400 font-bold">Cap reached</span>
@@ -1875,7 +1879,7 @@ export const PayinPayoutManager = () => {
                               ? 'bg-rose-500'
                               : 'bg-gradient-to-r from-indigo-500 to-emerald-400'
                             }`}
-                          style={{ width: `${Math.min(100, Math.max(0, invoicedPercent))}%` }}
+                          style={{ width: `${invoiceProjTcv > 0 ? Math.min(100, Math.max(0, invoicedPercent)) : 0}%` }}
                         />
                       </div>
                     </div>
@@ -1890,28 +1894,30 @@ export const PayinPayoutManager = () => {
                             Already Invoiced
                           </span>
                         </div>
-                        <div className="text-base font-extrabold font-mono text-slate-900 dark:text-white"> Rs {invoiceProjAlreadyInvoiced.toLocaleString()}
+                        <div className="text-base font-extrabold font-mono text-slate-900 dark:text-white">
+                          Rs {invoiceProjAlreadyInvoiced.toLocaleString()}
                         </div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-sans">
-                          {invoicedPercent}% of contract
+                          {invoiceProjTcv > 0 ? `${invoicedPercent}% of contract` : 'Standard billing'}
                         </div>
                       </div>
 
                       {/* Remaining Invoicable Card */}
-                      <div className={`p-3 rounded-xl border shadow-xs transition-colors ${invoiceRemainingCap > 0
+                      <div className={`p-3 rounded-xl border shadow-xs transition-colors ${invoiceProjTcv === 0 || invoiceRemainingCap > 0
                         ? 'bg-emerald-50/70 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/60'
                         : 'bg-amber-50/70 dark:bg-amber-950/25 border-amber-200 dark:border-amber-800/60'
                         }`}>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${invoiceRemainingCap > 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                          <span className={`text-[10px] font-bold uppercase tracking-wider font-sans ${invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${invoiceProjTcv === 0 || invoiceRemainingCap > 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          <span className={`text-[10px] font-bold uppercase tracking-wider font-sans ${invoiceProjTcv === 0 || invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
                             Remaining Cap
                           </span>
                         </div>
-                        <div className={`text-base font-extrabold font-mono ${invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}> Rs {invoiceRemainingCap.toLocaleString()}
+                        <div className={`text-base font-extrabold font-mono ${invoiceProjTcv === 0 || invoiceRemainingCap > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                          {invoiceProjTcv > 0 ? `Rs ${invoiceRemainingCap.toLocaleString()}` : 'No Ceiling'}
                         </div>
-                        <div className={`text-[10px] mt-0.5 font-sans ${invoiceRemainingCap > 0 ? 'text-emerald-700/80 dark:text-emerald-400/80' : 'text-amber-700/80 dark:text-amber-400/80'}`}>
-                          {invoiceRemainingCap > 0 ? 'Available allowance' : 'Limit reached'}
+                        <div className={`text-[10px] mt-0.5 font-sans ${invoiceProjTcv === 0 || invoiceRemainingCap > 0 ? 'text-emerald-700/80 dark:text-emerald-400/80' : 'text-amber-700/80 dark:text-amber-400/80'}`}>
+                          {invoiceProjTcv > 0 ? (invoiceRemainingCap > 0 ? 'Available allowance' : 'Limit reached') : 'Flexible Invoicing'}
                         </div>
                       </div>
                     </div>
@@ -1932,7 +1938,7 @@ export const PayinPayoutManager = () => {
                             Invoice Cap Constraint:
                           </span>
                           <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs bg-emerald-100/80 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-lg border border-emerald-300/60 dark:border-emerald-800/60">
-                            Must not exceed ${invoiceRemainingCap.toLocaleString()}
+                            {invoiceProjTcv > 0 ? `Must not exceed Rs ${invoiceRemainingCap.toLocaleString()}` : 'Flexible Invoicing (Uncapped)'}
                           </span>
                         </div>
                       )}
@@ -2224,7 +2230,7 @@ export const PayinPayoutManager = () => {
                             setPayrollMonth(val);
                             const mObj = availableMonths.find(m => (m.id || m.value) === val);
                             const mLabel = mObj?.label || val;
-                            setDeliverableTitle(`Monthly Payroll (Rs {mLabel})`);
+                            setDeliverableTitle(`Monthly Payroll (${mLabel})`);
                             setPaymentDate(`${val}-28`);
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-emerald-300 font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
@@ -2254,7 +2260,7 @@ export const PayinPayoutManager = () => {
                                   type="button"
                                   onClick={() => {
                                     setPayrollMonth(mVal);
-                                    setDeliverableTitle(`Monthly Payroll (Rs {m.label})`);
+                                    setDeliverableTitle(`Monthly Payroll (${m.label})`);
                                     setPaymentDate(`${mVal}-28`);
                                   }}
                                   className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${isSelected
@@ -2452,7 +2458,7 @@ export const PayinPayoutManager = () => {
               {modalType === 'INVOICE' && invoiceAmountNum > 0 && !isInvoiceExceedingCap && !isFullyInvoiced && (
                 <div className="mt-2 flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded-lg bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300">
                   <span className="font-medium">Projected cumulative total after invoice:</span>
-                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400"> Rs {(invoiceProjAlreadyInvoiced + invoiceAmountNum).toLocaleString()} / ${invoiceProjTcv.toLocaleString()} ({invoiceProjTcv > 0 ? Math.round(((invoiceProjAlreadyInvoiced + invoiceAmountNum) / invoiceProjTcv) * 100) : 0}%)
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400"> Rs {(invoiceProjAlreadyInvoiced + invoiceAmountNum).toLocaleString()} / Rs {invoiceProjTcv.toLocaleString()} ({invoiceProjTcv > 0 ? Math.round(((invoiceProjAlreadyInvoiced + invoiceAmountNum) / invoiceProjTcv) * 100) : 0}%)
                   </span>
                 </div>
               )}
@@ -2471,7 +2477,7 @@ export const PayinPayoutManager = () => {
                       onClick={() => setAmount(String(moSal))}
                       className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-bold transition-colors cursor-pointer"
                     >
-                      Set to ${moSal.toLocaleString()}
+                      Set to Rs {moSal.toLocaleString()}
                     </button>
                   </div>
                 );

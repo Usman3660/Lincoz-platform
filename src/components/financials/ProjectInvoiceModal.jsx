@@ -93,8 +93,8 @@ export const ProjectInvoiceModal = ({ isOpen, onClose, project, onSuccess }) => 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Issue Invoice: Rs {project.name}`}
-      subtitle={`Client: Rs {project.clientName || 'Client Organization'} • Contract Governance & Billing`}
+      title={`Issue Invoice: ${project.name}`}
+      subtitle={`Client: ${project.clientName || 'Client Organization'} • Contract Governance & Billing`}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

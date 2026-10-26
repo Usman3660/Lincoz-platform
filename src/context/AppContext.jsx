@@ -1545,6 +1545,12 @@ export const AppProvider = ({ children }) => {
         const projName = payoutItemMeta?.projectName || 'Company Payroll';
         const channel = payoutItemMeta?.disbursementChannel || 'Direct Deposit / Bank ACH';
 
+        const isSalariedPayout = Boolean(
+          payoutItemMeta?.isSalaried ||
+          payoutItemMeta?.agreementModel === 'FIXED_SALARY' ||
+          payoutItemMeta?.projectName === 'Company Payroll'
+        );
+
         updatedItem = {
           id: payoutId,
           contractorId: payoutItemMeta?.employeeId || payoutItemMeta?.contractorId || 'usr-staff',
@@ -1554,6 +1560,11 @@ export const AppProvider = ({ children }) => {
           deliverableTitle: payoutItemMeta?.deliverableTitle || payoutItemMeta?.period || 'Project Deliverable Settlement',
           calculatedPayoutAmount: amount,
           status: 'DISBURSED',
+          isSalaried: isSalariedPayout,
+          agreementModel: isSalariedPayout ? 'FIXED_SALARY' : 'PERCENTAGE_PROFIT_SHARE',
+          payoutType: isSalariedPayout ? 'SALARIED' : 'PERCENTAGE',
+          date: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
           step1ApprovedBy: currentUser.id,
           step1ApprovedAt: new Date().toISOString(),
           step2AuthorizedBy: currentUser.id,
@@ -2400,20 +2411,31 @@ export const AppProvider = ({ children }) => {
         .reduce((sum, p) => sum + (p.calculatedPayoutAmount || 0), 0) +
         filteredSourcePayouts.filter(s => s.status === 'DISBURSED').reduce((sum, s) => sum + (s.amount || 0), 0);
 
-      // Monthly Salaried commitments
+      // Actual employee payouts added/disbursed by admin for this month
+      const actualSalariedPayouts = filteredPayoutLedger
+        .filter(p => (p.isSalaried || p.payoutType === 'SALARIED' || p.agreementModel === 'FIXED_SALARY') && p.status === 'DISBURSED')
+        .reduce((sum, p) => sum + (Number(p.calculatedPayoutAmount || p.amount) || 0), 0);
+
+      const actualPercentagePayouts = filteredPayoutLedger
+        .filter(p => !(p.isSalaried || p.payoutType === 'SALARIED' || p.agreementModel === 'FIXED_SALARY') && p.status === 'DISBURSED')
+        .reduce((sum, p) => sum + (Number(p.calculatedPayoutAmount || p.amount) || 0), 0);
+
+      // Rule: Monthly payroll is strictly NOT added to finance until added by admin through employee payout
+      const totalPayroll = actualSalariedPayouts + actualPercentagePayouts;
+
+      const totalOutflows = directExpenses + totalSourcePayouts + totalPayroll;
+      const netMonthlyCashflow = totalCollected - totalOutflows;
+      const totalMonthlyProfit = grossInvoiced - directExpenses - totalSourcePayouts - totalPayroll;
+      const totalProfitMarginPercent = grossInvoiced > 0 ? Math.round((totalMonthlyProfit / grossInvoiced) * 100) : 0;
+      const netProjectGrossProfit = grossInvoiced - directExpenses - totalSourcePayouts - totalPayroll;
+      const netOperatingMargin = grossInvoiced > 0 ? Math.round((netProjectGrossProfit / grossInvoiced) * 100) : 0;
+
+      // Committed contractual salary baseline (for HR reference only, NOT financial outflow until added by admin)
       const salariedStaff = (users || []).filter(u => u.compensationType !== 'PERCENTAGE' && u.role !== 'PARTNER');
-      const totalMonthlySalaries = salariedStaff.reduce((sum, u) => {
-        const annualSalary = (u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : defaultSalary;
+      const totalCommittedSalaries = salariedStaff.reduce((sum, u) => {
+        const annualSalary = (u.salary !== undefined && u.salary !== null && !isNaN(Number(u.salary))) ? Number(u.salary) : 0;
         return sum + Math.round(annualSalary / 12);
       }, 0);
-
-      const totalOutflows = directExpenses + totalSourcePayouts + totalPercentagePayouts;
-      const totalPayroll = totalMonthlySalaries + totalPercentagePayouts;
-      const netMonthlyCashflow = totalCollected - totalOutflows - totalMonthlySalaries;
-      const totalMonthlyProfit = grossInvoiced - directExpenses - totalMonthlySalaries - totalPercentagePayouts - totalSourcePayouts;
-      const totalProfitMarginPercent = grossInvoiced > 0 ? Math.round((totalMonthlyProfit / grossInvoiced) * 100) : 0;
-      const netProjectGrossProfit = grossInvoiced - directExpenses - totalSourcePayouts - totalPercentagePayouts;
-      const netOperatingMargin = grossInvoiced > 0 ? Math.round((netProjectGrossProfit / grossInvoiced) * 100) : 0;
 
       return {
         roleAllowed: true,
@@ -2426,8 +2448,8 @@ export const AppProvider = ({ children }) => {
         monthlyInvoiced: grossInvoiced,
         monthlyExpense: directExpenses,
         payroll: totalPayroll,
-        fixedPayroll: totalMonthlySalaries,
-        variablePayroll: totalPercentagePayouts,
+        fixedPayroll: actualSalariedPayouts,
+        variablePayroll: actualPercentagePayouts,
         totalPayroll,
         netCashFlow: netMonthlyCashflow,
         totalMonthlyProfit,
@@ -2438,8 +2460,9 @@ export const AppProvider = ({ children }) => {
         accountsReceivable,
         directExpenses,
         totalSourcePayouts,
-        totalPercentagePayouts,
-        totalMonthlySalaries,
+        totalPercentagePayouts: actualPercentagePayouts,
+        totalMonthlySalaries: actualSalariedPayouts,
+        totalCommittedSalaries,
         totalOutflows,
         accruedLiabilities,
         totalDisbursed,

@@ -32,10 +32,10 @@ export const downloadCompanyMonthlyFinancesCSV = ({
   const totalIncome = financials.totalIncome || financials.totalCollected || 0;
   const monthlyInvoiced = financials.monthlyInvoiced || financials.grossInvoiced || 0;
   const monthlyExpense = financials.monthlyExpense || financials.directExpenses || 0;
-  const fixedPayroll = financials.fixedPayroll || financials.totalMonthlySalaries || 0;
-  const variablePayroll = financials.variablePayroll || financials.totalPercentagePayouts || 0;
+  const fixedPayroll = financials.fixedPayroll !== undefined ? financials.fixedPayroll : 0;
+  const variablePayroll = financials.variablePayroll !== undefined ? financials.variablePayroll : 0;
   const sourceCommissions = financials.totalSourcePayouts || 0;
-  const totalPayroll = financials.payroll || financials.totalPayroll || (fixedPayroll + variablePayroll);
+  const totalPayroll = financials.payroll !== undefined ? financials.payroll : (fixedPayroll + variablePayroll);
   const netCashFlow = financials.netCashFlow !== undefined ? financials.netCashFlow : (financials.netMonthlyCashflow || 0);
   const totalMonthlyProfit = financials.totalMonthlyProfit || 0;
   const profitMarginPercent = financials.totalProfitMarginPercent || 0;

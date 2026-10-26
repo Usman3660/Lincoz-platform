@@ -39,9 +39,9 @@ export const MonthlyStatementModal = ({
   const totalIncome = financials.totalIncome || financials.totalCollected || 0;
   const monthlyInvoiced = financials.monthlyInvoiced || financials.grossInvoiced || 0;
   const monthlyExpense = financials.monthlyExpense || financials.directExpenses || 0;
-  const fixedPayroll = financials.fixedPayroll || financials.totalMonthlySalaries || 0;
-  const variablePayroll = financials.variablePayroll || financials.totalPercentagePayouts || 0;
-  const totalPayroll = financials.payroll || financials.totalPayroll || (fixedPayroll + variablePayroll);
+  const fixedPayroll = financials.fixedPayroll !== undefined ? financials.fixedPayroll : 0;
+  const variablePayroll = financials.variablePayroll !== undefined ? financials.variablePayroll : 0;
+  const totalPayroll = financials.payroll !== undefined ? financials.payroll : (fixedPayroll + variablePayroll);
   const sourcePayouts = financials.totalSourcePayouts || 0;
   const netCashFlow = financials.netCashFlow !== undefined ? financials.netCashFlow : (financials.netMonthlyCashflow || 0);
   const totalMonthlyProfit = financials.totalMonthlyProfit || 0;
@@ -175,7 +175,7 @@ export const MonthlyStatementModal = ({
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Total Income</span>
                 <span className="text-base sm:text-lg font-black font-mono text-emerald-600 block mt-0.5">
-                  +${Number(totalIncome).toLocaleString()}
+                  +Rs {Number(totalIncome).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Cleared Client Pay-In Cash</span>
               </div>
@@ -183,7 +183,8 @@ export const MonthlyStatementModal = ({
               {/* Monthly Invoiced */}
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Monthly Invoiced</span>
-                <span className="text-base sm:text-lg font-black font-mono text-cyan-600 block mt-0.5"> Rs {Number(monthlyInvoiced).toLocaleString()}
+                <span className="text-base sm:text-lg font-black font-mono text-cyan-600 block mt-0.5">
+                  Rs {Number(monthlyInvoiced).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Accrued Milestone Billings</span>
               </div>
@@ -192,7 +193,7 @@ export const MonthlyStatementModal = ({
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Monthly Expense</span>
                 <span className="text-base sm:text-lg font-black font-mono text-rose-600 block mt-0.5">
-                  -${Number(monthlyExpense).toLocaleString()}
+                  -Rs {Number(monthlyExpense).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Direct Operational Overhead</span>
               </div>
@@ -201,7 +202,7 @@ export const MonthlyStatementModal = ({
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase font-mono">Monthly Payroll</span>
                 <span className="text-base sm:text-lg font-black font-mono text-purple-600 block mt-0.5">
-                  -${Number(totalPayroll).toLocaleString()}
+                  -Rs {Number(totalPayroll).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">
                   Salaries (Rs {Number(fixedPayroll).toLocaleString()}) + Shares (Rs {Number(variablePayroll).toLocaleString()})
@@ -249,37 +250,37 @@ export const MonthlyStatementModal = ({
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Total Income (Cleared Pay-In)</td>
                   <td className="p-2.5 text-slate-600 font-sans">Inward Cash Collections</td>
-                  <td className="p-2.5 text-right font-bold text-emerald-600">+${Number(totalIncome).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-emerald-600">+Rs {Number(totalIncome).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Client settlements cleared into corporate accounts</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Monthly Invoiced</td>
                   <td className="p-2.5 text-slate-600 font-sans">Accrued Revenue Billings</td>
-                  <td className="p-2.5 text-right font-bold text-cyan-600"> Rs {Number(monthlyInvoiced).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-cyan-600">Rs {Number(monthlyInvoiced).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Milestone invoices dispatched (AR: Rs {Number(financials.accountsReceivable || 0).toLocaleString()})</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Monthly Direct Expenses</td>
                   <td className="p-2.5 text-slate-600 font-sans">Direct Operational Overhead</td>
-                  <td className="p-2.5 text-right font-bold text-rose-600">-${Number(monthlyExpense).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-rose-600">-Rs {Number(monthlyExpense).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Cloud hosting, SaaS, software licenses, vendor services</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Fixed Salaried Payroll</td>
                   <td className="p-2.5 text-slate-600 font-sans">Fixed Workforce Base Pay</td>
-                  <td className="p-2.5 text-right font-bold text-purple-600">-${Number(fixedPayroll).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-purple-600">-Rs {Number(fixedPayroll).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Core dedicated employees, engineering team, PMs</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Variable Staff Profit Shares</td>
                   <td className="p-2.5 text-slate-600 font-sans">Milestone Profit Shares</td>
-                  <td className="p-2.5 text-right font-bold text-purple-600">-${Number(variablePayroll).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-purple-600">-Rs {Number(variablePayroll).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Contractor and developer percentage profit-share disbursements</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 font-sans font-bold text-slate-900">Source Referral Commissions</td>
                   <td className="p-2.5 text-slate-600 font-sans">Partner Origination Fees</td>
-                  <td className="p-2.5 text-right font-bold text-amber-600">-${Number(sourcePayouts).toLocaleString()}</td>
+                  <td className="p-2.5 text-right font-bold text-amber-600">-Rs {Number(sourcePayouts).toLocaleString()}</td>
                   <td className="p-2.5 text-slate-500 font-sans text-[10px]">Origination deal-sourcing referral fees disbursed</td>
                 </tr>
                 <tr className="bg-slate-50 font-bold border-t border-slate-300">
@@ -334,7 +335,7 @@ export const MonthlyStatementModal = ({
                 {expList.slice(0, 4).map((e, idx) => (
                   <div key={idx} className="flex justify-between border-b border-slate-200/60 pb-1">
                     <span className="text-slate-700 font-medium">{e.category} - {e.title || e.vendor}</span>
-                    <span className="font-mono font-bold text-rose-700">-${Number(e.amount || 0).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-rose-700">-Rs {Number(e.amount || 0).toLocaleString()}</span>
                   </div>
                 ))}
                 {expList.length === 0 && <p className="text-slate-400 italic text-[11px]">No direct expenses recorded for this period.</p>}

@@ -154,7 +154,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
                   } else {
                     setClientName(e.target.value);
                     const selected = safeClients.find(c => c.name === e.target.value);
-                    if (selected) setClientContact(`${selected.email} | Rs {selected.contactNumber}`);
+                    if (selected) setClientContact(`${selected.email} | ${selected.contactNumber || selected.phone || ''}`);
                   }
                 }}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#182234] border border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"

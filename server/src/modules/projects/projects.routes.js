@@ -286,8 +286,9 @@ projectsRouter.post('/tasks', authenticate, async (req, res, next) => {
             id: validProjectId,
             organizationId: orgId,
             clientId: defaultClient?.id || 'cli-default',
-            name: 'Active Project',
+            name: req.body.projectName || 'Client Project',
             status: 'ACTIVE',
+            tcv: 50000,
           },
         });
         validProjectId = createdProj.id;

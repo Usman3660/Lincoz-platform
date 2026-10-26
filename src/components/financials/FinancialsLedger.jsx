@@ -249,9 +249,8 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
 
     const disbursedSum = matchingDisbursements.reduce((sum, l) => sum + (Number(l.calculatedPayoutAmount || l.amount) || 0), 0);
     
-    // Initial/seed state: Alexander Wright (Admin) & Sarah Jenkins (PM) are seed-paid in current month if no other disbursed records
-    const isSeedPaid = (u.id === 'usr-admin' || u.id === 'usr-pm') && matchingDisbursements.length === 0;
-    const paidAmount = isSeedPaid ? monthlyAmount : disbursedSum;
+    // Paid amount is strictly what was disbursed/added by admin through payouts
+    const paidAmount = disbursedSum;
     const remainingAmount = Math.max(0, monthlyAmount - paidAmount);
 
     let paymentStatus = 'UNPAID';
@@ -261,7 +260,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
       paymentStatus = 'PARTIALLY_PAID';
     }
 
-    const latestRef = matchingDisbursements[0]?.disbursementRef || (u.id === 'usr-admin' ? 'ACH-PAYROLL-9924' : (u.id === 'usr-pm' ? 'ACH-PAYROLL-9925' : ''));
+    const latestRef = matchingDisbursements[0]?.disbursementRef || '';
 
     return {
       id: `salary-${u.id}-current`,
@@ -420,7 +419,8 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
   const totalMonthlySalaries = salariedPayrollRecords.reduce((sum, r) => sum + r.monthlyAmount, 0);
   const totalSalariesPaid = salariedPayrollRecords.reduce((sum, r) => sum + r.paidAmount, 0);
   const totalSalariesRemaining = salariedPayrollRecords.reduce((sum, r) => sum + r.remainingAmount, 0);
-  const totalPercentagePayouts = percentageRecords.reduce((sum, r) => sum + r.monthlyAmount, 0);
+  const totalPercentagePayouts = percentageRecords.reduce((sum, r) => sum + r.paidAmount, 0);
+  const actualPayrollDisbursed = totalSalariesPaid + totalPercentagePayouts;
 
   if (!financials.roleAllowed) {
     return (
@@ -540,8 +540,10 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Monthly Payroll"
-            value={`Rs ${totalMonthlySalaries.toLocaleString()}/mo`}
-            subtitle={`Paid: Rs ${totalSalariesPaid.toLocaleString()} • Rem: Rs ${totalSalariesRemaining.toLocaleString()}`}
+            value={`Rs ${(financials.payroll !== undefined ? financials.payroll : actualPayrollDisbursed).toLocaleString()}`}
+            subtitle={totalSalariesPaid > 0 
+              ? `Paid: Rs ${totalSalariesPaid.toLocaleString()} • Rem: Rs ${totalSalariesRemaining.toLocaleString()}`
+              : `Paid: Rs 0 • Due: Rs ${totalMonthlySalaries.toLocaleString()}`}
             icon={Users}
             colorScheme="emerald"
           />
@@ -561,10 +563,10 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
           />
           <StatsCard
             title="Monthly Net Cashflow"
-            value={`Rs ${(financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0))).toLocaleString()}`}
+            value={`Rs ${(financials.netCashFlow !== undefined ? financials.netCashFlow : (financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0)))).toLocaleString()}`}
             subtitle={`Net margin after outflows (${currentMonthName})`}
             icon={Banknote}
-            colorScheme={((financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0))) >= 0) ? "emerald" : "rose"}
+            colorScheme={((financials.netCashFlow !== undefined ? financials.netCashFlow : (financials.netMonthlyCashflow !== undefined ? financials.netMonthlyCashflow : ((financials.totalCollected || 0) - (financials.totalOutflows || 0)))) >= 0) ? "emerald" : "rose"}
           />
         </div>
       )}
@@ -917,6 +919,9 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   onClick={() => isSuperAdmin() && setSelectedPayoutForSignoff({
                                     id: item.id,
                                     contractorName: item.employeeName,
+                                    employeeId: item.employeeId,
+                                    isSalaried: isSalaried,
+                                    agreementModel: isSalaried ? 'FIXED_SALARY' : 'PERCENTAGE_PROFIT_SHARE',
                                     calculatedPayoutAmount: item.remainingAmount,
                                     projectName: isSalaried ? 'Company Payroll' : item.projectName,
                                     deliverableTitle: isSalaried ? `${item.period} (Balance)` : (item.deliverableTitle || 'Project Share Settlement'),
@@ -943,6 +948,9 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                                   onClick={() => isSuperAdmin() && setSelectedPayoutForSignoff({
                                     id: item.id,
                                     contractorName: item.employeeName,
+                                    employeeId: item.employeeId,
+                                    isSalaried: isSalaried,
+                                    agreementModel: isSalaried ? 'FIXED_SALARY' : 'PERCENTAGE_PROFIT_SHARE',
                                     calculatedPayoutAmount: item.remainingAmount || item.totalDue,
                                     projectName: isSalaried ? 'Company Payroll' : item.projectName,
                                     deliverableTitle: isSalaried ? item.period : (item.deliverableTitle || 'Project Share Settlement'),
@@ -1650,13 +1658,13 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 font-medium">
-                      Salaries: {formatCurrency(financials.fixedPayroll || financials.totalMonthlySalaries)} | Contractor % Shares: {formatCurrency(financials.variablePayroll || financials.totalPercentagePayouts)}.
+                      Salaries: {formatCurrency(financials.fixedPayroll || 0)} | Contractor % Shares: {formatCurrency(financials.variablePayroll || 0)} {(financials.payroll || 0) === 0 ? '(Pending admin employee payout)' : ''}.
                     </p>
                   </div>
                 </div>
                 <div className="text-left sm:text-right shrink-0">
                   <span className="text-base sm:text-lg font-black font-mono text-purple-400 block">
-                    -{formatCurrency(financials.payroll || financials.totalPayroll)}
+                    -{formatCurrency(financials.payroll || 0)}
                   </span>
                   <span className="text-[11px] text-slate-400 font-sans block">
                     Workforce Compensation
@@ -1765,7 +1773,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-emerald-300 font-sans text-[11px]">Inward Cash Collections</td>
                     <td className="p-3.5 text-right text-emerald-400 font-bold text-sm">
-                      +${Number(financials.totalIncome || financials.totalCollected || 0).toLocaleString()}
+                      +Rs {Number(financials.totalIncome || financials.totalCollected || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Liquid client settlements cleared into company accounts during {currentMonthName}.
@@ -1779,7 +1787,8 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                       Monthly Invoiced
                     </td>
                     <td className="p-3.5 text-cyan-300 font-sans text-[11px]">Accrued Revenue Billings</td>
-                    <td className="p-3.5 text-right text-cyan-400 font-bold text-sm"> Rs {Number(financials.monthlyInvoiced || financials.grossInvoiced || 0).toLocaleString()}
+                    <td className="p-3.5 text-right text-cyan-400 font-bold text-sm">
+                      Rs {Number(financials.monthlyInvoiced || financials.grossInvoiced || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Total milestone invoices billed (Outstanding Accounts Receivable: Rs {Number(financials.accountsReceivable || 0).toLocaleString()}).
@@ -1794,7 +1803,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-rose-300 font-sans text-[11px]">Operational Overhead</td>
                     <td className="p-3.5 text-right text-rose-400 font-bold text-sm">
-                      -${Number(financials.monthlyExpense || financials.directExpenses || 0).toLocaleString()}
+                      -Rs {Number(financials.monthlyExpense || financials.directExpenses || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Cloud hosting, SaaS subscriptions, software tools, security audits, and vendor services.
@@ -1809,7 +1818,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-purple-300 font-sans text-[11px]">Fixed Staff Compensation</td>
                     <td className="p-3.5 text-right text-purple-400 font-bold text-sm">
-                      -${Number(financials.fixedPayroll || financials.totalMonthlySalaries || 0).toLocaleString()}
+                      -Rs {Number(financials.fixedPayroll || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Salaries for dedicated on-site and remote employees (Engineering, PMs, Super Admins).
@@ -1824,7 +1833,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-purple-300 font-sans text-[11px]">Milestone Profit-Shares</td>
                     <td className="p-3.5 text-right text-purple-400 font-bold text-sm">
-                      -${Number(financials.variablePayroll || financials.totalPercentagePayouts || 0).toLocaleString()}
+                      -Rs {Number(financials.variablePayroll || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Performance and milestone profit-sharing allocated to contractors and engineering partners.
@@ -1839,7 +1848,7 @@ export const FinancialsLedger = ({ onNavigateToPayinPayout }) => {
                     </td>
                     <td className="p-3.5 text-amber-300 font-sans text-[11px]">Partner Commissions</td>
                     <td className="p-3.5 text-right text-amber-400 font-bold text-sm">
-                      -${Number(financials.totalSourcePayouts || 0).toLocaleString()}
+                      -Rs {Number(financials.totalSourcePayouts || 0).toLocaleString()}
                     </td>
                     <td className="p-3.5 text-slate-400 font-sans text-xs">
                       Origination and deal-sourcing commission payout disbursed to verified partner sources.

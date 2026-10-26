@@ -593,7 +593,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                         setForm({
                           ...form,
                           clientName: val,
-                          clientContact: selected ? `${selected.email} | Rs {selected.contactNumber}` : form.clientContact
+                          clientContact: selected ? `${selected.email} | ${selected.contactNumber || ''}` : form.clientContact
                         });
                       }}
                       className="w-full px-3 py-2 rounded-xl bg-[#0e1420] border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -1073,7 +1073,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
                           <img
                             src={assignee.avatar}
                             alt={assignee.name}
-                            title={`Assignee: Rs {assignee.name}`}
+                            title={`Assignee: ${assignee.name}`}
                             className="w-7 h-7 rounded-full object-cover ring-1 ring-indigo-500/30"
                           />
                         )}
