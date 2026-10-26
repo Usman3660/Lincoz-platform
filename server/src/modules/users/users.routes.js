@@ -10,6 +10,7 @@ import { prisma } from '../../infrastructure/database/client.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorizeRoles } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
+import { userCache } from '../auth/auth.routes.js';
 
 export const usersRouter = Router();
 
@@ -172,13 +173,34 @@ usersRouter.patch('/:id', authenticate, async (req, res, next) => {
         title: true,
         department: true,
         avatarUrl: true,
+        workMode: true,
+        compensationType: true,
+        salary: true,
+        sharePercentage: true,
       }
     });
+
+    const formattedUser = {
+      ...updated,
+      salary: Number(updated.salary),
+      percentage: Number(updated.sharePercentage),
+      avatar: updated.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+    };
+
+    // Synchronize auth userCache immediately
+    userCache.set(formattedUser.email.toLowerCase().trim(), {
+      ...formattedUser,
+      passwordHash: dataToUpdate.passwordHash || req.user.passwordHash,
+      organizationId: req.tenantId,
+    });
+    if (req.user?.email && req.user.email.toLowerCase() !== formattedUser.email.toLowerCase()) {
+      userCache.delete(req.user.email.toLowerCase().trim());
+    }
 
     res.json({
       success: true,
       message: 'User profile updated successfully.',
-      data: updated
+      data: formattedUser
     });
   } catch (error) {
     next(error);
@@ -208,10 +230,14 @@ usersRouter.patch('/:id/password', authenticate, async (req, res, next) => {
     const salt = await bcrypt.default.genSalt(12);
     const passwordHash = await bcrypt.default.hash(password.trim(), salt);
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: { passwordHash }
     });
+
+    if (updatedUser?.email) {
+      userCache.delete(updatedUser.email.toLowerCase().trim());
+    }
 
     res.json({
       success: true,
@@ -221,3 +247,118 @@ usersRouter.patch('/:id/password', authenticate, async (req, res, next) => {
     next(error);
   }
 });
+
+/**
+ * POST /api/users
+ * Super Admin: provisions a new team member in PostgreSQL
+ */
+usersRouter.post('/', authenticate, authorizeRoles('SUPER_ADMIN', 'PROJECT_MANAGER'), async (req, res, next) => {
+  try {
+    const {
+      id,
+      name,
+      email,
+      password,
+      role = 'ONSITE_MEMBER',
+      title,
+      department,
+      workMode = 'ONSITE',
+      compensationType = 'SALARIED',
+      salary = 0,
+      percentage = 0,
+      avatar,
+      avatarUrl,
+    } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ success: false, error: 'Name and email are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'A user with this email address already exists.' });
+    }
+
+    const rawPass = password && String(password).trim().length >= 6 ? String(password).trim() : 'Pass#123';
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(rawPass, salt);
+
+    const validRoles = ['SUPER_ADMIN', 'PROJECT_MANAGER', 'ONSITE_MEMBER', 'PARTNER'];
+    let assignedRole = validRoles.includes(role) ? role : 'ONSITE_MEMBER';
+    if (req.user?.role !== 'SUPER_ADMIN' && assignedRole === 'SUPER_ADMIN') {
+      assignedRole = 'ONSITE_MEMBER';
+    }
+    const validModes = ['ONSITE', 'REMOTE', 'HYBRID'];
+    const assignedMode = validModes.includes(workMode) ? workMode : 'ONSITE';
+    const validComp = ['SALARIED', 'PERCENTAGE'];
+    const assignedComp = validComp.includes(compensationType) ? compensationType : 'SALARIED';
+
+    const created = await prisma.user.create({
+      data: {
+        ...(id ? { id } : {}),
+        organizationId: req.tenantId || 'org_lincoz_primary',
+        name: name.trim(),
+        email: cleanEmail,
+        passwordHash,
+        role: assignedRole,
+        title: title ? title.trim() : (assignedRole === 'PROJECT_MANAGER' ? 'Project Manager' : 'Team Member'),
+        department: department ? department.trim() : 'Core Team',
+        workMode: assignedMode,
+        compensationType: assignedComp,
+        salary: Number(salary) || 0,
+        sharePercentage: Number(percentage) || 0,
+        avatarUrl: avatar || avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      },
+    });
+
+    const formatted = {
+      ...created,
+      salary: Number(created.salary),
+      percentage: Number(created.sharePercentage),
+      avatar: created.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+    };
+
+    userCache.set(cleanEmail, formatted);
+
+    res.status(201).json({
+      success: true,
+      message: 'User provisioned successfully.',
+      data: formatted,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/users/:id
+ * Super Admin: deactivate / remove user from PostgreSQL
+ */
+usersRouter.delete('/:id', authenticate, authorizeRoles('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found.' });
+    }
+
+    if (user.role === 'SUPER_ADMIN' && user.id === req.user.id) {
+      return res.status(400).json({ success: false, error: 'Cannot delete the active Super Admin account.' });
+    }
+
+    await prisma.user.delete({ where: { id } }).catch(async () => {
+      // Fallback: soft delete if foreign key constraints exist
+      await prisma.user.update({ where: { id }, data: { isActive: false } });
+    });
+
+    if (user.email) {
+      userCache.delete(user.email.toLowerCase().trim());
+    }
+
+    res.json({ success: true, message: 'User removed successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+

@@ -36,7 +36,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
   const fileInputRef = useRef(null);
   const targetUser = userToEdit || currentUser;
-  const isEditingOther = isSuperAdmin() && targetUser?.id !== currentUser?.id;
+  const isEditingOtherEmployee = isSuperAdmin() && targetUser?.id !== currentUser?.id && targetUser?.role !== 'SUPER_ADMIN';
 
   // Basic Info (Super Admin editable for other employees + Self editable)
   const [title, setTitle] = useState('');
@@ -136,7 +136,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
     let updatedData = {};
 
-    if (isEditingOther) {
+    if (isEditingOtherEmployee) {
       // Super Admin editing other employees: strictly update Department, Title, Location, and Compensation
       if (!title.trim() || !department.trim()) {
         alert('Please provide valid Department and Job Title.');
@@ -151,11 +151,11 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         compensationType,
         salary: compensationType === 'SALARIED'
           ? (salary !== '' && salary !== null && !isNaN(Number(salary)) ? Number(salary) : 0)
-          : undefined,
+          : 0,
         percentage: compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined,
       };
     } else {
-      // User editing their own profile
+      // User editing their own profile or Super Admin editing Super Admin profile
       if (!name.trim()) {
         alert('Please provide a valid name.');
         return;
@@ -178,22 +178,22 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         skills: parsedSkills
       };
 
-      // Super Admin self-governance: allow updating title, department, workMode, and compensation
-      if (isSuperAdmin()) {
-        if (title.trim()) updatedData.title = title.trim();
-        if (department.trim()) updatedData.department = department.trim();
-        if (location.trim()) updatedData.location = location.trim();
+      // Super Admin self-governance or Super Admin account editing: allow updating title, department, workMode, and compensation
+      if (isSuperAdmin() || targetUser?.role === 'SUPER_ADMIN' || targetUser?.id === 'usr-admin') {
+        updatedData.title = title.trim();
+        updatedData.department = department.trim();
+        updatedData.location = location.trim();
         updatedData.workMode = workMode;
         updatedData.compensationType = compensationType;
         updatedData.salary = compensationType === 'SALARIED'
           ? (salary !== '' && salary !== null && !isNaN(Number(salary)) ? Number(salary) : 0)
-          : undefined;
+          : 0;
         updatedData.percentage = compensationType === 'PERCENTAGE' && percentage ? Number(percentage) : undefined;
       }
     }
 
     // Super Admin credential overrides
-    if (isSuperAdmin()) {
+    if (isSuperAdmin() || targetUser?.role === 'SUPER_ADMIN' || targetUser?.id === 'usr-admin') {
       if (editPassword && editPassword.trim()) {
         updatedData.password = editPassword.trim();
         updatedData.passwordUpdatedAt = new Date().toISOString();
@@ -208,9 +208,9 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       if (typeof recordAuditLog === 'function') {
         recordAuditLog({
           actionType: 'USER_PROVISIONED',
-          itemText: isEditingOther
-            ? `Super Admin updated organizational profile for ${targetUser.name} (Rs {department.trim()} • ${title.trim()}).`
-            : `User ${targetUser.name} updated their personal profile information.`,
+          itemText: isEditingOtherEmployee
+            ? `Super Admin updated organizational profile for ${targetUser.name} (${department.trim()} • ${title.trim()}).`
+            : `User ${targetUser.name} updated profile information.`,
           previousState: null,
           newState: updatedData
         });
@@ -219,9 +219,9 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
       if (typeof pushNotification === 'function') {
         pushNotification(
           'Profile Saved',
-          isEditingOther
+          isEditingOtherEmployee
             ? `Organizational terms for ${targetUser.name} were updated successfully.`
-            : `Your profile details have been saved.`,
+            : `Profile details for ${updatedData.name || targetUser.name} have been saved.`,
           'success'
         );
       }
@@ -243,16 +243,16 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
         <div className="shrink-0 bg-[#182234]/60 px-5 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              {isEditingOther ? <Building className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              {isEditingOtherEmployee ? <Building className="w-4 h-4" /> : <User className="w-4 h-4" />}
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                {isEditingOther ? `Edit Employee Record: Rs {targetUser.name}` : 'My Profile Settings'}
+                {isEditingOtherEmployee ? `Edit Employee Record: ${targetUser.name}` : (targetUser?.role === 'SUPER_ADMIN' ? 'Super Admin Profile Settings' : 'My Profile Settings')}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-300">
-                {isEditingOther
+                {isEditingOtherEmployee
                   ? 'Super Admin Administration: Update department, title, location, and compensation.'
-                  : 'Update your photo, name, email, phone, bio, and skills.'}
+                  : 'Update your photo, name, email, phone, bio, and organizational settings.'}
               </p>
             </div>
           </div>
@@ -273,7 +273,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
           {/* CASE 1: SUPER ADMIN EDITING ANOTHER EMPLOYEE                   */}
           {/* Only Department, Title, Location, and Compensation are editable */}
           {/* ============================================================== */}
-          {isEditingOther ? (
+          {isEditingOtherEmployee ? (
             <>
               {/* Employee Identity Read-Only Card */}
               <div className="p-4 rounded-2xl bg-[#182234] border border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -682,7 +682,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
               </div>
 
               {/* Super Admin Executive Compensation & Role Governance */}
-              {isSuperAdmin() && (
+              {(isSuperAdmin() || targetUser?.role === 'SUPER_ADMIN' || targetUser?.id === 'usr-admin') && (
                 <div className="p-4 rounded-2xl bg-[#182234] border border-indigo-500/30 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
@@ -835,7 +835,7 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
               )}
 
               {/* Super Admin Self-Security Credentials */}
-              {isSuperAdmin() && (
+              {(isSuperAdmin() || targetUser?.role === 'SUPER_ADMIN' || targetUser?.id === 'usr-admin') && (
                 <div className="p-4 rounded-2xl bg-[#182234] border border-amber-500/30 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
@@ -918,10 +918,9 @@ export const EditProfileModal = ({ isOpen, onClose, userToEdit = null }) => {
 
             <button
               type="submit"
-              onClick={handleSave}
               className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4" /> Save {isEditingOther ? 'Record Changes' : 'Profile Changes'}
+              <CheckCircle2 className="w-4 h-4" /> Save {isEditingOtherEmployee ? 'Record Changes' : 'Profile Changes'}
             </button>
           </div>
 

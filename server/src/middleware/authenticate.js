@@ -27,7 +27,9 @@ export const authenticate = (req, res, next) => {
     const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = decoded;
     // Multi-tenant SaaS isolation: attach active tenant ID
-    req.tenantId = decoded.organizationId || 'org_lincoz_primary';
+    req.tenantId = (!decoded.organizationId || decoded.organizationId === 'org-lincoz-core')
+      ? 'org_lincoz_primary'
+      : decoded.organizationId;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

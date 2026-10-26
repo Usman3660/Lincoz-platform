@@ -136,10 +136,19 @@ export const AppProvider = ({ children }) => {
         const combined = missing.length > 0 ? [...parsed, ...missing] : parsed;
         return combined.map(p => {
           const init = INITIAL_PROJECTS.find(ip => ip.id === p.id);
-          if (init?.requirementDoc && !p.requirementDoc) {
-            return { ...p, requirementDoc: init.requirementDoc };
+          const reqDoc = (init?.requirementDoc && !p.requirementDoc) ? init.requirementDoc : p.requirementDoc;
+          const activePmId = p.projectManagerId;
+          // Filter out other PMs from assignedTeamIds so only current PM remains
+          const otherPmIds = new Set(INITIAL_USERS.filter(u => u.role === 'PROJECT_MANAGER' && u.id !== activePmId).map(u => u.id));
+          const cleanedTeam = (p.assignedTeamIds || []).filter(id => !otherPmIds.has(id));
+          if (activePmId && !cleanedTeam.includes(activePmId)) {
+            cleanedTeam.push(activePmId);
           }
-          return p;
+          return {
+            ...p,
+            requirementDoc: reqDoc,
+            assignedTeamIds: cleanedTeam
+          };
         });
       }
       return INITIAL_PROJECTS;
@@ -348,25 +357,94 @@ export const AppProvider = ({ children }) => {
         }
 
         if (token && isMounted) {
-          // 1. Fetch live projects from PostgreSQL
+          // 0. Fetch live users from PostgreSQL
+          const usersRes = await api.get('/users').catch(() => null);
+          if (usersRes?.data?.length && isMounted) {
+            setUsers(prev => {
+              const dbUsers = usersRes.data;
+              const dbIds = new Set(dbUsers.map(u => u.id));
+              const localRemainder = prev.filter(p => !dbIds.has(p.id));
+              const merged = [...dbUsers, ...localRemainder];
+              try {
+                localStorage.setItem('lincoz_users', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
+            });
+          }
+
+          // 1. Fetch live clients directory from PostgreSQL
+          const clientsRes = await api.get('/clients').catch(() => null);
+          if (clientsRes?.data?.length && isMounted) {
+            setClients(prev => {
+              const dbClients = clientsRes.data;
+              const prevMap = new Map(prev.map(c => [c.id, c]));
+              const mergedDb = dbClients.map(dbC => {
+                const existing = prevMap.get(dbC.id);
+                return {
+                  ...existing,
+                  ...dbC,
+                  associatedProjects: existing?.associatedProjects || dbC.associatedProjects || [],
+                };
+              });
+              const dbIds = new Set(dbClients.map(c => c.id));
+              const localRemainder = prev.filter(p => !dbIds.has(p.id));
+              const merged = [...mergedDb, ...localRemainder];
+              try {
+                localStorage.setItem('lincoz_clients_directory', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
+            });
+          }
+
+          // 2. Fetch live projects from PostgreSQL
           const projRes = await api.get('/projects').catch(() => null);
           if (projRes?.data?.length && isMounted) {
             setProjects(prev => {
               const dbProjects = projRes.data;
+              const prevMap = new Map(prev.map(p => [p.id, p]));
+              const mergedDb = dbProjects.map(dbP => {
+                const existing = prevMap.get(dbP.id);
+                return {
+                  ...existing,
+                  ...dbP,
+                  assignedTeamIds: existing?.assignedTeamIds || (dbP.assignedTeamIds || ['usr-pm']),
+                  grossInvoiced: existing?.grossInvoiced || 0,
+                  accountsReceivable: existing?.accountsReceivable || 0,
+                };
+              });
               const dbIds = new Set(dbProjects.map(p => p.id));
               const localRemainder = prev.filter(p => !dbIds.has(p.id));
-              return [...dbProjects, ...localRemainder];
+              const merged = [...mergedDb, ...localRemainder];
+              try {
+                localStorage.setItem('lincoz_projects', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
             });
           }
 
-          // 2. Fetch live sprint tasks from PostgreSQL
+          // 3. Fetch live sprint tasks from PostgreSQL
           const tasksRes = await api.get('/projects/tasks').catch(() => null);
           if (tasksRes?.data?.length && isMounted) {
             setTasks(prev => {
               const dbTasks = tasksRes.data;
+              const prevMap = new Map(prev.map(t => [t.id, t]));
+              const mergedDb = dbTasks.map(dbT => {
+                const existing = prevMap.get(dbT.id);
+                return {
+                  ...existing,
+                  ...dbT,
+                  checklists: existing?.checklists || dbT.checklists || [],
+                  deliverables: existing?.deliverables || dbT.deliverables || [],
+                  comments: existing?.comments || dbT.comments || [],
+                };
+              });
               const dbIds = new Set(dbTasks.map(t => t.id));
               const localRemainder = prev.filter(t => !dbIds.has(t.id));
-              return [...dbTasks, ...localRemainder];
+              const merged = [...mergedDb, ...localRemainder];
+              try {
+                localStorage.setItem('lincoz_tasks', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
             });
           }
 
@@ -762,6 +840,17 @@ export const AppProvider = ({ children }) => {
 
     setTasks(prev => [newTask, ...prev]);
 
+    // Persist to PostgreSQL in background
+    api.post('/projects/tasks', newTask)
+      .then(res => {
+        if (res?.data) {
+          setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, ...res.data } : t));
+        }
+      })
+      .catch(err => {
+        console.warn('[DB Task Create] PostgreSQL sync notice:', err.message);
+      });
+
     recordAuditLog({
       taskId: newTask.id,
       taskTitle: newTask.title,
@@ -933,6 +1022,10 @@ export const AppProvider = ({ children }) => {
       if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED') {
         triggerRecurrenceIfEligible(taskRef);
       }
+
+      api.patch(`/projects/tasks/${taskId}`, { status: newStatus }).catch(err => {
+        console.warn('[DB Task Status] PostgreSQL sync notice:', err.message);
+      });
     }
   };
 
@@ -1046,6 +1139,10 @@ export const AppProvider = ({ children }) => {
       if (oldTask && oldTask.status !== 'COMPLETED' && updatedTask.status === 'COMPLETED') {
         triggerRecurrenceIfEligible(updatedTask);
       }
+
+      api.patch(`/projects/tasks/${taskId}`, updates).catch(err => {
+        console.warn('[DB Task Update] PostgreSQL sync notice:', err.message);
+      });
     }
   };
 
@@ -1054,6 +1151,9 @@ export const AppProvider = ({ children }) => {
     if (!taskToDelete) return;
 
     setTasks(prev => prev.filter(t => t.id !== taskId));
+    api.delete(`/projects/tasks/${taskId}`).catch(err => {
+      console.warn('[DB Task Delete] PostgreSQL sync notice:', err.message);
+    });
 
     recordAuditLog({
       taskId,
@@ -1150,17 +1250,34 @@ export const AppProvider = ({ children }) => {
   };
 
   const createProject = (projectData) => {
+    const assignedPm = projectData.projectManagerId || 'usr-pm';
+    const initialTeam = [assignedPm];
+    if (currentUser?.id && !initialTeam.includes(currentUser.id)) {
+      initialTeam.push(currentUser.id);
+    }
+
     const newProject = {
       id: 'proj-' + Date.now(),
       status: 'ACTIVE',
       grossInvoiced: 0,
       accountsReceivable: 0,
       directExpenses: 0,
-      assignedTeamIds: ['usr-pm', currentUser.id],
+      assignedTeamIds: initialTeam,
       ...projectData
     };
 
     setProjects(prev => [newProject, ...prev]);
+
+    // Persist to PostgreSQL in background
+    api.post('/projects', newProject)
+      .then(res => {
+        if (res?.data) {
+          setProjects(prev => prev.map(p => p.id === newProject.id ? { ...p, ...res.data } : p));
+        }
+      })
+      .catch(err => {
+        console.warn('[DB Project Create] PostgreSQL sync notice:', err.message);
+      });
 
     recordAuditLog({
       projectId: newProject.id,
@@ -1214,10 +1331,22 @@ export const AppProvider = ({ children }) => {
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
         oldProj = p;
-        const assignedTeam = [...(p.assignedTeamIds || [])];
-        if (updates.projectManagerId && !assignedTeam.includes(updates.projectManagerId)) {
-          assignedTeam.push(updates.projectManagerId);
+        const targetPmId = updates.projectManagerId || p.projectManagerId;
+        let assignedTeam = updates.assignedTeamIds ? [...updates.assignedTeamIds] : [...(p.assignedTeamIds || [])];
+
+        if (updates.projectManagerId && updates.projectManagerId !== p.projectManagerId) {
+          // Remove previous project manager from team list
+          assignedTeam = assignedTeam.filter(id => id !== p.projectManagerId);
         }
+
+        // Clean out any former/other project managers so only the current active PM is in team
+        const otherPmIds = new Set(users.filter(u => u.role === 'PROJECT_MANAGER' && u.id !== targetPmId).map(u => u.id));
+        assignedTeam = assignedTeam.filter(id => !otherPmIds.has(id));
+
+        if (targetPmId && !assignedTeam.includes(targetPmId)) {
+          assignedTeam.push(targetPmId);
+        }
+
         newProj = { ...p, ...updates, assignedTeamIds: assignedTeam };
         return newProj;
       }
@@ -1294,7 +1423,19 @@ export const AppProvider = ({ children }) => {
           }
         );
       }
+
+      api.patch(`/projects/${projectId}`, updates).catch(err => {
+        console.warn('[DB Project Update] PostgreSQL sync notice:', err.message);
+      });
     }
+  };
+
+  const deleteProject = (projectId) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    setTasks(prev => prev.filter(t => t.projectId !== projectId));
+    api.delete(`/projects/${projectId}`).catch(err => {
+      console.warn('[DB Project Delete] PostgreSQL sync notice:', err.message);
+    });
   };
 
   const updateContractorAgreement = (contractorUserId, projectId, agreementData) => {
@@ -1777,6 +1918,17 @@ export const AppProvider = ({ children }) => {
 
     setUsers(prev => [...prev, newUser]);
 
+    // Persist to PostgreSQL in background
+    api.post('/users', newUser)
+      .then(res => {
+        if (res?.data) {
+          setUsers(prev => prev.map(u => u.id === newUser.id ? { ...u, ...res.data } : u));
+        }
+      })
+      .catch(err => {
+        console.warn('[DB User Create] PostgreSQL sync notice:', err.message);
+      });
+
     const compSummary = newUser.compensationType === 'PERCENTAGE'
       ? `${newUser.percentage || 15}% Share`
       : newUser.salary ? `Rs ${Number(newUser.salary).toLocaleString()}/yr` : 'Salaried';
@@ -1810,10 +1962,31 @@ export const AppProvider = ({ children }) => {
       );
       delete updates.password;
     }
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-    api.patch(`/users/${userId}`, updates).catch(err => {
-      console.warn('[DB User Sync] Live database update fallback:', err.message);
+
+    setUsers(prev => {
+      const nextUsers = prev.map(u => u.id === userId ? { ...u, ...updates } : u);
+      try {
+        localStorage.setItem('lincoz_users', JSON.stringify(nextUsers));
+      } catch (e) {}
+      return nextUsers;
     });
+
+    api.patch(`/users/${userId}`, updates)
+      .then(res => {
+        if (res?.data) {
+          setUsers(prev => {
+            const next = prev.map(u => u.id === userId ? { ...u, ...res.data } : u);
+            try {
+              localStorage.setItem('lincoz_users', JSON.stringify(next));
+            } catch (e) {}
+            return next;
+          });
+        }
+      })
+      .catch(err => {
+        console.warn('[DB User Sync] Live database update fallback:', err.message);
+      });
+
     pushNotification('User Updated', 'User profile details were updated.', 'info', {
       targetRoles: ['SUPER_ADMIN'],
       targetUserId: userId
@@ -1882,12 +2055,26 @@ export const AppProvider = ({ children }) => {
     return true;
   };
 
+  const deleteUser = (userId) => {
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    if (target.role === 'SUPER_ADMIN' && target.id === currentUser?.id) {
+      pushNotification('Action Restricted', 'Cannot delete active Super Admin account.', 'warning');
+      return;
+    }
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    api.delete(`/users/${userId}`).catch(err => {
+      console.warn('[DB User Delete] PostgreSQL sync notice:', err.message);
+    });
+  };
+
   const createClient = (clientData) => {
     const isFreelancer = clientData.category === 'FREELANCER';
     const newClient = {
       id: (isFreelancer ? 'fl-' : 'cli-') + Date.now(),
       category: clientData.category || 'CLIENT',
       name: clientData.name?.trim() || '',
+      company: clientData.company?.trim() || clientData.name?.trim() || '',
       email: clientData.email?.trim() || '',
       contactNumber: clientData.contactNumber?.trim() || '',
       country: clientData.country?.trim() || 'United States',
@@ -1900,6 +2087,17 @@ export const AppProvider = ({ children }) => {
     };
 
     setClients(prev => [newClient, ...prev]);
+
+    // Persist to PostgreSQL in background
+    api.post('/clients', newClient)
+      .then(res => {
+        if (res?.data) {
+          setClients(prev => prev.map(c => c.id === newClient.id ? { ...c, ...res.data } : c));
+        }
+      })
+      .catch(err => {
+        console.warn('[DB Client Create] PostgreSQL sync notice:', err.message);
+      });
 
     recordAuditLog({
       actionType: isFreelancer ? 'SOURCE_CREATED' : 'CLIENT_CREATED',
@@ -1941,6 +2139,10 @@ export const AppProvider = ({ children }) => {
     }));
 
     if (updatedClient) {
+      api.patch(`/clients/${clientId}`, updates).catch(err => {
+        console.warn('[DB Client Update] PostgreSQL sync notice:', err.message);
+      });
+
       const isFreelancer = updatedClient.category === 'FREELANCER';
       recordAuditLog({
         actionType: isFreelancer ? 'SOURCE_UPDATED' : 'CLIENT_UPDATED',
@@ -1963,6 +2165,9 @@ export const AppProvider = ({ children }) => {
     if (!target) return;
 
     setClients(prev => prev.filter(c => c.id !== clientId));
+    api.delete(`/clients/${clientId}`).catch(err => {
+      console.warn('[DB Client Delete] PostgreSQL sync notice:', err.message);
+    });
 
     const isFreelancer = target.category === 'FREELANCER';
     recordAuditLog({
@@ -2886,11 +3091,13 @@ export const AppProvider = ({ children }) => {
         addDeliverable,
         createProject,
         updateProject,
+        deleteProject,
         updateContractorAgreement,
         approvePayoutStep1,
         authorizeDisbursementStep2,
         createUser,
         updateUser,
+        deleteUser,
         updateUserPassword,
         updateUserMfaKey,
         resetToDefaults,

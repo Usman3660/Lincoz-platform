@@ -156,7 +156,8 @@ export const ProjectList = () => {
                       <span className="text-slate-400 flex items-center gap-1 font-medium">
                         <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Contract Valuation
                       </span>
-                      <span className="font-mono text-white font-extrabold"> Rs {typeof proj.totalContractValue === 'number' ? proj.totalContractValue.toLocaleString() : 'N/A'}
+                      <span className="font-mono text-white font-extrabold">
+                        Rs {typeof proj.totalContractValue === 'number' ? proj.totalContractValue.toLocaleString() : 'N/A'}
                       </span>
                     </div>
 
@@ -210,14 +211,14 @@ export const ProjectList = () => {
                       </div>
                     ))}
                     {projectTasks.length > 2 && (
-                      <span className="text-[10px] text-slate-500 block italic text-center">
+                      <span className="text-[10px] text-slate-500 block italic text-center pt-0.5">
                         +{projectTasks.length - 2} more tasks
                       </span>
                     )}
                     {projectTasks.length === 0 && (
-                      <span className="text-[10px] text-slate-500 block italic text-center">
+                      <div className="py-2 px-3 rounded-lg bg-[#182234]/30 border border-dashed border-slate-800 text-[11px] text-slate-500 italic text-center">
                         No tasks created yet
-                      </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -232,13 +233,14 @@ export const ProjectList = () => {
               </div>
 
               {/* Card Footer: Target Date & Detail Action */}
-              <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Due: {proj.targetDeliveryDate}</span>
-                </div>
+              <div className="pt-3.5 border-t border-slate-800/80 space-y-2.5">
+                {/* Meta Row: Target Date & Quick Status Complete */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono whitespace-nowrap">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span>Due: <span className="text-slate-200 font-semibold">{proj.targetDeliveryDate}</span></span>
+                  </div>
 
-                <div className="flex items-center gap-2">
                   {(isSuperAdmin() || isPM()) && proj.status !== 'COMPLETED' && (
                     <button
                       onClick={(e) => {
@@ -247,27 +249,31 @@ export const ProjectList = () => {
                           updateProject(proj.id, { status: 'COMPLETED' });
                         }
                       }}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0 cursor-pointer"
                       title="Mark Project as Completed"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                     </button>
                   )}
+                </div>
 
+                {/* Primary Action Buttons */}
+                <div className="flex items-center gap-2 pt-0.5">
                   {isSuperAdmin() && !isConfidential && (
                     <button
                       onClick={() => setProjectForInvoice(proj)}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                      className="flex-1 py-2 px-3 rounded-xl bg-[#182234] hover:bg-indigo-600/20 text-indigo-300 hover:text-white border border-slate-700/80 hover:border-indigo-500/40 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                       title={`Issue invoice for ${proj.name}`}
                     >
-                      <Plus className="w-3.5 h-3.5" /> Invoice
+                      <Plus className="w-3.5 h-3.5 text-indigo-400" /> Invoice
                     </button>
                   )}
                   <button
                     onClick={() => setSelectedProjectId(proj.id)}
-                    className="px-3.5 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                    className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/25 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                   >
-                    View Details &rarr;
+                    <span>View Details</span>
+                    <span>&rarr;</span>
                   </button>
                 </div>
               </div>
@@ -380,8 +386,14 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
   const currentPm = users.find((u) => u.id === project.projectManagerId);
   const availablePMs = users.filter((u) => u.role === 'PROJECT_MANAGER' || u.role === 'SUPER_ADMIN');
 
-  // Assigned team members
-  const assignedTeamMembers = users.filter((u) => project.assignedTeamIds?.includes(u.id));
+  // Assigned team members: only show current project manager and active team, never former project managers
+  const assignedTeamMembers = users.filter((u) => {
+    // Current active PM of this project is always included
+    if (u.id === project.projectManagerId) return true;
+    // Any former/other Project Manager must NOT be shown as part of this project's team
+    if (u.role === 'PROJECT_MANAGER' && u.id !== project.projectManagerId) return false;
+    return project.assignedTeamIds?.includes(u.id);
+  });
 
   const handleSaveNewManager = () => {
     if (!selectedNewPmId || selectedNewPmId === project.projectManagerId) {
@@ -389,7 +401,17 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
       return;
     }
 
-    updateProject(project.id, { projectManagerId: selectedNewPmId });
+    const prevPmId = project.projectManagerId;
+    // Remove previous manager from assigned team and ensure new manager is included
+    const currentTeam = (project.assignedTeamIds || []).filter(id => id !== prevPmId);
+    if (!currentTeam.includes(selectedNewPmId)) {
+      currentTeam.push(selectedNewPmId);
+    }
+
+    updateProject(project.id, {
+      projectManagerId: selectedNewPmId,
+      assignedTeamIds: currentTeam
+    });
     setIsChangingManager(false);
   };
 
@@ -402,6 +424,15 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
       return;
     }
 
+    const prevPmId = project.projectManagerId;
+    let updatedTeam = [...(project.assignedTeamIds || [])];
+    if (form.projectManagerId && form.projectManagerId !== prevPmId) {
+      updatedTeam = updatedTeam.filter(id => id !== prevPmId);
+      if (!updatedTeam.includes(form.projectManagerId)) {
+        updatedTeam.push(form.projectManagerId);
+      }
+    }
+
     updateProject(project.id, {
       name: form.name.trim(),
       clientName: form.clientName.trim(),
@@ -412,6 +443,7 @@ const ProjectDetailModal = ({ isOpen, onClose, project }) => {
       totalContractValue: newTcv,
       targetDeliveryDate: form.targetDeliveryDate,
       projectManagerId: form.projectManagerId,
+      assignedTeamIds: updatedTeam,
       requirementDoc: form.requirementDoc || null
     });
     setIsEditing(false);

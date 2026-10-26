@@ -29,8 +29,9 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    const activeToken = this.token || localStorage.getItem('lincoz_auth_token');
+    if (activeToken) {
+      headers['Authorization'] = `Bearer ${activeToken}`;
     }
 
 
