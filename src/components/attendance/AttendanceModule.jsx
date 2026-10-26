@@ -473,7 +473,12 @@ export const AttendanceModule = () => {
                 </tr>
               ) : (
                 filteredRecords.map((rec) => {
-                  const staffUser = users.find(u => u.id === rec.userId) || currentUser;
+                  const staffUser = users.find(u => u.id === rec.userId) || {
+                    id: rec.userId,
+                    name: rec.userName || 'Team Member',
+                    role: rec.userRole || 'ONSITE_MEMBER',
+                    avatar: rec.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+                  };
                   const dayName = new Date(rec.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' });
 
                   return (

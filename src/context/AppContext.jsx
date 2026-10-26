@@ -344,153 +344,94 @@ export const AppProvider = ({ children }) => {
   });
 
   // Live PostgreSQL Database Synchronization (Real-Time DB Connection)
-  useEffect(() => {
-    let isMounted = true;
+  const syncFromDatabase = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('lincoz_auth_token');
+      if (!token) return;
 
-    async function syncFromDatabase() {
-      try {
-        let token = localStorage.getItem('lincoz_auth_token');
-        if (!token) {
-          // If no active session token exists, skip live sync until user signs in
-          return;
-        }
-
-        if (token && isMounted) {
-          // 0. Fetch live users from PostgreSQL
-          const usersRes = await api.get('/users').catch(() => null);
-          if (usersRes?.data?.length && isMounted) {
-            setUsers(prev => {
-              const dbUsers = usersRes.data;
-              const dbIds = new Set(dbUsers.map(u => u.id));
-              const localRemainder = prev.filter(p => !dbIds.has(p.id));
-              const merged = [...dbUsers, ...localRemainder];
-              try {
-                localStorage.setItem('lincoz_users', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-
-          // 1. Fetch live clients directory from PostgreSQL
-          const clientsRes = await api.get('/clients').catch(() => null);
-          if (clientsRes?.data?.length && isMounted) {
-            setClients(prev => {
-              const dbClients = clientsRes.data;
-              const prevMap = new Map(prev.map(c => [c.id, c]));
-              const mergedDb = dbClients.map(dbC => {
-                const existing = prevMap.get(dbC.id);
-                return {
-                  ...existing,
-                  ...dbC,
-                  associatedProjects: existing?.associatedProjects || dbC.associatedProjects || [],
-                };
-              });
-              const dbIds = new Set(dbClients.map(c => c.id));
-              const localRemainder = prev.filter(p => !dbIds.has(p.id));
-              const merged = [...mergedDb, ...localRemainder];
-              try {
-                localStorage.setItem('lincoz_clients_directory', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-
-          // 2. Fetch live projects from PostgreSQL
-          const projRes = await api.get('/projects').catch(() => null);
-          if (projRes?.data?.length && isMounted) {
-            setProjects(prev => {
-              const dbProjects = projRes.data;
-              const prevMap = new Map(prev.map(p => [p.id, p]));
-              const mergedDb = dbProjects.map(dbP => {
-                const existing = prevMap.get(dbP.id);
-                return {
-                  ...existing,
-                  ...dbP,
-                  assignedTeamIds: existing?.assignedTeamIds || (dbP.assignedTeamIds || ['usr-pm']),
-                  grossInvoiced: existing?.grossInvoiced || 0,
-                  accountsReceivable: existing?.accountsReceivable || 0,
-                };
-              });
-              const dbIds = new Set(dbProjects.map(p => p.id));
-              const localRemainder = prev.filter(p => !dbIds.has(p.id));
-              const merged = [...mergedDb, ...localRemainder];
-              try {
-                localStorage.setItem('lincoz_projects', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-
-          // 3. Fetch live sprint tasks from PostgreSQL
-          const tasksRes = await api.get('/projects/tasks').catch(() => null);
-          if (tasksRes?.data?.length && isMounted) {
-            setTasks(prev => {
-              const dbTasks = tasksRes.data;
-              const prevMap = new Map(prev.map(t => [t.id, t]));
-              const mergedDb = dbTasks.map(dbT => {
-                const existing = prevMap.get(dbT.id);
-                return {
-                  ...existing,
-                  ...dbT,
-                  checklists: existing?.checklists || dbT.checklists || [],
-                  deliverables: existing?.deliverables || dbT.deliverables || [],
-                  comments: existing?.comments || dbT.comments || [],
-                };
-              });
-              const dbIds = new Set(dbTasks.map(t => t.id));
-              const localRemainder = prev.filter(t => !dbIds.has(t.id));
-              const merged = [...mergedDb, ...localRemainder];
-              try {
-                localStorage.setItem('lincoz_tasks', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-
-          // 3. Fetch live attendance records from PostgreSQL
-          const attRes = await api.get('/attendance').catch(() => null);
-          if (attRes?.data?.length && isMounted) {
-            setAttendanceRecords(prev => {
-              const dbRecords = attRes.data;
-              const dbKeys = new Set(dbRecords.map(r => `${r.userId}-${r.date}`));
-              const localRemainder = prev.filter(r => !dbKeys.has(`${r.userId}-${r.date}`));
-              return [...dbRecords, ...localRemainder];
-            });
-          }
-
-          // 4. Fetch live payouts from PostgreSQL
-          const payRes = await api.get('/financials/payouts').catch(() => null);
-          if (payRes?.data?.length && isMounted) {
-            setPayoutLedger(prev => {
-              const dbPayouts = payRes.data;
-              const dbIds = new Set(dbPayouts.map(p => p.id));
-              const localRemainder = prev.filter(p => !dbIds.has(p.id));
-              return [...dbPayouts, ...localRemainder];
-            });
-          }
-
-          // 5. Fetch live direct expenses from PostgreSQL
-          const expRes = await api.get('/financials/expenses').catch(() => null);
-          if (expRes?.success && Array.isArray(expRes.data) && isMounted) {
-            setDirectExpensesList(expRes.data);
-            localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expRes.data));
-          }
-
-          // 6. Fetch live expense categories from PostgreSQL
-          const catRes = await api.get('/financials/expense-categories').catch(() => null);
-          if (catRes?.success && Array.isArray(catRes.data) && isMounted) {
-            setExpenseCategories(catRes.data);
-            localStorage.setItem('lincoz_expense_categories', JSON.stringify(catRes.data));
-          }
-        }
-      } catch (err) {
-        console.warn('[PostgreSQL Sync] Running with cached state:', err.message);
+      // 0. Fetch live users from PostgreSQL
+      const usersRes = await api.get('/users').catch(() => null);
+      if (usersRes?.data && Array.isArray(usersRes.data)) {
+        setUsers(usersRes.data);
+        try {
+          localStorage.setItem('lincoz_users', JSON.stringify(usersRes.data));
+        } catch (e) {}
       }
-    }
 
-    void syncFromDatabase();
-    return () => { isMounted = false; };
+      // 1. Fetch live clients directory from PostgreSQL
+      const clientsRes = await api.get('/clients').catch(() => null);
+      if (clientsRes?.data && Array.isArray(clientsRes.data)) {
+        setClients(clientsRes.data);
+        try {
+          localStorage.setItem('lincoz_clients_directory', JSON.stringify(clientsRes.data));
+        } catch (e) {}
+      }
+
+      // 2. Fetch live projects from PostgreSQL
+      const projRes = await api.get('/projects').catch(() => null);
+      if (projRes?.data && Array.isArray(projRes.data)) {
+        setProjects(projRes.data);
+        try {
+          localStorage.setItem('lincoz_projects', JSON.stringify(projRes.data));
+        } catch (e) {}
+      }
+
+      // 3. Fetch live sprint tasks from PostgreSQL
+      const tasksRes = await api.get('/projects/tasks').catch(() => null);
+      if (tasksRes?.data && Array.isArray(tasksRes.data)) {
+        setTasks(tasksRes.data);
+        try {
+          localStorage.setItem('lincoz_tasks', JSON.stringify(tasksRes.data));
+        } catch (e) {}
+      }
+
+      // 4. Fetch live attendance records from PostgreSQL
+      const attRes = await api.get('/attendance').catch(() => null);
+      if (attRes?.data && Array.isArray(attRes.data)) {
+        setAttendanceRecords(attRes.data);
+        try {
+          localStorage.setItem('lincoz_attendance', JSON.stringify(attRes.data));
+        } catch (e) {}
+      }
+
+      // 5. Fetch live payouts from PostgreSQL
+      const payRes = await api.get('/financials/payouts').catch(() => null);
+      if (payRes?.data && Array.isArray(payRes.data)) {
+        setPayoutLedger(payRes.data);
+        try {
+          localStorage.setItem('lincoz_payout_ledger', JSON.stringify(payRes.data));
+        } catch (e) {}
+      }
+
+      // 6. Fetch live direct expenses from PostgreSQL
+      const expRes = await api.get('/financials/expenses').catch(() => null);
+      if (expRes?.success && Array.isArray(expRes.data)) {
+        setDirectExpensesList(expRes.data);
+        try {
+          localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expRes.data));
+        } catch (e) {}
+      }
+
+      // 7. Fetch live expense categories from PostgreSQL
+      const catRes = await api.get('/financials/expense-categories').catch(() => null);
+      if (catRes?.success && Array.isArray(catRes.data)) {
+        setExpenseCategories(catRes.data);
+        try {
+          localStorage.setItem('lincoz_expense_categories', JSON.stringify(catRes.data));
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.warn('[PostgreSQL Sync] Error syncing data from database:', err.message);
+    }
   }, []);
+
+  // Trigger real-time database sync on mount and whenever session is active
+  useEffect(() => {
+    const token = localStorage.getItem('lincoz_auth_token');
+    if (token || currentUserId) {
+      syncFromDatabase();
+    }
+  }, [currentUserId, syncFromDatabase]);
 
   // Selected Month Filter for Global Monthly Financial Calculations
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -654,7 +595,31 @@ export const AppProvider = ({ children }) => {
     } catch (e) {}
   }, [expenseCategories]);
 
-  const currentUser = users.find(u => u.id === currentUserId) || null;
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('lincoz_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (currentUserId) {
+      const found = users.find(u => u.id === currentUserId);
+      if (found) {
+        setCurrentUser(found);
+        try {
+          localStorage.setItem('lincoz_user', JSON.stringify(found));
+        } catch (e) {}
+      }
+    } else {
+      setCurrentUser(null);
+      try {
+        localStorage.removeItem('lincoz_user');
+      } catch (e) {}
+    }
+  }, [currentUserId, users]);
 
   const pushNotification = (title, message, type = 'info', meta = {}) => {
     const newNotif = {
@@ -2313,7 +2278,7 @@ export const AppProvider = ({ children }) => {
     if (isSuperAdmin()) return projects || [];
     if (isPM()) {
       return (projects || [])
-        .filter(p => p.projectManagerId === currentUser.id || (p.assignedTeamIds && p.assignedTeamIds.includes(currentUser.id)))
+        .filter(p => !p.projectManagerId || p.projectManagerId === currentUser?.id || (p.assignedTeamIds && p.assignedTeamIds.includes(currentUser?.id)))
         .map(p => ({
           ...p,
           totalContractValue: 'CONFIDENTIAL',
@@ -2324,7 +2289,7 @@ export const AppProvider = ({ children }) => {
     }
     if (isOnsiteMember()) {
       return (projects || [])
-        .filter(p => p.assignedTeamIds && p.assignedTeamIds.includes(currentUser.id))
+        .filter(p => p.assignedTeamIds && p.assignedTeamIds.includes(currentUser?.id))
         .map(p => {
           const { requirementDoc, ...rest } = p;
           return rest;
@@ -3142,7 +3107,10 @@ export const AppProvider = ({ children }) => {
         updateAttendance,
         deleteAttendance,
         bulkMarkAttendance,
-        getScopedAttendance
+        getScopedAttendance,
+        setCurrentUser,
+        syncFromDatabase,
+        refreshData: syncFromDatabase
       }}
     >
       {children}

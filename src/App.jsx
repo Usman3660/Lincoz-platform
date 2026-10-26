@@ -91,6 +91,8 @@ export const MainApp = () => {
     currentUser,
     users,
     setCurrentUserId,
+    setCurrentUser,
+    syncFromDatabase,
     isSuperAdmin,
     isPM,
     isOnsiteMember,
@@ -160,6 +162,8 @@ export const MainApp = () => {
         .then(res => {
           if (res?.user?.id) {
             setCurrentUserId(res.user.id);
+            setCurrentUser(res.user);
+            void syncFromDatabase();
           } else {
             handleLogout();
           }
@@ -201,9 +205,11 @@ export const MainApp = () => {
       api.setToken(null);
       localStorage.removeItem('lincoz_auth_token');
       localStorage.removeItem('lincoz_current_user_id');
+      localStorage.removeItem('lincoz_user');
       localStorage.setItem('lincoz_current_route', 'landing');
       api.post('/auth/logout').catch(() => {});
     } catch (e) {}
+    setCurrentUser(null);
     setCurrentRoute('landing');
     pushNotification('Logged Out', 'Returned to platform landing page.', 'info');
   };

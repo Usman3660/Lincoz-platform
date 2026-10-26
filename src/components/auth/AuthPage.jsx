@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
-  const { users, setCurrentUserId, pushNotification, theme, toggleTheme } = useApp();
+  const { users, setCurrentUserId, setCurrentUser, syncFromDatabase, pushNotification, theme, toggleTheme } = useApp();
 
   // Login form state
   const [email, setEmail] = useState('');
@@ -47,14 +47,18 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
 
       if (res.ok && data.success && data.token) {
         api.setToken(data.token);
-        const loggedUser = users.find(u => u.id === data.user.id || u.email.toLowerCase() === targetEmail) || data.user;
+        try {
+          localStorage.setItem('lincoz_user', JSON.stringify(data.user));
+        } catch (e) {}
+        setCurrentUser(data.user);
         setCurrentUserId(data.user.id);
+        void syncFromDatabase();
         pushNotification(
           'Authenticated Successfully',
-          `Signed in as ${data.user.name || loggedUser.name}.`,
+          `Signed in as ${data.user.name}.`,
           'success'
         );
-        onLoginSuccess(loggedUser);
+        onLoginSuccess(data.user);
         return;
       }
 
