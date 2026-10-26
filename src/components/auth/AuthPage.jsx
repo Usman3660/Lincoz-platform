@@ -34,7 +34,8 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
 
     try {
       // 1. Primary: Secure server-side authentication verifying bcrypt hash in PostgreSQL
-      const res = await fetch('/api/auth/login', {
+      const apiUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+      const res = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -43,7 +44,7 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
         })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.success && data.token) {
         api.setToken(data.token);
