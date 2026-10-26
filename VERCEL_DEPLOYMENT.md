@@ -31,7 +31,7 @@ This project is fully configured for unified **Full-Stack deployment on Vercel**
 
    | Key | Value |
    | :--- | :--- |
-   | `DATABASE_URL` | `postgresql://postgres.rdhinfgppvybemqbjjrz:lincozusman@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1` |
+   | `DATABASE_URL` | `postgresql://postgres.rdhinfgppvybemqbjjrz:lincozusman@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true` |
    | `DIRECT_URL` | `postgresql://postgres.rdhinfgppvybemqbjjrz:lincozusman@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres` |
    | `JWT_SECRET` | `lincoz_enterprise_super_secret_jwt_key_minimum_32_characters_long` |
    | `JWT_REFRESH_SECRET` | `lincoz_enterprise_super_secret_jwt_refresh_key_minimum_32_characters_long` |

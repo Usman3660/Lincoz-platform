@@ -6,18 +6,19 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../logger/logger.js';
 
-// Singleton instance on globalThis to reuse connection pool across serverless invocations and dev hot-reloads
-const globalForPrisma = globalThis;
+// Singleton instance to prevent multiple connection pools during hot-reloading
+const globalForPrisma = global;
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-    errorFormat: 'minimal', // Never leaks raw internals
-  });
+export const prisma = globalForPrisma.prisma || new PrismaClient({
+  log: process.env.NODE_ENV === 'development' 
+    ? ['warn', 'error'] 
+    : ['error'],
+  errorFormat: 'minimal', // Never leaks raw internals
+});
 
-// Always cache Prisma instance on globalThis to avoid pool exhaustion in serverless environments (e.g. Vercel)
-globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 /**
  * Executes an atomic multi-tenant transaction with automatic rollback on error.

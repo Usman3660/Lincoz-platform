@@ -24,9 +24,6 @@ import { clientsRouter } from './modules/clients/clients.routes.js';
 export function createServer() {
   const app = express();
 
-  // Enable trust proxy for reverse proxies (Vercel, AWS, Cloudflare) to ensure accurate client IP identification
-  app.set('trust proxy', 1);
-
   // 1. Security Headers (Helmet, CSP, HSTS, X-Frame-Options: DENY) - Rule 7
   app.use(securityHeadersMiddleware);
 
