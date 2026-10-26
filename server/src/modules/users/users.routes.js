@@ -10,7 +10,7 @@ import { prisma } from '../../infrastructure/database/client.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorizeRoles } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
-import { userCache, verifiedPasswordCache } from '../auth/auth.routes.js';
+import { userCache } from '../auth/auth.routes.js';
 
 export const usersRouter = Router();
 
@@ -236,13 +236,7 @@ usersRouter.patch('/:id/password', authenticate, async (req, res, next) => {
     });
 
     if (updatedUser?.email) {
-      const emailKey = updatedUser.email.toLowerCase().trim();
-      userCache.delete(emailKey);
-      for (const [key] of verifiedPasswordCache.entries()) {
-        if (key.startsWith(`${emailKey}:`)) {
-          verifiedPasswordCache.delete(key);
-        }
-      }
+      userCache.delete(updatedUser.email.toLowerCase().trim());
     }
 
     res.json({
