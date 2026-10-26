@@ -11,9 +11,10 @@ import rateLimit from 'express-rate-limit';
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 15 : 100,
+  max: process.env.NODE_ENV === 'production' ? 30 : 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     error: 'Too many authentication attempts. Please retry after 15 minutes.',
@@ -29,6 +30,7 @@ export const apiRateLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     error: 'Too many requests. Please slow down and try again.',
@@ -44,6 +46,7 @@ export const uploadRateLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     error: 'Upload limit reached (5 per minute). Please wait before uploading more files.',
@@ -59,6 +62,7 @@ export const aiRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   keyGenerator: (req) => {
     // Throttles per authenticated user ID; falls back to IP address
     return req.user?.id || req.ip;
