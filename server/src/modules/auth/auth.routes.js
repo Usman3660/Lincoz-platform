@@ -12,6 +12,7 @@ import { env } from '../../config/env.js';
 import { authRateLimiter } from '../../middleware/rateLimiter.js';
 import { validate } from '../../middleware/validate.js';
 import { authenticate } from '../../middleware/authenticate.js';
+import { getCachedBootstrap } from '../sync/sync.routes.js';
 
 export const authRouter = Router();
 
@@ -26,7 +27,7 @@ export const userCache = new Map();
       userCache.set(u.email.toLowerCase().trim(), u);
     }
   } catch (err) {
-    // Non-blocking background sync
+    console.warn('[Auth Warmup] Error warming up user cache:', err.message);
   }
 })();
 
@@ -62,22 +63,26 @@ authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, re
       }
     }
 
-    // 1. Fetch user directly from PostgreSQL database
-    let user = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { email },
-      });
-      if (user) {
-        userCache.set(email, user);
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
+
+    // 1. Instant check in-memory user cache first (0ms), fallback to PostgreSQL database
+    let user = userCache.get(cleanEmail);
+    if (!user) {
+      try {
+        user = await prisma.user.findUnique({
+          where: { email: cleanEmail },
+        });
+        if (user) {
+          userCache.set(cleanEmail, user);
+        }
+      } catch (dbErr) {
+        console.error('[Auth] Database connection error during login:', dbErr.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Authentication database service temporarily unavailable.',
+          statusCode: 500,
+        });
       }
-    } catch (dbErr) {
-      console.error('[Auth] Database connection error during login:', dbErr.message);
-      return res.status(500).json({
-        success: false,
-        error: 'Authentication database service temporarily unavailable.',
-        statusCode: 500,
-      });
     }
 
     // 2. Strict password verification via bcrypt against database passwordHash
@@ -129,6 +134,9 @@ authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, re
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // 3. Attach pre-warmed bootstrap dataset directly without blocking (sub-millisecond)
+    const bootstrapData = getCachedBootstrap(user.organizationId || 'org_lincoz_primary', user);
+
     res.json({
       success: true,
       message: 'Authentication successful',
@@ -141,6 +149,7 @@ authRouter.post('/login', authRateLimiter, validate(loginSchema), async (req, re
         title: user.title,
         organizationId: user.organizationId,
       },
+      bootstrap: bootstrapData,
     });
   } catch (error) {
     next(error);

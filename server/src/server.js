@@ -20,6 +20,7 @@ import { aiRouter } from './modules/ai-proxy/ai.routes.js';
 import { uploadRouter } from './modules/upload/upload.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { clientsRouter } from './modules/clients/clients.routes.js';
+import { syncRouter } from './modules/sync/sync.routes.js';
 
 export function createServer() {
   const app = express();
@@ -61,6 +62,7 @@ export function createServer() {
   app.use('/api/upload', uploadRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/clients', clientsRouter);
+  app.use('/api/sync', syncRouter);
 
   // 8. 404 Route Handler
   app.use('*', (req, res) => {

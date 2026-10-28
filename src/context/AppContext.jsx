@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   INITIAL_USERS,
   INITIAL_CONTRACTORS,
@@ -343,86 +343,127 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  // Live PostgreSQL Database Synchronization (Real-Time DB Connection)
-  const syncFromDatabase = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('lincoz_auth_token');
-      if (!token) return;
+  // In-flight sync lock to prevent duplicate concurrent database queries
+  const activeSyncPromiseRef = useRef(null);
 
-      // 0. Fetch live users from PostgreSQL
-      const usersRes = await api.get('/users').catch(() => null);
-      if (usersRes?.data && Array.isArray(usersRes.data)) {
-        setUsers(usersRes.data);
-        try {
-          localStorage.setItem('lincoz_users', JSON.stringify(usersRes.data));
-        } catch (e) {}
-      }
+  // Synchronously apply bootstrap dataset to React state and localStorage (Zero network wait)
+  const applyBootstrapData = useCallback((data) => {
+    if (!data) return;
+    const { users, clients, projects, tasks, attendance, payouts, expenses, expenseCategories } = data;
 
-      // 1. Fetch live clients directory from PostgreSQL
-      const clientsRes = await api.get('/clients').catch(() => null);
-      if (clientsRes?.data && Array.isArray(clientsRes.data)) {
-        setClients(clientsRes.data);
-        try {
-          localStorage.setItem('lincoz_clients_directory', JSON.stringify(clientsRes.data));
-        } catch (e) {}
-      }
-
-      // 2. Fetch live projects from PostgreSQL
-      const projRes = await api.get('/projects').catch(() => null);
-      if (projRes?.data && Array.isArray(projRes.data)) {
-        setProjects(projRes.data);
-        try {
-          localStorage.setItem('lincoz_projects', JSON.stringify(projRes.data));
-        } catch (e) {}
-      }
-
-      // 3. Fetch live sprint tasks from PostgreSQL
-      const tasksRes = await api.get('/projects/tasks').catch(() => null);
-      if (tasksRes?.data && Array.isArray(tasksRes.data)) {
-        setTasks(tasksRes.data);
-        try {
-          localStorage.setItem('lincoz_tasks', JSON.stringify(tasksRes.data));
-        } catch (e) {}
-      }
-
-      // 4. Fetch live attendance records from PostgreSQL
-      const attRes = await api.get('/attendance').catch(() => null);
-      if (attRes?.data && Array.isArray(attRes.data)) {
-        setAttendanceRecords(attRes.data);
-        try {
-          localStorage.setItem('lincoz_attendance', JSON.stringify(attRes.data));
-        } catch (e) {}
-      }
-
-      // 5. Fetch live payouts from PostgreSQL
-      const payRes = await api.get('/financials/payouts').catch(() => null);
-      if (payRes?.data && Array.isArray(payRes.data)) {
-        setPayoutLedger(payRes.data);
-        try {
-          localStorage.setItem('lincoz_payout_ledger', JSON.stringify(payRes.data));
-        } catch (e) {}
-      }
-
-      // 6. Fetch live direct expenses from PostgreSQL
-      const expRes = await api.get('/financials/expenses').catch(() => null);
-      if (expRes?.success && Array.isArray(expRes.data)) {
-        setDirectExpensesList(expRes.data);
-        try {
-          localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expRes.data));
-        } catch (e) {}
-      }
-
-      // 7. Fetch live expense categories from PostgreSQL
-      const catRes = await api.get('/financials/expense-categories').catch(() => null);
-      if (catRes?.success && Array.isArray(catRes.data)) {
-        setExpenseCategories(catRes.data);
-        try {
-          localStorage.setItem('lincoz_expense_categories', JSON.stringify(catRes.data));
-        } catch (e) {}
-      }
-    } catch (err) {
-      console.warn('[PostgreSQL Sync] Error syncing data from database:', err.message);
+    if (Array.isArray(users)) {
+      setUsers(users);
+      try { localStorage.setItem('lincoz_users', JSON.stringify(users)); } catch (e) {}
     }
+    if (Array.isArray(clients)) {
+      setClients(clients);
+      try { localStorage.setItem('lincoz_clients_directory', JSON.stringify(clients)); } catch (e) {}
+    }
+    if (Array.isArray(projects)) {
+      setProjects(projects);
+      try { localStorage.setItem('lincoz_projects', JSON.stringify(projects)); } catch (e) {}
+    }
+    if (Array.isArray(tasks)) {
+      setTasks(tasks);
+      try { localStorage.setItem('lincoz_tasks', JSON.stringify(tasks)); } catch (e) {}
+    }
+    if (Array.isArray(attendance)) {
+      setAttendanceRecords(attendance);
+      try { localStorage.setItem('lincoz_attendance', JSON.stringify(attendance)); } catch (e) {}
+    }
+    if (Array.isArray(payouts)) {
+      setPayoutLedger(payouts);
+      try { localStorage.setItem('lincoz_payout_ledger', JSON.stringify(payouts)); } catch (e) {}
+    }
+    if (Array.isArray(expenses)) {
+      setDirectExpensesList(expenses);
+      try { localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expenses)); } catch (e) {}
+    }
+    if (Array.isArray(expenseCategories)) {
+      setExpenseCategories(expenseCategories);
+      try { localStorage.setItem('lincoz_expense_categories', JSON.stringify(expenseCategories)); } catch (e) {}
+    }
+  }, []);
+
+  // Live PostgreSQL Database Synchronization (Real-Time DB Connection - Optimized)
+  const syncFromDatabase = useCallback(async () => {
+    const token = localStorage.getItem('lincoz_auth_token');
+    if (!token) return;
+
+    // Reuse existing in-flight sync if one is already running
+    if (activeSyncPromiseRef.current) {
+      return activeSyncPromiseRef.current;
+    }
+
+    activeSyncPromiseRef.current = (async () => {
+      try {
+        // 1. FAST PATH: Single-request unified bootstrap endpoint (executes all queries in parallel on server)
+        const bootstrapRes = await api.get('/sync/bootstrap').catch(err => {
+          console.warn('[Sync Bootstrap] Falling back to parallel fetch:', err.message);
+          return null;
+        });
+
+        if (bootstrapRes?.success && bootstrapRes.data) {
+          applyBootstrapData(bootstrapRes.data);
+          return;
+        }
+
+        // 2. FALLBACK PATH: Parallel execution (all 8 executed concurrently via Promise.allSettled instead of sequential waterfall)
+        const results = await Promise.allSettled([
+          api.get('/users'),
+          api.get('/clients'),
+          api.get('/projects'),
+          api.get('/projects/tasks'),
+          api.get('/attendance'),
+          api.get('/financials/payouts'),
+          api.get('/financials/expenses'),
+          api.get('/financials/expense-categories')
+        ]);
+
+        const [usersRes, clientsRes, projRes, tasksRes, attRes, payRes, expRes, catRes] = results.map(
+          r => (r.status === 'fulfilled' ? r.value : null)
+        );
+
+        if (usersRes?.data && Array.isArray(usersRes.data)) {
+          setUsers(usersRes.data);
+          try { localStorage.setItem('lincoz_users', JSON.stringify(usersRes.data)); } catch (e) {}
+        }
+        if (clientsRes?.data && Array.isArray(clientsRes.data)) {
+          setClients(clientsRes.data);
+          try { localStorage.setItem('lincoz_clients_directory', JSON.stringify(clientsRes.data)); } catch (e) {}
+        }
+        if (projRes?.data && Array.isArray(projRes.data)) {
+          setProjects(projRes.data);
+          try { localStorage.setItem('lincoz_projects', JSON.stringify(projRes.data)); } catch (e) {}
+        }
+        if (tasksRes?.data && Array.isArray(tasksRes.data)) {
+          setTasks(tasksRes.data);
+          try { localStorage.setItem('lincoz_tasks', JSON.stringify(tasksRes.data)); } catch (e) {}
+        }
+        if (attRes?.data && Array.isArray(attRes.data)) {
+          setAttendanceRecords(attRes.data);
+          try { localStorage.setItem('lincoz_attendance', JSON.stringify(attRes.data)); } catch (e) {}
+        }
+        if (payRes?.data && Array.isArray(payRes.data)) {
+          setPayoutLedger(payRes.data);
+          try { localStorage.setItem('lincoz_payout_ledger', JSON.stringify(payRes.data)); } catch (e) {}
+        }
+        if (expRes?.data && Array.isArray(expRes.data)) {
+          setDirectExpensesList(expRes.data);
+          try { localStorage.setItem('lincoz_direct_expenses', JSON.stringify(expRes.data)); } catch (e) {}
+        }
+        if (catRes?.data && Array.isArray(catRes.data)) {
+          setExpenseCategories(catRes.data);
+          try { localStorage.setItem('lincoz_expense_categories', JSON.stringify(catRes.data)); } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('[PostgreSQL Sync] Error syncing data from database:', err.message);
+      } finally {
+        activeSyncPromiseRef.current = null;
+      }
+    })();
+
+    return activeSyncPromiseRef.current;
   }, []);
 
   // Trigger real-time database sync on mount and whenever session is active
@@ -3110,7 +3151,8 @@ export const AppProvider = ({ children }) => {
         getScopedAttendance,
         setCurrentUser,
         syncFromDatabase,
-        refreshData: syncFromDatabase
+        refreshData: syncFromDatabase,
+        applyBootstrapData
       }}
     >
       {children}

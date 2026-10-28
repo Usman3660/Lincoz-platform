@@ -158,6 +158,10 @@ export const MainApp = () => {
         handleLogout();
         return;
       }
+      // If user is already set from active login, skip redundant network call
+      if (currentUser?.id) {
+        return;
+      }
       api.get('/auth/me')
         .then(res => {
           if (res?.user?.id) {
@@ -173,7 +177,7 @@ export const MainApp = () => {
           handleLogout();
         });
     }
-  }, [currentRoute]);
+  }, [currentRoute, currentUser]);
 
   // Automatically route onsite employees directly to 'tasks' (My Assigned Tasks)
   useEffect(() => {

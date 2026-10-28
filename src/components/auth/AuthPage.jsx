@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
-  const { users, setCurrentUserId, setCurrentUser, syncFromDatabase, pushNotification, theme, toggleTheme } = useApp();
+  const { users, setCurrentUserId, setCurrentUser, syncFromDatabase, applyBootstrapData, pushNotification, theme, toggleTheme } = useApp();
 
   // Login form state
   const [email, setEmail] = useState('');
@@ -52,7 +52,14 @@ export const AuthPage = ({ onNavigateToLanding, onLoginSuccess }) => {
         } catch (e) {}
         setCurrentUser(data.user);
         setCurrentUserId(data.user.id);
-        void syncFromDatabase();
+
+        // Apply bundled live database records synchronously (<1ms)
+        if (data.bootstrap) {
+          applyBootstrapData(data.bootstrap);
+        } else {
+          void syncFromDatabase();
+        }
+
         pushNotification(
           'Authenticated Successfully',
           `Signed in as ${data.user.name}.`,
